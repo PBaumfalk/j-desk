@@ -8,6 +8,9 @@
   import { screenToWorld, zoomAt, zoomToFit, type Viewport } from '../state/viewport';
   import { allBoxes } from '../state/geometry';
   import DocCard from './DocCard.svelte';
+  import LinkLayer from './LinkLayer.svelte';
+  import ContextMenu from './ContextMenu.svelte';
+  import { ui } from '../ui.svelte';
 
   let vp = $state<Viewport>({ x: 0, y: 0, scale: 1 });
   let el: HTMLDivElement;
@@ -48,7 +51,10 @@
   }
 
   onMount(() => {
-    const down = (e: KeyboardEvent) => { if (e.code === 'Space') spaceDown = true; };
+    const down = (e: KeyboardEvent) => {
+      if (e.code === 'Space') spaceDown = true;
+      if (e.code === 'Escape') { ui.linkingFromId = null; ui.menu = null; }
+    };
     const up = (e: KeyboardEvent) => { if (e.code === 'Space') spaceDown = false; };
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
@@ -72,6 +78,7 @@
 <div class="desk" bind:this={el} class:grabbing={spaceDown || panning}
      onwheel={onWheel} onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp}>
   <div class="world" style:transform="translate({vp.x}px, {vp.y}px) scale({vp.scale})">
+    <LinkLayer />
     {#each freeDocs(desktop.state) as doc (doc.id)}
       <DocCard {doc} {vp} />
     {/each}
@@ -80,6 +87,10 @@
     <button onclick={addViaDialog} title="PDF hinzufügen">＋ PDF</button>
     <button onclick={fitAll}>Übersicht</button>
   </div>
+  {#if ui.linkingFromId}
+    <div class="hint">Verknüpfen: Ziel anklicken (Esc bricht ab)</div>
+  {/if}
+  <ContextMenu />
 </div>
 
 <style>
@@ -90,4 +101,6 @@
   .toolbar { position: fixed; top: 12px; right: 12px; display: flex; gap: 8px; }
   .toolbar button { font-size: 13px; padding: 6px 12px; border-radius: 8px; border: none;
                     background: rgba(255,255,255,.92); cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+  .hint { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); padding: 6px 14px;
+          border-radius: 999px; background: rgba(20, 40, 90, .85); color: #fff; font-size: 13px; z-index: 9999; }
 </style>

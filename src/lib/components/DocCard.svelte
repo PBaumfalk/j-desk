@@ -5,6 +5,9 @@
   import { moveDoc, bringToFront } from '../state/documents';
   import { openPath } from '@tauri-apps/plugin-opener';
   import { getThumbnail } from '../thumbnails';
+  import { addLink } from '../state/links';
+  import { ui } from '../ui.svelte';
+  import { showDocMenu } from '../menus';
 
   let { doc, vp }: { doc: Doc; vp: Viewport } = $props();
 
@@ -20,6 +23,16 @@
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
     e.stopPropagation();
+    if (ui.linkingFromId && ui.linkingFromId !== doc.id) {
+      const from = ui.linkingFromId;
+      ui.linkingFromId = null;
+      desktop.apply((s) => addLink(s, from, doc.id));
+      return;
+    }
+    if (ui.linkingFromId === doc.id) {
+      ui.linkingFromId = null;
+      return;
+    }
     dragging = true;
     moved = false;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -45,7 +58,8 @@
      style:z-index={doc.zIndex} style:transform="rotate({doc.rotation}deg)"
      style:width="{CARD_W}px" style:height="{CARD_H}px"
      onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp}
-     ondblclick={() => { if (!doc.missing) void openPath(doc.path); }}>
+     ondblclick={() => { if (!doc.missing) void openPath(doc.path); }}
+     oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showDocMenu(e, doc); }}>
   <div class="body">
     {#if doc.missing}
       <div class="warn">⚠️<br />Datei fehlt</div>
