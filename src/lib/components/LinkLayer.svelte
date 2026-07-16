@@ -1,8 +1,13 @@
 <script lang="ts">
-  import { desktop } from '../store.svelte';
   import {
-    CARD_W, CARD_H, findDoc, findStack, stackOf, type Vec2, removeLink, setLinkNote,
+    CARD_W, CARD_H, findDoc, findStack, stackOf, setLinkNote, type Vec2,
   } from '@digital-desktop/core';
+  import { debounce } from '../debounce';
+  import { desktop } from '../store.svelte';
+
+  const sendNote = debounce(400, (linkId: string, note: string) => {
+    void desktop.command('setLinkNote', { linkId, note });
+  });
 
   let openLinkId = $state<string | null>(null);
   const openLink = $derived(desktop.state.links.find((l) => l.id === openLinkId) ?? null);
@@ -47,10 +52,14 @@
     <div class="popover" style:left="{(a.x + b.x) / 2}px" style:top="{(a.y + b.y) / 2}px"
          onpointerdown={(e) => e.stopPropagation()}>
       <textarea placeholder="Notiz zur Verknüpfung…" value={openLink.note}
-        oninput={(e) => { const note = (e.currentTarget as HTMLTextAreaElement).value; desktop.apply((s) => setLinkNote(s, openLink.id, note)); }}
+        oninput={(e) => {
+          const note = (e.currentTarget as HTMLTextAreaElement).value;
+          desktop.applyLocal((s) => setLinkNote(s, openLink.id, note));
+          sendNote(openLink.id, note);
+        }}
       ></textarea>
       <div class="row">
-        <button onclick={() => { desktop.apply((s) => removeLink(s, openLink.id)); openLinkId = null; }}>Verknüpfung lösen</button>
+        <button onclick={() => { void desktop.command('removeLink', { linkId: openLink.id }); openLinkId = null; }}>Verknüpfung lösen</button>
         <button onclick={() => (openLinkId = null)}>Schließen</button>
       </div>
     </div>

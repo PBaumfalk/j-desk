@@ -1,12 +1,10 @@
 <script lang="ts">
   import {
-    CARD_W, CARD_H, findDoc, type Stack, screenToWorld, type Viewport, bringToFront,
-    moveStack, removeFromStack, renameStack, addLink,
+    CARD_W, CARD_H, findDoc, moveStack, screenToWorld, type Stack, type Viewport,
   } from '@digital-desktop/core';
   import { desktop } from '../store.svelte';
-  import { openPath } from '@tauri-apps/plugin-opener';
   import { ui } from '../ui.svelte';
-  import { showDocMenu, showStackMenu } from '../menus';
+  import { showDocMenu, showStackMenu, openDoc } from '../menus';
   import { getThumbnail } from '../thumbnails';
 
   let { stack, vp }: { stack: Stack; vp: Viewport } = $props();
@@ -15,7 +13,7 @@
   const topDoc = $derived(findDoc(desktop.state, stack.docIds[stack.docIds.length - 1]));
   let thumb = $state<string | null>(null);
   $effect(() => {
-    if (topDoc && !topDoc.missing) void getThumbnail(topDoc).then((t) => (thumb = t));
+    if (topDoc && desktop.api) void getThumbnail(desktop.api, topDoc).then((t) => (thumb = t));
     else thumb = null;
   });
 
@@ -27,7 +25,7 @@
     if (ui.linkingFromId && ui.linkingFromId !== stack.id) {
       const from = ui.linkingFromId;
       ui.linkingFromId = null;
-      desktop.apply((s) => addLink(s, from, stack.id));
+      void desktop.command('addLink', { fromId: from, toId: stack.id });
       return;
     }
     if (ui.linkingFromId === stack.id) {
@@ -37,20 +35,19 @@
     dragging = true;
     moved = false;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    desktop.apply((s) => bringToFront(s, stack.id));
+    void desktop.command('bringToFront', { id: stack.id });
   }
   function onPointerMove(e: PointerEvent) {
     if (!dragging) return;
     moved = true;
-    desktop.apply(
-      (s) => moveStack(s, stack.id, { x: stack.position.x + e.movementX / vp.scale, y: stack.position.y + e.movementY / vp.scale }),
-      { transient: true },
+    desktop.applyLocal((s) =>
+      moveStack(s, stack.id, { x: stack.position.x + e.movementX / vp.scale, y: stack.position.y + e.movementY / vp.scale }),
     );
   }
   function onPointerUp() {
     if (!dragging) return;
     dragging = false;
-    if (moved) desktop.apply((s) => s);
+    if (moved) void desktop.command('moveStack', { stackId: stack.id, position: { x: stack.position.x, y: stack.position.y } });
     else ui.fannedStackId = fanned ? null : stack.id;
   }
 
@@ -69,10 +66,13 @@
       cleanup();
       if (Math.hypot(up.clientX - startX, up.clientY - startY) > 30) {
         const w = screenToWorld(vp, { x: up.clientX, y: up.clientY });
-        desktop.apply((s) => removeFromStack(s, docId, { x: w.x - CARD_W / 2, y: w.y - CARD_H / 2 }));
+        void desktop.command('removeFromStack', {
+          docId,
+          position: { x: w.x - CARD_W / 2, y: w.y - CARD_H / 2 },
+        });
       } else {
         const d = findDoc(desktop.state, docId);
-        if (d && !d.missing) void openPath(d.path);
+        if (d) void openDoc(d);
       }
     };
     window.addEventListener('pointerup', onUp);
@@ -87,9 +87,7 @@
   <div class="sheet s2"></div>
   <div class="sheet s1"></div>
   <div class="sheet top">
-    {#if topDoc?.missing}
-      <div class="warn">⚠️<br />Datei fehlt</div>
-    {:else if thumb}
+    {#if thumb}
       <img src={thumb} alt="" draggable="false" />
     {:else}
       <div class="fallback">PDF</div>
@@ -99,7 +97,7 @@
   {#if ui.editingStackId === stack.id}
     <input class="name" value={stack.name} placeholder="Stapelname"
            onpointerdown={(e) => e.stopPropagation()}
-           onchange={(e) => { const name = (e.currentTarget as HTMLInputElement).value; desktop.apply((s) => renameStack(s, stack.id, name)); ui.editingStackId = null; }} />
+           onchange={(e) => { const name = (e.currentTarget as HTMLInputElement).value; void desktop.command('renameStack', { stackId: stack.id, name }); ui.editingStackId = null; }} />
   {:else if stack.name}
     <div class="name label">{stack.name}</div>
   {/if}
@@ -111,7 +109,7 @@
         {#if d}
           <div class="fan-card" onpointerdown={(e) => fanPointerDown(e, docId)}
                oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showDocMenu(e, d); }}>
-            {d.missing ? '⚠️ ' : ''}{d.path.split('/').pop()}
+            {d.name}
           </div>
         {/if}
       {/each}
@@ -128,7 +126,6 @@
   .sheet.top { left: 0; top: 0; display: flex; align-items: center; justify-content: center; }
   .sheet img { width: 100%; height: 100%; object-fit: cover; object-position: top; pointer-events: none; }
   .fallback { font-weight: 700; color: #b33; font-size: 22px; }
-  .warn { text-align: center; font-size: 14px; }
   .badge { position: absolute; top: -10px; right: 2px; min-width: 22px; height: 22px; border-radius: 11px;
            background: #d9534f; color: #fff; font-size: 12px; font-weight: 700;
            display: flex; align-items: center; justify-content: center; padding: 0 5px; }
