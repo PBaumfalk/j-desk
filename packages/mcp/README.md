@@ -50,7 +50,7 @@ Jedes Wort im Dokument kostet 1 Credit. Caching greift pro Prozesslaufzeit (nich
 
 ### Platzhalter-Zuordnungen, Mandantentrennung und Speicherwachstum
 
-Platzhalter→Klartext-Zuordnungen (für `deanonymize` sowie für Schreib-Tools mit Platzhaltern im Text, z. B. `rename_stack`, `set_link_note`, `create_desk`) werden **pro Anmelde-Token** im Prozessspeicher geführt. Ein Benutzer kann damit keine Platzhalter aus der Sitzung eines anderen Benutzers auflösen — ein fremder Platzhalter bleibt unbekannt. Der Dateitext-Cache (anonymisierte Volltexte pro `fileId`) ist dagegen bewusst prozessweit geteilt, da der Zugriff darauf bereits über die Desk-API gegatet ist (spart anymize-Credits über Benutzer hinweg).
+Platzhalter→Klartext-Zuordnungen (für `deanonymize` sowie für Schreib-Tools mit Platzhaltern im Text, z. B. `rename_stack`, `set_link_note`, `create_desk`) werden **pro Anmelde-Token** im Prozessspeicher geführt. Ein Benutzer kann damit keine Platzhalter aus der Sitzung eines anderen Benutzers auflösen — ein fremder Platzhalter bleibt unbekannt. Der Dateitext-Cache (anonymisierte Volltexte pro `fileId`) ist dagegen bewusst prozessweit geteilt, da der Zugriff darauf bereits über die Desk-API gegatet ist (spart anymize-Credits über Benutzer hinweg). Folge dieser Teilung: Liest ein zweiter berechtigter Benutzer eine bereits gecachte Datei, erhält er den anonymisierten Text, kann deren Platzhalter aber nicht auflösen — die Zuordnungen liegen nur beim Erstleser, und auch erneutes Lesen füllt sie bis zu einem Server-Neustart nicht nach.
 
 Ein Neustart des MCP-Servers verwirft **alle** Zuordnungen und Caches — Dokumente müssen danach erneut gelesen werden, bevor Platzhalter wieder aufgelöst werden können.
 
