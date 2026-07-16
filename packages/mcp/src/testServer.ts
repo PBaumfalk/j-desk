@@ -46,13 +46,13 @@ class FakeAnymize extends AnymizeClient {
   }
 }
 
-export async function startTestSetup(): Promise<TestSetup> {
+export async function startTestSetup(opts?: { allowDeanonymize?: boolean }): Promise<TestSetup> {
   const ctx = await createTestApp();
   const app: FastifyInstance = ctx.app;
   await app.listen({ port: 0 });
   const deskUrl = `http://127.0.0.1:${(app.server.address() as { port: number }).port}`;
 
-  const config = { ...loadConfig({ ANYMIZE_API_KEY: 'fake' }), deskServerUrl: deskUrl, port: 0 };
+  const config = { ...loadConfig({ ANYMIZE_API_KEY: 'fake' }), deskServerUrl: deskUrl, port: 0, allowDeanonymize: opts?.allowDeanonymize ?? true };
   const fake = new FakeAnymize();
   const mappings = new MappingStore();
   const shared: Shared = { anonymizer: new Anonymizer(fake, mappings, new AnonCache()), mappings };
