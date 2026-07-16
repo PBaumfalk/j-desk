@@ -12,16 +12,17 @@ import {
   listMembers, addMember, removeMember, MemberError,
 } from './deskStore';
 import { storeFile, getFilePath, fileExists, FileError } from './files';
-import { ForbiddenError, requireDeskAccess, requireDeskOwner, requireAdmin, canReadFile } from './guards';
+import { ForbiddenError, requireDeskAccess, requireDeskOwner, requireAdmin, canReadFile, isAdminUser } from './guards';
 import { listUsers, renameUser, resetPassword, changeOwnPassword, getUserDesks, deleteUserCascade, UserNotFoundError } from './users';
 import { register, unregister, broadcast } from './broadcast';
+import { createInvite, listInvites, getInvite, revokeInvite, redeemInvite, InviteError } from './invites';
 
 export interface AppOptions {
   db: Db;
   dataDir: string;
 }
 
-const PUBLIC_PATHS = new Set(['/api/v1/auth/status', '/api/v1/auth/login', '/api/v1/auth/setup']);
+const PUBLIC_PATHS = new Set(['/api/v1/auth/status', '/api/v1/auth/login', '/api/v1/auth/setup', '/api/v1/auth/redeem']);
 
 function bearerToken(req: FastifyRequest): string | null {
   const header = req.headers.authorization;
@@ -43,7 +44,7 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
   app.setErrorHandler((err, _req, reply) => {
     if (err instanceof ForbiddenError) return reply.code(403).send({ error: err.message });
     if (err instanceof DeskNotFoundError || err instanceof UserNotFoundError) return reply.code(404).send({ error: err.message });
-    if (err instanceof AuthError || err instanceof CommandError || err instanceof InvalidStateError || err instanceof FileError || err instanceof MemberError) {
+    if (err instanceof AuthError || err instanceof CommandError || err instanceof InvalidStateError || err instanceof FileError || err instanceof MemberError || err instanceof InviteError) {
       return reply.code(400).send({ error: err.message });
     }
     return reply.send(err);
@@ -51,6 +52,7 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
 
   app.addHook('onRequest', async (req, reply) => {
     const path = req.url.split('?')[0];
+    if (path.startsWith('/api/v1/auth/invite/')) return;
     if (PUBLIC_PATHS.has(path)) return;
     const token = bearerToken(req);
     const session = token ? validateToken(db, token) : null;
@@ -96,6 +98,40 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
     const { oldPassword, newPassword } = (req.body ?? {}) as { oldPassword?: string; newPassword?: string };
     await changeOwnPassword(db, userIdOf(req), String(oldPassword ?? ''), String(newPassword ?? ''));
     return { ok: true };
+  });
+
+  // ---- Einladungen ----
+  app.post('/api/v1/invites', async (req, reply) => {
+    const userId = userIdOf(req);
+    const { deskId } = (req.body ?? {}) as { deskId?: string };
+    if (deskId) requireDeskOwner(db, deskId, userId);
+    else requireAdmin(db, userId);
+    reply.code(201);
+    return createInvite(db, userId, deskId ?? null);
+  });
+
+  app.get('/api/v1/invites', async (req) => {
+    const userId = userIdOf(req);
+    return listInvites(db, userId, isAdminUser(db, userId));
+  });
+
+  app.delete('/api/v1/invites/:token', async (req) => {
+    const userId = userIdOf(req);
+    const { token } = req.params as { token: string };
+    revokeInvite(db, token, userId, isAdminUser(db, userId));
+    return { ok: true };
+  });
+
+  app.get('/api/v1/auth/invite/:token', async (req, reply) => {
+    const { token } = req.params as { token: string };
+    const invite = getInvite(db, token);
+    if (!invite) return reply.code(404).send({ error: 'Einladung ist ungültig oder abgelaufen' });
+    return { deskName: invite.deskName };
+  });
+
+  app.post('/api/v1/auth/redeem', async (req) => {
+    const { token, username, password } = (req.body ?? {}) as { token?: string; username?: string; password?: string };
+    return { token: await redeemInvite(db, String(token ?? ''), String(username ?? ''), String(password ?? '')) };
   });
 
   // ---- Benutzer ----
