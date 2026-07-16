@@ -1,0 +1,53 @@
+import { randomBytes, randomUUID } from 'node:crypto';
+import argon2 from 'argon2';
+import type { Db } from './db';
+
+export class AuthError extends Error {}
+
+const SESSION_MAX_IDLE_MS = 30 * 24 * 60 * 60 * 1000;
+
+export function needsSetup(db: Db): boolean {
+  const row = db.prepare('SELECT COUNT(*) AS n FROM users').get() as { n: number };
+  return row.n === 0;
+}
+
+export async function createUser(db: Db, username: string, password: string): Promise<string> {
+  if (username.trim() === '') throw new AuthError('Benutzername darf nicht leer sein');
+  if (password.length < 8) throw new AuthError('Passwort muss mindestens 8 Zeichen haben');
+  const hash = await argon2.hash(password, { type: argon2.argon2id });
+  const userId = randomUUID();
+  db.prepare('INSERT INTO users (id, username, password_hash, created_at) VALUES (?, ?, ?, ?)').run(
+    userId, username.trim(), hash, Date.now(),
+  );
+  return userId;
+}
+
+export async function login(db: Db, username: string, password: string): Promise<string | null> {
+  const user = db
+    .prepare('SELECT id, password_hash FROM users WHERE username = ?')
+    .get(username.trim()) as { id: string; password_hash: string } | undefined;
+  if (!user) return null;
+  if (!(await argon2.verify(user.password_hash, password))) return null;
+  const token = randomBytes(32).toString('hex');
+  db.prepare('INSERT INTO sessions (token, user_id, created_at, last_used_at) VALUES (?, ?, ?, ?)').run(
+    token, user.id, Date.now(), Date.now(),
+  );
+  return token;
+}
+
+export function validateToken(db: Db, token: string): { userId: string } | null {
+  const row = db
+    .prepare('SELECT user_id, last_used_at FROM sessions WHERE token = ?')
+    .get(token) as { user_id: string; last_used_at: number } | undefined;
+  if (!row) return null;
+  if (Date.now() - row.last_used_at > SESSION_MAX_IDLE_MS) {
+    db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+    return null;
+  }
+  db.prepare('UPDATE sessions SET last_used_at = ? WHERE token = ?').run(Date.now(), token);
+  return { userId: row.user_id };
+}
+
+export function logout(db: Db, token: string): void {
+  db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+}
