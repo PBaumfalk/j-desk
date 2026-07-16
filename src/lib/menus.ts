@@ -1,38 +1,48 @@
-import { open as openDialog } from '@tauri-apps/plugin-dialog';
-import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener';
-import {
-  type Doc, type Stack, collectLinkedPaths, setDocPath, dissolveStack, removeDoc, removeStack,
-} from '@digital-desktop/core';
+import { save as saveDialog } from '@tauri-apps/plugin-dialog';
+import { openPath } from '@tauri-apps/plugin-opener';
+import { writeFile } from '@tauri-apps/plugin-fs';
+import { collectLinkedDocs, type Doc, type Stack } from '@digital-desktop/core';
 import { desktop } from './store.svelte';
-import { ui } from './ui.svelte';
-import { invalidateThumbnail } from './thumbnails';
+import { ui, showToast } from './ui.svelte';
+import { ensureCached } from './fileCache';
 
-export function openWithLinked(entityId: string): void {
-  for (const p of collectLinkedPaths(desktop.state, entityId)) void openPath(p);
+export async function openDoc(doc: Doc): Promise<void> {
+  if (!desktop.api) return;
+  try {
+    await openPath(await ensureCached(desktop.api, doc.fileId));
+  } catch (e) {
+    showToast(e instanceof Error ? e.message : 'Öffnen fehlgeschlagen');
+  }
 }
 
-export async function relinkDoc(doc: Doc): Promise<void> {
-  const picked = await openDialog({ multiple: false, filters: [{ name: 'PDF', extensions: ['pdf'] }] });
-  if (typeof picked === 'string') {
-    invalidateThumbnail(doc.id);
-    desktop.apply((s) => setDocPath(s, doc.id, picked));
+export function openWithLinked(entityId: string): void {
+  for (const d of collectLinkedDocs(desktop.state, entityId)) void openDoc(d);
+}
+
+export async function downloadDoc(doc: Doc): Promise<void> {
+  if (!desktop.api) return;
+  const target = await saveDialog({ defaultPath: doc.name });
+  if (typeof target !== 'string') return;
+  try {
+    await writeFile(target, await desktop.api.fetchFile(doc.fileId));
+    showToast(`Gespeichert: ${doc.name}`);
+  } catch (e) {
+    showToast(e instanceof Error ? e.message : 'Herunterladen fehlgeschlagen');
   }
 }
 
 export function showDocMenu(e: MouseEvent, doc: Doc): void {
-  const items = doc.missing
-    ? [
-        { label: 'Datei neu verknüpfen…', action: () => void relinkDoc(doc) },
-        { label: 'Vom Schreibtisch entfernen', action: () => desktop.apply((s) => removeDoc(s, doc.id)) },
-      ]
-    : [
-        { label: 'Öffnen', action: () => void openPath(doc.path) },
-        { label: 'Mit allen Verknüpften öffnen', action: () => openWithLinked(doc.id) },
-        { label: 'Verknüpfen…', action: () => { ui.linkingFromId = doc.id; } },
-        { label: 'Im Finder zeigen', action: () => void revealItemInDir(doc.path) },
-        { label: 'Vom Schreibtisch entfernen', action: () => desktop.apply((s) => removeDoc(s, doc.id)) },
-      ];
-  ui.menu = { x: e.clientX, y: e.clientY, items };
+  ui.menu = {
+    x: e.clientX,
+    y: e.clientY,
+    items: [
+      { label: 'Öffnen', action: () => void openDoc(doc) },
+      { label: 'Mit allen Verknüpften öffnen', action: () => openWithLinked(doc.id) },
+      { label: 'Verknüpfen…', action: () => { ui.linkingFromId = doc.id; } },
+      { label: 'Herunterladen…', action: () => void downloadDoc(doc) },
+      { label: 'Vom Schreibtisch entfernen', action: () => void desktop.command('removeDoc', { id: doc.id }) },
+    ],
+  };
 }
 
 export function showStackMenu(e: MouseEvent, stack: Stack): void {
@@ -44,8 +54,8 @@ export function showStackMenu(e: MouseEvent, stack: Stack): void {
       { label: 'Mit allen Verknüpften öffnen', action: () => openWithLinked(stack.id) },
       { label: 'Benennen…', action: () => { ui.editingStackId = stack.id; } },
       { label: 'Verknüpfen…', action: () => { ui.linkingFromId = stack.id; } },
-      { label: 'Stapel auflösen', action: () => desktop.apply((s) => dissolveStack(s, stack.id)) },
-      { label: 'Vom Schreibtisch entfernen', action: () => desktop.apply((s) => removeStack(s, stack.id)) },
+      { label: 'Stapel auflösen', action: () => void desktop.command('dissolveStack', { stackId: stack.id }) },
+      { label: 'Vom Schreibtisch entfernen', action: () => void desktop.command('removeStack', { stackId: stack.id }) },
     ],
   };
 }

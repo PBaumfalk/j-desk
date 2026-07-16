@@ -8,4 +8,12 @@ export const ui = $state({
   editingStackId: null as string | null,
   fannedStackId: null as string | null,
   menu: null as { x: number; y: number; items: MenuItem[] } | null,
+  toast: null as string | null,
 });
+
+export function showToast(message: string): void {
+  ui.toast = message;
+  setTimeout(() => {
+    if (ui.toast === message) ui.toast = null;
+  }, 4000);
+}
