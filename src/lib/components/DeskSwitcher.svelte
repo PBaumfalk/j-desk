@@ -1,10 +1,12 @@
 <script lang="ts">
   import { ask } from '@tauri-apps/plugin-dialog';
   import { desktop } from '../store.svelte';
+  import ShareDialog from './ShareDialog.svelte';
 
   let open = $state(false);
   let mode = $state<'liste' | 'neu' | 'umbenennen'>('liste');
   let nameEntwurf = $state('');
+  let teilenOffen = $state(false);
 
   const aktiv = $derived(desktop.desks.find((d) => d.id === desktop.deskId));
 
@@ -43,6 +45,18 @@
     }
   }
 
+  async function verlassen() {
+    if (!desktop.deskId || !aktiv) return;
+    const ja = await ask(
+      `„${aktiv.name}" verlassen? Du kannst wieder beitreten, wenn dich der Besitzer erneut hinzufügt.`,
+      { title: 'Digital Desktop', kind: 'warning' },
+    );
+    if (ja) {
+      await desktop.leaveDesk(desktop.deskId);
+      open = false;
+    }
+  }
+
   function onKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') open = false;
   }
@@ -58,13 +72,18 @@
       {#if mode === 'liste'}
         {#each desktop.desks as desk (desk.id)}
           <button class="item" onclick={() => { void desktop.switchDesk(desk.id); open = false; }}>
-            {desk.id === desktop.deskId ? '✓ ' : ''}{desk.name}
+            {desk.id === desktop.deskId ? '✓ ' : ''}{desk.name}{desk.isOwner ? '' : ` · von ${desk.ownerName}`}
           </button>
         {/each}
         <hr />
         <button class="item" onclick={startNeu}>Neuer Schreibtisch…</button>
-        <button class="item" onclick={startUmbenennen}>Umbenennen…</button>
-        <button class="item gefahr" onclick={() => void loeschen()}>Löschen…</button>
+        {#if aktiv?.isOwner}
+          <button class="item" onclick={startUmbenennen}>Umbenennen…</button>
+          <button class="item" onclick={() => { teilenOffen = true; open = false; }}>Teilen…</button>
+          <button class="item gefahr" onclick={() => void loeschen()}>Löschen…</button>
+        {:else if aktiv}
+          <button class="item gefahr" onclick={() => void verlassen()}>Verlassen…</button>
+        {/if}
       {:else}
         <!-- svelte-ignore a11y_autofocus -->
         <input
@@ -87,6 +106,10 @@
     </div>
   {/if}
 </div>
+
+{#if teilenOffen && aktiv}
+  <ShareDialog desk={aktiv} onClose={() => (teilenOffen = false)} />
+{/if}
 
 <style>
   .switcher { position: fixed; top: 12px; left: 12px; z-index: 9000; }
