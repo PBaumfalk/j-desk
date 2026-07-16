@@ -14,6 +14,7 @@
   import LinkLayer from './LinkLayer.svelte';
   import ContextMenu from './ContextMenu.svelte';
   import DeskSwitcher from './DeskSwitcher.svelte';
+  import AccountMenu from './AccountMenu.svelte';
 
   let vp = $state<Viewport>({ x: 0, y: 0, scale: 1 });
   let el: HTMLDivElement;
@@ -115,6 +116,7 @@
   <div class="toolbar">
     <button onclick={() => void addViaDialog()} title="PDF hinzufügen">＋ PDF</button>
     <button onclick={fitAll}>Übersicht</button>
+    <AccountMenu />
   </div>
   {#if ui.linkingFromId}
     <div class="hint">Verknüpfen: Ziel anklicken (Esc bricht ab)</div>
