@@ -49,6 +49,10 @@ export const desktop = {
 
   /** Optimistisch lokal anwenden, dann ans Backend; die Server-Antwort ist maßgeblich. */
   async command(type: string, payload: Command['payload']): Promise<void> {
+    if (status !== 'online') {
+      showToast('Offline — Aktion nicht möglich');
+      return;
+    }
     if (!api || !deskId) return;
     const cmd: Command = { type, payload };
     try {

@@ -48,7 +48,7 @@
     const name = path.split('/').pop() ?? 'Dokument.pdf';
     try {
       const fileId = await desktop.api.uploadFile(await readFile(path), name);
-      await desktop.command('addDoc', { fileId, name, position });
+      await desktop.command('addDoc', { fileId, name, position, id: crypto.randomUUID() });
     } catch (e) {
       showToast(e instanceof Error ? e.message : `Upload fehlgeschlagen: ${name}`);
     }

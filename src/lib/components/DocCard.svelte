@@ -23,7 +23,7 @@
     if (ui.linkingFromId && ui.linkingFromId !== doc.id) {
       const from = ui.linkingFromId;
       ui.linkingFromId = null;
-      void desktop.command('addLink', { fromId: from, toId: doc.id });
+      void desktop.command('addLink', { fromId: from, toId: doc.id, id: crypto.randomUUID() });
       return;
     }
     if (ui.linkingFromId === doc.id) {
@@ -48,7 +48,7 @@
     if (!moved) return;
     const center = { x: doc.position.x + CARD_W / 2, y: doc.position.y + CARD_H / 2 };
     const hit = hitTest(desktop.state, center, doc.id);
-    if (hit) void desktop.command('stackDocs', { draggedId: doc.id, targetId: hit.id });
+    if (hit) void desktop.command('stackDocs', { draggedId: doc.id, targetId: hit.id, id: crypto.randomUUID() });
     else void desktop.command('moveDoc', { id: doc.id, position: { x: doc.position.x, y: doc.position.y } });
   }
 

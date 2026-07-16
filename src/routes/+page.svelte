@@ -5,11 +5,12 @@
   import Desktop from '../lib/components/Desktop.svelte';
   import LoginScreen from '../lib/components/LoginScreen.svelte';
   import { desktop } from '../lib/store.svelte';
-  import { ApiClient } from '../lib/api';
+  import { ApiClient, ApiError } from '../lib/api';
   import { loadSession, clearSession, type Session } from '../lib/session';
   import { maybeOfferV1Import } from '../lib/importV1';
 
   let phase = $state<'loading' | 'login' | 'desk'>('loading');
+  let lastServerUrl = $state('http://localhost:4810');
 
   async function connect(session: Session): Promise<void> {
     const api = new ApiClient(session.serverUrl, session.token);
@@ -53,17 +54,18 @@
       phase = 'login';
       return;
     }
+    lastServerUrl = session.serverUrl;
     try {
       await connect(session);
-    } catch {
-      await clearSession();
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) await clearSession();
       phase = 'login';
     }
   });
 </script>
 
 {#if phase === 'login'}
-  <LoginScreen onConnected={connect} />
+  <LoginScreen onConnected={connect} initialServerUrl={lastServerUrl} />
 {:else if phase === 'desk'}
   <Desktop />
 {/if}

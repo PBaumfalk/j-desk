@@ -25,7 +25,7 @@
     if (ui.linkingFromId && ui.linkingFromId !== stack.id) {
       const from = ui.linkingFromId;
       ui.linkingFromId = null;
-      void desktop.command('addLink', { fromId: from, toId: stack.id });
+      void desktop.command('addLink', { fromId: from, toId: stack.id, id: crypto.randomUUID() });
       return;
     }
     if (ui.linkingFromId === stack.id) {

@@ -75,6 +75,7 @@ POST /desks/:id/commands  {type, payload} → {rev, state}
             setLinkNote | removeLink | stackDocs | removeFromStack |
             dissolveStack | renameStack | moveStack | removeStack
      (1:1-Abbildung auf die puren core-Funktionen)
+PUT  /desks/:id/state  Ersetzt den kompletten Karten-Zustand (validiert; für v1-Import) → {rev, state}
 
 POST /files           PDF-Upload (multipart) → {fileId}
                       Nur .pdf/application/pdf, Limit 100 MB

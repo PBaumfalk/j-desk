@@ -2,9 +2,9 @@
   import { ApiClient, ApiError } from '../api';
   import { saveSession, type Session } from '../session';
 
-  let { onConnected }: { onConnected: (s: Session) => Promise<void> } = $props();
+  let { onConnected, initialServerUrl = 'http://localhost:4810' }: { onConnected: (s: Session) => Promise<void>; initialServerUrl?: string } = $props();
 
-  let serverUrl = $state('http://localhost:4810');
+  let serverUrl = $state(initialServerUrl);
   let username = $state('');
   let password = $state('');
   let needsSetup = $state<boolean | null>(null);
