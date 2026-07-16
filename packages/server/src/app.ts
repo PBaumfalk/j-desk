@@ -11,7 +11,8 @@ import {
   applyDeskCommand, putDeskState, DeskNotFoundError, InvalidStateError,
 } from './deskStore';
 import { storeFile, getFilePath, fileExists, FileError } from './files';
-import { ForbiddenError, requireDeskAccess, requireDeskOwner, canReadFile } from './guards';
+import { ForbiddenError, requireDeskAccess, requireDeskOwner, requireAdmin, canReadFile } from './guards';
+import { listUsers, renameUser, resetPassword, changeOwnPassword, getUserDesks, deleteUserCascade, UserNotFoundError } from './users';
 import { register, unregister, broadcast } from './broadcast';
 
 export interface AppOptions {
@@ -40,7 +41,7 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
 
   app.setErrorHandler((err, _req, reply) => {
     if (err instanceof ForbiddenError) return reply.code(403).send({ error: err.message });
-    if (err instanceof DeskNotFoundError) return reply.code(404).send({ error: err.message });
+    if (err instanceof DeskNotFoundError || err instanceof UserNotFoundError) return reply.code(404).send({ error: err.message });
     if (err instanceof AuthError || err instanceof CommandError || err instanceof InvalidStateError || err instanceof FileError) {
       return reply.code(400).send({ error: err.message });
     }
@@ -88,6 +89,53 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
     const row = db.prepare('SELECT id, username, is_admin AS isAdmin FROM users WHERE id = ?').get(userIdOf(req)) as
       { id: string; username: string; isAdmin: number };
     return { id: row.id, username: row.username, isAdmin: row.isAdmin === 1 };
+  });
+
+  app.post('/api/v1/auth/password', async (req) => {
+    const { oldPassword, newPassword } = (req.body ?? {}) as { oldPassword?: string; newPassword?: string };
+    await changeOwnPassword(db, userIdOf(req), String(oldPassword ?? ''), String(newPassword ?? ''));
+    return { ok: true };
+  });
+
+  // ---- Benutzer ----
+  app.get('/api/v1/users', async () => listUsers(db));
+
+  app.post('/api/v1/users', async (req, reply) => {
+    requireAdmin(db, userIdOf(req));
+    const { username, password } = (req.body ?? {}) as { username?: string; password?: string };
+    const id = await createUser(db, String(username ?? ''), String(password ?? ''));
+    reply.code(201);
+    return { id, username: String(username).trim(), isAdmin: false };
+  });
+
+  app.patch('/api/v1/users/:id', async (req) => {
+    requireAdmin(db, userIdOf(req));
+    const { id } = req.params as { id: string };
+    const { username } = (req.body ?? {}) as { username?: string };
+    renameUser(db, id, String(username ?? ''));
+    return { ok: true };
+  });
+
+  app.post('/api/v1/users/:id/password', async (req) => {
+    requireAdmin(db, userIdOf(req));
+    const { id } = req.params as { id: string };
+    const { password } = (req.body ?? {}) as { password?: string };
+    await resetPassword(db, id, String(password ?? ''));
+    return { ok: true };
+  });
+
+  app.get('/api/v1/users/:id/desks', async (req) => {
+    requireAdmin(db, userIdOf(req));
+    const { id } = req.params as { id: string };
+    return getUserDesks(db, id);
+  });
+
+  app.delete('/api/v1/users/:id', async (req) => {
+    requireAdmin(db, userIdOf(req));
+    const { id } = req.params as { id: string };
+    if (id === userIdOf(req)) throw new AuthError('Eigenes Konto kann nicht gelöscht werden');
+    deleteUserCascade(db, id);
+    return { ok: true };
   });
 
   // ---- Schreibtische ----
