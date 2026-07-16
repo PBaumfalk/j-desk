@@ -82,3 +82,38 @@ export function putDeskState(db: Db, deskId: string, state: unknown): DeskState 
   });
   return txn();
 }
+
+export class MemberError extends Error {}
+
+export interface MemberInfo {
+  id: string;
+  username: string;
+}
+
+export function listMembers(db: Db, deskId: string): MemberInfo[] {
+  return db.prepare(
+    'SELECT u.id, u.username FROM desk_members m JOIN users u ON u.id = m.user_id WHERE m.desk_id = ? ORDER BY u.username',
+  ).all(deskId) as MemberInfo[];
+}
+
+export function addMember(db: Db, deskId: string, username: string): MemberInfo {
+  const user = db.prepare('SELECT id, username FROM users WHERE username = ?').get(username.trim()) as
+    | MemberInfo
+    | undefined;
+  if (!user) throw new MemberError('Benutzer nicht gefunden');
+  const desk = db.prepare('SELECT owner_id AS ownerId FROM desks WHERE id = ?').get(deskId) as
+    | { ownerId: string }
+    | undefined;
+  if (!desk) throw new DeskNotFoundError('Schreibtisch nicht gefunden');
+  if (desk.ownerId === user.id) throw new MemberError('Der Besitzer ist bereits dabei');
+  if (db.prepare('SELECT 1 FROM desk_members WHERE desk_id = ? AND user_id = ?').get(deskId, user.id)) {
+    throw new MemberError('Benutzer ist bereits Mitglied');
+  }
+  db.prepare('INSERT INTO desk_members (desk_id, user_id) VALUES (?, ?)').run(deskId, user.id);
+  return user;
+}
+
+export function removeMember(db: Db, deskId: string, userId: string): void {
+  const result = db.prepare('DELETE FROM desk_members WHERE desk_id = ? AND user_id = ?').run(deskId, userId);
+  if (result.changes === 0) throw new MemberError('Kein Mitglied dieses Schreibtischs');
+}

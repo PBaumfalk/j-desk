@@ -9,6 +9,7 @@ import { needsSetup, createUser, login, logout, validateToken, AuthError } from 
 import {
   createDesk, listDesks, renameDesk, deleteDesk, getDeskState,
   applyDeskCommand, putDeskState, DeskNotFoundError, InvalidStateError,
+  listMembers, addMember, removeMember, MemberError,
 } from './deskStore';
 import { storeFile, getFilePath, fileExists, FileError } from './files';
 import { ForbiddenError, requireDeskAccess, requireDeskOwner, requireAdmin, canReadFile } from './guards';
@@ -42,7 +43,7 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
   app.setErrorHandler((err, _req, reply) => {
     if (err instanceof ForbiddenError) return reply.code(403).send({ error: err.message });
     if (err instanceof DeskNotFoundError || err instanceof UserNotFoundError) return reply.code(404).send({ error: err.message });
-    if (err instanceof AuthError || err instanceof CommandError || err instanceof InvalidStateError || err instanceof FileError) {
+    if (err instanceof AuthError || err instanceof CommandError || err instanceof InvalidStateError || err instanceof FileError || err instanceof MemberError) {
       return reply.code(400).send({ error: err.message });
     }
     return reply.send(err);
@@ -194,6 +195,30 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
     const result = putDeskState(db, id, req.body);
     broadcast(id, result);
     return result;
+  });
+
+  // ---- Mitglieder ----
+  app.get('/api/v1/desks/:id/members', async (req) => {
+    const { id } = req.params as { id: string };
+    requireDeskAccess(db, id, userIdOf(req));
+    return listMembers(db, id);
+  });
+
+  app.post('/api/v1/desks/:id/members', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    requireDeskOwner(db, id, userIdOf(req));
+    const { username } = (req.body ?? {}) as { username?: string };
+    const member = addMember(db, id, String(username ?? ''));
+    reply.code(201);
+    return member;
+  });
+
+  app.delete('/api/v1/desks/:id/members/:userId', async (req) => {
+    const { id, userId } = req.params as { id: string; userId: string };
+    if (userId !== userIdOf(req)) requireDeskOwner(db, id, userIdOf(req));
+    else requireDeskAccess(db, id, userIdOf(req));
+    removeMember(db, id, userId);
+    return { ok: true };
   });
 
   // ---- Dateien ----
