@@ -17,7 +17,7 @@ beforeEach(() => {
 
 describe('storeFile', () => {
   it('speichert eine PDF unter files/<sha256>.pdf und registriert sie', () => {
-    const meta = storeFile(db, dataDir, pdfBytes('eins'), 'Rechnung.pdf');
+    const meta = storeFile(db, dataDir, pdfBytes('eins'), 'Rechnung.pdf', null);
     expect(meta.originalName).toBe('Rechnung.pdf');
     const stored = join(dataDir, 'files', `${meta.sha256}.pdf`);
     expect(existsSync(stored)).toBe(true);
@@ -26,16 +26,16 @@ describe('storeFile', () => {
   });
 
   it('dedupliziert inhaltsgleiche Uploads', () => {
-    const a = storeFile(db, dataDir, pdfBytes('eins'), 'a.pdf');
-    const b = storeFile(db, dataDir, pdfBytes('eins'), 'kopie.pdf');
+    const a = storeFile(db, dataDir, pdfBytes('eins'), 'a.pdf', null);
+    const b = storeFile(db, dataDir, pdfBytes('eins'), 'kopie.pdf', null);
     expect(b.id).toBe(a.id);
     expect(readdirSync(join(dataDir, 'files'))).toHaveLength(1);
   });
 
   it('lehnt falsche Endung, fehlende PDF-Signatur und leere Dateien ab', () => {
-    expect(() => storeFile(db, dataDir, pdfBytes('x'), 'notiz.txt')).toThrow(FileError);
-    expect(() => storeFile(db, dataDir, Buffer.from('kein pdf'), 'a.pdf')).toThrow(FileError);
-    expect(() => storeFile(db, dataDir, Buffer.alloc(0), 'a.pdf')).toThrow(FileError);
+    expect(() => storeFile(db, dataDir, pdfBytes('x'), 'notiz.txt', null)).toThrow(FileError);
+    expect(() => storeFile(db, dataDir, Buffer.from('kein pdf'), 'a.pdf', null)).toThrow(FileError);
+    expect(() => storeFile(db, dataDir, Buffer.alloc(0), 'a.pdf', null)).toThrow(FileError);
   });
 
   it('räumt die tmp-Datei auf, wenn das Umbenennen fehlschlägt', () => {
@@ -43,14 +43,14 @@ describe('storeFile', () => {
     const sha = createHash('sha256').update(bytes).digest('hex');
     // Zielpfad als VERZEICHNIS blockieren → renameSync wirft, writeFileSync(tmp) war erfolgreich
     mkdirSync(join(dataDir, 'files', `${sha}.pdf`), { recursive: true });
-    expect(() => storeFile(db, dataDir, bytes, 'a.pdf')).toThrow();
+    expect(() => storeFile(db, dataDir, bytes, 'a.pdf', null)).toThrow();
     expect(readdirSync(join(dataDir, 'files')).some((f) => f.startsWith('.tmp-'))).toBe(false);
   });
 });
 
 describe('getFilePath / fileExists', () => {
   it('liefert den Pfad einer gespeicherten Datei und null für Unbekanntes', () => {
-    const meta = storeFile(db, dataDir, pdfBytes('eins'), 'a.pdf');
+    const meta = storeFile(db, dataDir, pdfBytes('eins'), 'a.pdf', null);
     expect(getFilePath(db, dataDir, meta.id)).toBe(join(dataDir, 'files', `${meta.sha256}.pdf`));
     expect(getFilePath(db, dataDir, 'gibtsnicht')).toBeNull();
     expect(fileExists(db, meta.id)).toBe(true);

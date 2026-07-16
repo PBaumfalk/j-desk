@@ -15,11 +15,11 @@ beforeEach(() => {
 describe('Desk-CRUD', () => {
   it('legt an, listet, benennt um und löscht', () => {
     const desk = createDesk(db, 'u1', 'Schreibtisch 1');
-    expect(listDesks(db)).toEqual([{ id: desk.id, name: 'Schreibtisch 1', ownerId: 'u1' }]);
+    expect(listDesks(db, 'u1')).toEqual([{ id: desk.id, name: 'Schreibtisch 1', ownerId: 'u1', ownerName: 'p', isOwner: true }]);
     renameDesk(db, desk.id, 'Projekte');
-    expect(listDesks(db)[0].name).toBe('Projekte');
+    expect(listDesks(db, 'u1')[0].name).toBe('Projekte');
     deleteDesk(db, desk.id);
-    expect(listDesks(db)).toHaveLength(0);
+    expect(listDesks(db, 'u1')).toHaveLength(0);
     expect(() => renameDesk(db, desk.id, 'x')).toThrow(DeskNotFoundError);
     expect(() => deleteDesk(db, desk.id)).toThrow(DeskNotFoundError);
   });

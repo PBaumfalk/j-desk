@@ -11,6 +11,7 @@ import {
   applyDeskCommand, putDeskState, DeskNotFoundError, InvalidStateError,
 } from './deskStore';
 import { storeFile, getFilePath, fileExists, FileError } from './files';
+import { ForbiddenError, requireDeskAccess, requireDeskOwner, canReadFile } from './guards';
 import { register, unregister, broadcast } from './broadcast';
 
 export interface AppOptions {
@@ -27,11 +28,24 @@ function bearerToken(req: FastifyRequest): string | null {
   return query?.token ?? null;
 }
 
+function userIdOf(req: FastifyRequest): string {
+  return (req as FastifyRequest & { userId: string }).userId;
+}
+
 export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInstance> {
   const app = Fastify();
   await app.register(cors, { origin: true });
   await app.register(multipart, { limits: { fileSize: 100 * 1024 * 1024 } });
   await app.register(websocket);
+
+  app.setErrorHandler((err, _req, reply) => {
+    if (err instanceof ForbiddenError) return reply.code(403).send({ error: err.message });
+    if (err instanceof DeskNotFoundError) return reply.code(404).send({ error: err.message });
+    if (err instanceof AuthError || err instanceof CommandError || err instanceof InvalidStateError || err instanceof FileError) {
+      return reply.code(400).send({ error: err.message });
+    }
+    return reply.send(err);
+  });
 
   app.addHook('onRequest', async (req, reply) => {
     const path = req.url.split('?')[0];
@@ -70,47 +84,45 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
     return { ok: true };
   });
 
+  app.get('/api/v1/auth/me', async (req) => {
+    const row = db.prepare('SELECT id, username, is_admin AS isAdmin FROM users WHERE id = ?').get(userIdOf(req)) as
+      { id: string; username: string; isAdmin: number };
+    return { id: row.id, username: row.username, isAdmin: row.isAdmin === 1 };
+  });
+
   // ---- Schreibtische ----
-  app.get('/api/v1/desks', async () => listDesks(db));
+  app.get('/api/v1/desks', async (req) => listDesks(db, userIdOf(req)));
 
   app.post('/api/v1/desks', async (req, reply) => {
     const { name } = (req.body ?? {}) as { name?: string };
     if (typeof name !== 'string' || name.trim() === '') {
       return reply.code(400).send({ error: 'Feld "name" fehlt oder ist leer' });
     }
-    const userId = (req as FastifyRequest & { userId: string }).userId;
     reply.code(201);
-    return createDesk(db, userId, name.trim());
+    return createDesk(db, userIdOf(req), name.trim());
   });
 
   app.patch('/api/v1/desks/:id', async (req, reply) => {
     const { id } = req.params as { id: string };
+    requireDeskOwner(db, id, userIdOf(req));
     const { name } = (req.body ?? {}) as { name?: string };
     if (typeof name !== 'string' || name.trim() === '') {
       return reply.code(400).send({ error: 'Feld "name" fehlt oder ist leer' });
     }
-    try {
-      renameDesk(db, id, name.trim());
-    } catch (e) {
-      if (e instanceof DeskNotFoundError) return reply.code(404).send({ error: e.message });
-      throw e;
-    }
+    renameDesk(db, id, name.trim());
     return { ok: true };
   });
 
-  app.delete('/api/v1/desks/:id', async (req, reply) => {
+  app.delete('/api/v1/desks/:id', async (req) => {
     const { id } = req.params as { id: string };
-    try {
-      deleteDesk(db, id);
-    } catch (e) {
-      if (e instanceof DeskNotFoundError) return reply.code(404).send({ error: e.message });
-      throw e;
-    }
+    requireDeskOwner(db, id, userIdOf(req));
+    deleteDesk(db, id);
     return { ok: true };
   });
 
   app.get('/api/v1/desks/:id/state', async (req, reply) => {
     const { id } = req.params as { id: string };
+    requireDeskAccess(db, id, userIdOf(req));
     const result = getDeskState(db, id);
     if (!result) return reply.code(404).send({ error: 'Schreibtisch nicht gefunden' });
     return result;
@@ -118,32 +130,22 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
 
   app.post('/api/v1/desks/:id/commands', async (req, reply) => {
     const { id } = req.params as { id: string };
+    requireDeskAccess(db, id, userIdOf(req));
     const cmd = (req.body ?? {}) as Command;
     if (cmd.type === 'addDoc' && !fileExists(db, String((cmd.payload as { fileId?: unknown })?.fileId ?? ''))) {
       return reply.code(400).send({ error: 'Unbekannte fileId' });
     }
-    try {
-      const result = applyDeskCommand(db, id, cmd);
-      broadcast(id, result);
-      return result;
-    } catch (e) {
-      if (e instanceof CommandError) return reply.code(400).send({ error: e.message });
-      if (e instanceof DeskNotFoundError) return reply.code(404).send({ error: e.message });
-      throw e;
-    }
+    const result = applyDeskCommand(db, id, cmd);
+    broadcast(id, result);
+    return result;
   });
 
-  app.put('/api/v1/desks/:id/state', async (req, reply) => {
+  app.put('/api/v1/desks/:id/state', async (req) => {
     const { id } = req.params as { id: string };
-    try {
-      const result = putDeskState(db, id, req.body);
-      broadcast(id, result);
-      return result;
-    } catch (e) {
-      if (e instanceof InvalidStateError) return reply.code(400).send({ error: e.message });
-      if (e instanceof DeskNotFoundError) return reply.code(404).send({ error: e.message });
-      throw e;
-    }
+    requireDeskAccess(db, id, userIdOf(req));
+    const result = putDeskState(db, id, req.body);
+    broadcast(id, result);
+    return result;
   });
 
   // ---- Dateien ----
@@ -151,20 +153,16 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
     const part = await req.file();
     if (!part) return reply.code(400).send({ error: 'Keine Datei im Request' });
     const bytes = await part.toBuffer();
-    try {
-      const meta = storeFile(db, dataDir, bytes, part.filename);
-      reply.code(201);
-      return { fileId: meta.id, name: meta.originalName };
-    } catch (e) {
-      if (e instanceof FileError) return reply.code(400).send({ error: e.message });
-      throw e;
-    }
+    const meta = storeFile(db, dataDir, bytes, part.filename, userIdOf(req));
+    reply.code(201);
+    return { fileId: meta.id, name: meta.originalName };
   });
 
   app.get('/api/v1/files/:id', async (req, reply) => {
     const { id } = req.params as { id: string };
     const path = getFilePath(db, dataDir, id);
     if (!path) return reply.code(404).send({ error: 'Datei nicht gefunden' });
+    if (!canReadFile(db, userIdOf(req), id)) return reply.code(403).send({ error: 'Kein Zugriff auf diese Datei' });
     reply.header('content-type', 'application/pdf');
     return readFileSync(path);
   });
@@ -172,6 +170,12 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
   // ---- WebSocket ----
   app.get('/api/v1/desks/:id/ws', { websocket: true }, (socket, req) => {
     const { id } = req.params as { id: string };
+    try {
+      requireDeskAccess(db, id, userIdOf(req));
+    } catch (e) {
+      socket.close(e instanceof ForbiddenError ? 4003 : 4001, e instanceof ForbiddenError ? 'access-revoked' : 'desk-deleted');
+      return;
+    }
     register(id, socket);
     socket.on('close', () => unregister(id, socket));
   });

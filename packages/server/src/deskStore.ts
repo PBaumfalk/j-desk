@@ -11,6 +11,8 @@ export interface DeskInfo {
   id: string;
   name: string;
   ownerId: string;
+  ownerName: string;
+  isOwner: boolean;
 }
 
 export interface DeskState {
@@ -23,13 +25,19 @@ export function createDesk(db: Db, ownerId: string, name: string): DeskInfo {
   db.prepare('INSERT INTO desks (id, name, owner_id, state, rev, created_at) VALUES (?, ?, ?, ?, 0, ?)').run(
     id, name, ownerId, JSON.stringify(emptyState()), Date.now(),
   );
-  return { id, name, ownerId };
+  const ownerName = (db.prepare('SELECT username FROM users WHERE id = ?').get(ownerId) as { username: string }).username;
+  return { id, name, ownerId, ownerName, isOwner: true };
 }
 
-export function listDesks(db: Db): DeskInfo[] {
-  return db
-    .prepare('SELECT id, name, owner_id AS ownerId FROM desks ORDER BY created_at')
-    .all() as DeskInfo[];
+/** Nur Schreibtische, die userId besitzt oder als Mitglied teilt. */
+export function listDesks(db: Db, userId: string): DeskInfo[] {
+  const rows = db.prepare(
+    `SELECT d.id, d.name, d.owner_id AS ownerId, u.username AS ownerName, (d.owner_id = ?) AS isOwner
+     FROM desks d JOIN users u ON u.id = d.owner_id
+     WHERE d.owner_id = ? OR d.id IN (SELECT desk_id FROM desk_members WHERE user_id = ?)
+     ORDER BY d.created_at`,
+  ).all(userId, userId, userId) as (Omit<DeskInfo, 'isOwner'> & { isOwner: 0 | 1 })[];
+  return rows.map((r) => ({ ...r, isOwner: r.isOwner === 1 }));
 }
 
 export function renameDesk(db: Db, deskId: string, name: string): void {

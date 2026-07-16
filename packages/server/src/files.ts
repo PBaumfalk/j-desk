@@ -15,7 +15,7 @@ export interface FileMeta {
 const MAX_SIZE = 100 * 1024 * 1024;
 const PDF_MAGIC = Buffer.from('%PDF-');
 
-export function storeFile(db: Db, dataDir: string, bytes: Buffer, originalName: string): FileMeta {
+export function storeFile(db: Db, dataDir: string, bytes: Buffer, originalName: string, uploaderId: string | null): FileMeta {
   if (!originalName.toLowerCase().endsWith('.pdf')) throw new FileError('Nur PDF-Dateien (.pdf) werden akzeptiert');
   if (bytes.length === 0) throw new FileError('Datei ist leer');
   if (bytes.length > MAX_SIZE) throw new FileError('Datei ist größer als 100 MB');
@@ -39,8 +39,8 @@ export function storeFile(db: Db, dataDir: string, bytes: Buffer, originalName: 
   }
 
   const id = randomUUID();
-  db.prepare('INSERT INTO files (id, sha256, original_name, size, created_at) VALUES (?, ?, ?, ?, ?)').run(
-    id, sha256, originalName, bytes.length, Date.now(),
+  db.prepare('INSERT INTO files (id, sha256, original_name, size, uploader_id, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
+    id, sha256, originalName, bytes.length, uploaderId, Date.now(),
   );
   return { id, sha256, originalName, size: bytes.length };
 }
