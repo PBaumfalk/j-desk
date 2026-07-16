@@ -59,10 +59,15 @@
   function fanPointerDown(e: PointerEvent, docId: string) {
     if (e.button !== 0) return;
     e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const startX = e.clientX;
     const startY = e.clientY;
-    const onUp = (up: PointerEvent) => {
+    const cleanup = () => {
       window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', cleanup);
+    };
+    const onUp = (up: PointerEvent) => {
+      cleanup();
       if (Math.hypot(up.clientX - startX, up.clientY - startY) > 30) {
         const w = screenToWorld(vp, { x: up.clientX, y: up.clientY });
         desktop.apply((s) => removeFromStack(s, docId, { x: w.x - CARD_W / 2, y: w.y - CARD_H / 2 }));
@@ -72,6 +77,7 @@
       }
     };
     window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', cleanup);
   }
 </script>
 
