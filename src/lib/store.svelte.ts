@@ -145,7 +145,12 @@ export const desktop = {
         if (desks.length === 0) desks = [await api.createDesk('Schreibtisch 1')];
         status = 'connecting';
         await closeWs();
-        await loadDesk(desks[0].id);
+        try {
+          await loadDesk(desks[0].id);
+        } catch (e) {
+          showToast(e instanceof Error ? e.message : 'Wechsel fehlgeschlagen');
+          onDisconnected();
+        }
       }
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Löschen fehlgeschlagen');
@@ -187,12 +192,13 @@ async function connectWs(): Promise<void> {
   if (!api || !deskId || stopped) return;
   const generation = ++wsGeneration;
   try {
-    ws = await WebSocket.connect(api.wsUrl(deskId));
+    const socket = await WebSocket.connect(api.wsUrl(deskId));
     if (generation !== wsGeneration) {
       // Während des Verbindens wurde gewechselt/geschlossen — diesen Socket verwerfen.
-      await ws?.disconnect().catch(() => {});
+      await socket.disconnect().catch(() => {});
       return;
     }
+    ws = socket;
     reconnectDelay = 1000;
     status = 'online';
     ws.addListener((msg) => {
