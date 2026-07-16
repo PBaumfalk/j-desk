@@ -1,0 +1,54 @@
+export interface Vec2 { x: number; y: number }
+
+export interface Doc {
+  id: string;
+  path: string;        // absoluter Dateipfad (nur Referenz)
+  position: Vec2;      // Weltkoordinaten, linke obere Ecke
+  rotation: number;    // Grad, feste leichte Zufallsdrehung
+  zIndex: number;
+  missing: boolean;    // Datei aktuell nicht auffindbar
+}
+
+export interface Link {
+  id: string;
+  fromId: string;      // Doc- oder Stack-id
+  toId: string;        // Doc- oder Stack-id
+  note: string;
+}
+
+export interface Stack {
+  id: string;
+  name: string;
+  docIds: string[];    // Reihenfolge: unten → oben
+  position: Vec2;
+  zIndex: number;
+}
+
+export interface DesktopState {
+  docs: Doc[];
+  links: Link[];
+  stacks: Stack[];
+}
+
+export const CARD_W = 180;
+export const CARD_H = 240;
+
+export function emptyState(): DesktopState {
+  return { docs: [], links: [], stacks: [] };
+}
+
+export function findDoc(s: DesktopState, id: string): Doc | undefined {
+  return s.docs.find((d) => d.id === id);
+}
+
+export function findStack(s: DesktopState, id: string): Stack | undefined {
+  return s.stacks.find((st) => st.id === id);
+}
+
+export function stackOf(s: DesktopState, docId: string): Stack | undefined {
+  return s.stacks.find((st) => st.docIds.includes(docId));
+}
+
+export function freeDocs(s: DesktopState): Doc[] {
+  return s.docs.filter((d) => !stackOf(s, d.id));
+}
