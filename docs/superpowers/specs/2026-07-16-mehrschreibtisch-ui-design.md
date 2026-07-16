@@ -17,7 +17,7 @@ Der Nutzer kann in der App mehrere Schreibtische anlegen, benennen, löschen und
 **Store (`src/lib/store.svelte.ts`):**
 - Neu im Zustand: `desks: DeskInfo[]` (reaktiv), gefüllt in `start()` und nach jeder Desk-Operation.
 - `start()` wählt statt „immer der erste": `lastDeskId` aus der Session, falls vorhanden und noch existent; sonst erster; sonst „Schreibtisch 1" anlegen.
-- `switchDesk(deskId)`: aktuellen WebSocket trennen (ohne `stopped`/`loggedOut` zu setzen — eigener `closeWs()`-Helfer), `getState` laden, neuen WebSocket verbinden, `saveLastDeskId` aufrufen.
+- `switchDesk(deskId)`: aktuellen WebSocket trennen (ohne `stopped`/`loggedOut` zu setzen — eigener `closeWs()`-Helfer), `getState` laden und dabei den internen `rev`-Zähler auf den geladenen Stand des NEUEN Schreibtischs setzen (nicht vergleichen — der alte rev gehört zum alten Desk), neuen WebSocket verbinden, `saveLastDeskId` aufrufen.
 - `createDesk(name)`: anlegen, Liste aktualisieren, direkt hinwechseln.
 - `renameDesk(deskId, name)`, `deleteDesk(deskId)`: API-Aufruf + Liste aktualisieren. Beim Löschen des aktiven Schreibtischs: zum ersten verbleibenden wechseln; war es der letzte, automatisch „Schreibtisch 1" anlegen und hinwechseln.
 - Alle Operationen respektieren den Offline-Guard (Toast „Offline — Aktion nicht möglich") und melden Fehler als deutsche Toasts.
