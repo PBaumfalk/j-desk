@@ -1,9 +1,11 @@
 <script lang="ts">
   import { desktop } from '../store.svelte';
   import { showToast } from '../ui.svelte';
+  import UserAdmin from './UserAdmin.svelte';
 
   let open = $state(false);
   let mode = $state<'menue' | 'passwort'>('menue');
+  let adminOffen = $state(false);
   let altesPasswort = $state('');
   let neuesPasswort = $state('');
   let busy = $state(false);
@@ -53,6 +55,9 @@
     <div class="menu" onpointerdown={(e) => e.stopPropagation()}>
       {#if mode === 'menue'}
         <button class="item" onclick={() => (mode = 'passwort')}>Passwort ändern…</button>
+        {#if desktop.me?.isAdmin}
+          <button class="item" onclick={() => { adminOffen = true; open = false; }}>Benutzerverwaltung…</button>
+        {/if}
         <button class="item" onclick={() => void abmelden()}>Abmelden</button>
       {:else}
         <input type="password" placeholder="Aktuelles Passwort" bind:value={altesPasswort} autocomplete="current-password" />
@@ -78,6 +83,10 @@
     </div>
   {/if}
 </div>
+
+{#if adminOffen}
+  <UserAdmin onClose={() => (adminOffen = false)} />
+{/if}
 
 <style>
   .konto { position: relative; }
