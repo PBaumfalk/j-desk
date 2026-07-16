@@ -49,7 +49,7 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
     if (!needsSetup(db)) return reply.code(403).send({ error: 'Es existiert bereits ein Konto' });
     const { username, password } = (req.body ?? {}) as { username?: string; password?: string };
     try {
-      await createUser(db, String(username ?? ''), String(password ?? ''));
+      await createUser(db, String(username ?? ''), String(password ?? ''), true);
     } catch (e) {
       if (e instanceof AuthError) return reply.code(400).send({ error: e.message });
       throw e;

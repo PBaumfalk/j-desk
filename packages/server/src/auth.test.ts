@@ -54,4 +54,18 @@ describe('Auth', () => {
     logout(db, token);
     expect(validateToken(db, token)).toBeNull();
   });
+
+  it('verweigert doppelten Benutzernamen', async () => {
+    const db = openDb(':memory:');
+    await createUser(db, 'patrick', 'geheim-genug');
+    await expect(createUser(db, 'patrick', 'anderes-passwort')).rejects.toThrow(AuthError);
+  });
+
+  it('setzt das Admin-Flag, wenn isAdmin übergeben wird', async () => {
+    const db = openDb(':memory:');
+    await createUser(db, 'chef', 'geheim-genug', true);
+    await createUser(db, 'normal', 'geheim-genug');
+    expect((db.prepare("SELECT is_admin AS a FROM users WHERE username = 'chef'").get() as { a: number }).a).toBe(1);
+    expect((db.prepare("SELECT is_admin AS a FROM users WHERE username = 'normal'").get() as { a: number }).a).toBe(0);
+  });
 });

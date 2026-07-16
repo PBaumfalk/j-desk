@@ -40,5 +40,29 @@ export function openDb(path: string): Db {
       created_at INTEGER NOT NULL
     );
   `);
+  migrate(db);
   return db;
+}
+
+/** Hebt das Schema schrittweise an; user_version markiert den Stand. */
+function migrate(db: Db): void {
+  const version = db.pragma('user_version', { simple: true }) as number;
+  if (version < 1) {
+    db.transaction(() => {
+      db.exec(`
+        ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE files ADD COLUMN uploader_id TEXT REFERENCES users(id) ON DELETE SET NULL;
+        CREATE TABLE invites (
+          token TEXT PRIMARY KEY,
+          created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          desk_id TEXT REFERENCES desks(id) ON DELETE CASCADE,
+          created_at INTEGER NOT NULL,
+          expires_at INTEGER NOT NULL
+        );
+        UPDATE users SET is_admin = 1;
+        UPDATE files SET uploader_id = (SELECT id FROM users ORDER BY created_at LIMIT 1);
+      `);
+      db.pragma('user_version = 1');
+    })();
+  }
 }

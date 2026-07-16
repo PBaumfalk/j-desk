@@ -14,13 +14,17 @@ export function needsSetup(db: Db): boolean {
   return row.n === 0;
 }
 
-export async function createUser(db: Db, username: string, password: string): Promise<string> {
-  if (username.trim() === '') throw new AuthError('Benutzername darf nicht leer sein');
+export async function createUser(db: Db, username: string, password: string, isAdmin = false): Promise<string> {
+  const name = username.trim();
+  if (name === '') throw new AuthError('Benutzername darf nicht leer sein');
+  if (db.prepare('SELECT 1 FROM users WHERE username = ?').get(name)) {
+    throw new AuthError('Benutzername bereits vergeben');
+  }
   if (password.length < 8) throw new AuthError('Passwort muss mindestens 8 Zeichen haben');
   const hash = await argon2.hash(password, { type: argon2.argon2id });
   const userId = randomUUID();
-  db.prepare('INSERT INTO users (id, username, password_hash, created_at) VALUES (?, ?, ?, ?)').run(
-    userId, username.trim(), hash, Date.now(),
+  db.prepare('INSERT INTO users (id, username, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?, ?)').run(
+    userId, name, hash, isAdmin ? 1 : 0, Date.now(),
   );
   return userId;
 }
@@ -34,9 +38,14 @@ export async function login(db: Db, username: string, password: string): Promise
     return null;
   }
   if (!(await argon2.verify(user.password_hash, password))) return null;
+  return createSession(db, user.id);
+}
+
+/** Legt eine Sitzung an und gibt das Token zurück (Login und Einladungs-Einlösung). */
+export function createSession(db: Db, userId: string): string {
   const token = randomBytes(32).toString('hex');
   db.prepare('INSERT INTO sessions (token, user_id, created_at, last_used_at) VALUES (?, ?, ?, ?)').run(
-    token, user.id, Date.now(), Date.now(),
+    token, userId, Date.now(), Date.now(),
   );
   return token;
 }
