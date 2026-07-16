@@ -9,7 +9,10 @@
     "dialog:default",
     "fs:default",
     "websocket:default",
-    { "identifier": "http:default", "allow": [{ "url": "http://**" }, { "url": "https://**" }] },
+    { "identifier": "http:default", "allow": [
+      { "url": "http://**" }, { "url": "https://**" },
+      { "url": "http://*:*" }, { "url": "https://*:*" }
+    ] },
     { "identifier": "fs:allow-read-file", "allow": [{ "path": "**" }, { "path": "$HOME/**" }] },
     { "identifier": "fs:allow-read-text-file", "allow": [{ "path": "**" }, { "path": "$APPDATA/**" }] },
     { "identifier": "fs:allow-write-file", "allow": [{ "path": "$APPDATA/**" }, { "path": "$APPCACHE/**" }, { "path": "$HOME/**" }] },
