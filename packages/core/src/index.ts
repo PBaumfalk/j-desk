@@ -3,5 +3,6 @@ export * from './documents';
 export * from './links';
 export * from './stacks';
 export * from './removal';
+export * from './commands';
 export * from './viewport';
 export * from './geometry';
