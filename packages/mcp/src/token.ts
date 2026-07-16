@@ -17,6 +17,7 @@ function frage(text: string, verdeckt = false): Promise<string> {
           rl.close();
           resolve(wert);
         } else if (c === "\u0003") {
+          stdin.setRawMode?.(false);
           process.exit(130);
         } else if (c === "\u007f") {
           wert = wert.slice(0, -1);
