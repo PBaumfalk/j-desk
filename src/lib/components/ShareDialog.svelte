@@ -43,12 +43,15 @@
   }
 
   async function entfernen(member: MemberInfo) {
-    if (!desktop.api) return;
+    if (!desktop.api || busy) return;
+    busy = true;
     try {
       await desktop.api.removeMember(desk.id, member.id);
       await laden();
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Entfernen fehlgeschlagen');
+    } finally {
+      busy = false;
     }
   }
 
@@ -66,13 +69,16 @@
   }
 
   async function widerrufen(token: string) {
-    if (!desktop.api) return;
+    if (!desktop.api || busy) return;
+    busy = true;
     try {
       await desktop.api.revokeInvite(token);
       if (neuerCode === token) neuerCode = null;
       await laden();
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Widerruf fehlgeschlagen');
+    } finally {
+      busy = false;
     }
   }
 
