@@ -11,6 +11,7 @@ let deskId: string | null = null;
 let ws: Awaited<ReturnType<typeof WebSocket.connect>> | null = null;
 let reconnectDelay = 1000;
 let stopped = false;
+let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
 
 export const desktop = {
   get state(): DesktopState {
@@ -28,6 +29,8 @@ export const desktop = {
 
   /** Nach erfolgreichem Login: ersten Schreibtisch laden (oder anlegen) und WS verbinden. */
   async start(client: ApiClient): Promise<void> {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = undefined;
     api = client;
     stopped = false;
     status = 'connecting';
@@ -67,6 +70,7 @@ export const desktop = {
 
   /** Kompletten Zustand vom Server holen (nach Reconnect oder Fehler). */
   async refresh(): Promise<void> {
+    if (stopped) return;
     if (!api || !deskId) return;
     const result = await api.getState(deskId);
     if (result.rev >= rev) {
@@ -76,6 +80,8 @@ export const desktop = {
   },
 
   async stop(): Promise<void> {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = undefined;
     stopped = true;
     status = 'loggedOut';
     await ws?.disconnect().catch(() => {});
@@ -111,7 +117,8 @@ function onDisconnected(): void {
   ws = null;
   const delay = reconnectDelay;
   reconnectDelay = Math.min(reconnectDelay * 2, 15000);
-  setTimeout(() => {
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = undefined;
     void (async () => {
       await desktop.refresh().catch(() => {});
       await connectWs();
