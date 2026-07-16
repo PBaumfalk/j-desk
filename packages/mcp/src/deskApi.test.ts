@@ -34,6 +34,8 @@ describe('deskApi', () => {
 
   it('wirft DeskApiError mit Status und deutscher Meldung', async () => {
     await expect(listDesks(baseUrl, 'falsches-token')).rejects.toMatchObject({ status: 401 });
-    await expect(getFile(baseUrl, token, 'gibtsnicht')).rejects.toBeInstanceOf(DeskApiError);
+    await expect(getFile(baseUrl, token, 'gibtsnicht')).rejects.toMatchObject({
+      message: 'Datei nicht gefunden',
+    });
   });
 });

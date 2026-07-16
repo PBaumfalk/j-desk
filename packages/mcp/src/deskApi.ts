@@ -41,6 +41,14 @@ export const renameDesk = (b: string, t: string, deskId: string, name: string) =
 
 export async function getFile(baseUrl: string, token: string, fileId: string): Promise<Uint8Array> {
   const res = await fetch(`${baseUrl}/api/v1/files/${fileId}`, { headers: { authorization: `Bearer ${token}` } });
-  if (!res.ok) throw new DeskApiError(`Datei nicht ladbar (HTTP ${res.status})`, res.status);
+  if (!res.ok) {
+    let message = `Datei nicht ladbar (HTTP ${res.status})`;
+    try {
+      message = ((await res.json()) as { error?: string }).error ?? message;
+    } catch {
+      // kein JSON-Body
+    }
+    throw new DeskApiError(message, res.status);
+  }
   return new Uint8Array(await res.arrayBuffer());
 }
