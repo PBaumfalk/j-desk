@@ -52,4 +52,25 @@ describe('applyCommand', () => {
     expect(s.links[0].note).toBe('');
     expect(() => applyCommand(s, { type: 'removeLink', payload: { linkId: '' } })).toThrow(CommandError);
   });
+
+  it('führt auch die übrigen Handler erfolgreich aus', () => {
+    let s = addDoc(base(), 'file-b', 'b.pdf', { x: 0, y: 0 }, 'id-b');
+    s = applyCommand(s, { type: 'bringToFront', payload: { id: 'id-a' } });
+    expect(s.docs.find((d) => d.id === 'id-a')!.zIndex).toBe(3);
+    s = applyCommand(s, { type: 'addLink', payload: { fromId: 'id-a', toId: 'id-b', id: 'l-1' } });
+    s = applyCommand(s, { type: 'removeLink', payload: { linkId: 'l-1' } });
+    expect(s.links).toHaveLength(0);
+    s = applyCommand(s, { type: 'stackDocs', payload: { draggedId: 'id-b', targetId: 'id-a', id: 'st-1' } });
+    s = applyCommand(s, { type: 'moveStack', payload: { stackId: 'st-1', position: { x: 7, y: 8 } } });
+    expect(s.stacks[0].position).toEqual({ x: 7, y: 8 });
+    s = applyCommand(s, { type: 'removeFromStack', payload: { docId: 'id-b', position: { x: 50, y: 60 } } });
+    expect(s.stacks).toHaveLength(0); // 1 Rest-Dokument → Stapel aufgelöst
+    expect(s.docs.find((d) => d.id === 'id-b')!.position).toEqual({ x: 50, y: 60 });
+    s = applyCommand(s, { type: 'stackDocs', payload: { draggedId: 'id-b', targetId: 'id-a', id: 'st-2' } });
+    s = applyCommand(s, { type: 'dissolveStack', payload: { stackId: 'st-2' } });
+    expect(s.stacks).toHaveLength(0);
+    expect(s.docs).toHaveLength(2);
+    s = applyCommand(s, { type: 'removeDoc', payload: { id: 'id-b' } });
+    expect(s.docs.map((d) => d.id)).toEqual(['id-a']);
+  });
 });
