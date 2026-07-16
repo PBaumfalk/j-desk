@@ -29,8 +29,13 @@ export class MappingStore {
 }
 
 export class AnonCache {
-  private readonly fileTexts = new Map<string, string>();
+  private readonly fileTexts: Map<string, string>;
   private readonly namen = new Map<string, string>();
+
+  /** fileTexts ist prozessweit geteilt (Zugriff bereits über getState/getFile gegatet); namen bleibt instanzeigen (pro Token). */
+  constructor(fileTexts?: Map<string, string>) {
+    this.fileTexts = fileTexts ?? new Map<string, string>();
+  }
 
   getFileText(fileId: string): string | undefined {
     return this.fileTexts.get(fileId);

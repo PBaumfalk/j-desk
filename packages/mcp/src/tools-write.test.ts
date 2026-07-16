@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { startTestSetup, type TestSetup } from './testServer';
-import { getState } from './deskApi';
+import { getState, listDesks } from './deskApi';
 
 let ts: TestSetup;
 beforeAll(async () => {
@@ -82,6 +82,35 @@ describe('Organisier-Tools', () => {
     const r = await ts.mcpClient.callTool({ name: 'move_document', arguments: { deskId, docId, x: 5, y: 5 } });
     expect(r.isError).toBeFalsy();
     ts.setAnymizeDown(false);
+  });
+});
+
+describe('Mandantengrenze (Fix 1: Mapping/Namens-Cache pro Token)', () => {
+  it('deanonymize eines Fremdbenutzers löst fremde Platzhalter nicht auf', async () => {
+    const deskId = await ts.createDesk('Mandanten-Desk');
+    await ts.addDoc(deskId, 'Rechnung Max Mustermann.pdf');
+    await ts.mcpClient.callTool({ name: 'get_desk', arguments: { deskId } }); // füllt Mapping des Test-Users
+
+    const { token } = await ts.zweitBenutzer();
+    const zweiterClient = await ts.clientMitToken(token);
+    const r = await zweiterClient.callTool({ name: 'deanonymize', arguments: { text: 'Hallo [[Person-TEST1]]' } });
+    expect(textOf(r)).toContain('[[Person-TEST1]]');
+    expect(textOf(r)).not.toContain('Max Mustermann');
+    expect(textOf(r)).toContain('Unbekannte Platzhalter');
+  });
+
+  it('create_desk mit Platzhalter im Namen: Tool-Antwort zeigt Eingabewert, Desk-Server-State den Klartext', async () => {
+    const quelle = await ts.createDesk('Quelle');
+    await ts.addDoc(quelle, 'Ausweis Max Mustermann.pdf');
+    await ts.mcpClient.callTool({ name: 'get_desk', arguments: { deskId: quelle } }); // füllt Mapping des Test-Users
+
+    const neu = await ts.mcpClient.callTool({ name: 'create_desk', arguments: { name: 'Akte [[Person-TEST1]]' } });
+    expect(neu.isError).toBeFalsy();
+    expect(textOf(neu)).toContain('[[Person-TEST1]]');
+    expect(textOf(neu)).not.toContain('Max Mustermann');
+
+    const desks = await listDesks(ts.deskUrl, ts.token);
+    expect(desks.find((d) => d.name === 'Akte Max Mustermann')).toBeDefined();
   });
 });
 

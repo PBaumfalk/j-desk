@@ -48,6 +48,14 @@ Im anymize-Account muss der „Zero Detection Radius" **AUS** sein, sonst versch
 
 Jedes Wort im Dokument kostet 1 Credit. Caching greift pro Prozesslaufzeit (nicht über Prozessgrenzen hinweg). Leseanfragen mehrfach auf einem Dokument sparen Credits.
 
+### Platzhalter-Zuordnungen, Mandantentrennung und Speicherwachstum
+
+Platzhalter→Klartext-Zuordnungen (für `deanonymize` sowie für Schreib-Tools mit Platzhaltern im Text, z. B. `rename_stack`, `set_link_note`, `create_desk`) werden **pro Anmelde-Token** im Prozessspeicher geführt. Ein Benutzer kann damit keine Platzhalter aus der Sitzung eines anderen Benutzers auflösen — ein fremder Platzhalter bleibt unbekannt. Der Dateitext-Cache (anonymisierte Volltexte pro `fileId`) ist dagegen bewusst prozessweit geteilt, da der Zugriff darauf bereits über die Desk-API gegatet ist (spart anymize-Credits über Benutzer hinweg).
+
+Ein Neustart des MCP-Servers verwirft **alle** Zuordnungen und Caches — Dokumente müssen danach erneut gelesen werden, bevor Platzhalter wieder aufgelöst werden können.
+
+Es gibt kein Eviction/TTL: Die Caches wachsen mit der Prozesslaufzeit (pro aktivem Token sowie der geteilte Dateitext-Cache). Bei sehr langer Laufzeit oder vielen Benutzern ggf. den Server neu starten.
+
 ## Tools
 
 | Name | Beschreibung |

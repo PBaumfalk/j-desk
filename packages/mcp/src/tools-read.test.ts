@@ -61,4 +61,13 @@ describe('Lese-Tools', () => {
     expect(r.isError).toBe(true);
     expect((r.content as { text: string }[])[0].text).toContain('mcp:token');
   });
+
+  it('fremder Desk → Fehler mit "Kein Zugriff"', async () => {
+    const deskId = await ts.createDesk('Desk des Test-Users');
+    const { token } = await ts.zweitBenutzer();
+    const zweiterClient = await ts.clientMitToken(token);
+    const r = await zweiterClient.callTool({ name: 'get_desk', arguments: { deskId } });
+    expect(r.isError).toBe(true);
+    expect(textOf(r)).toContain('Kein Zugriff');
+  });
 });

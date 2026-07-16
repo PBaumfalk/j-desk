@@ -7,9 +7,35 @@ import { AnonCache, MappingStore } from './mapping';
 import { Anonymizer } from './anonymizer';
 import { buildMcpServer } from './server';
 
-export interface Shared {
+export interface Session {
   anonymizer: Anonymizer;
   mappings: MappingStore;
+}
+
+export interface Shared {
+  getSession(token: string): Session;
+}
+
+/**
+ * Erzeugt die geteilte Laufzeitumgebung: EIN AnymizeClient und EIN fileTexts-Cache
+ * prozessweit (Dateizugriff ist bereits über getState/getFile gegatet), aber MappingStore
+ * und Namens-Cache pro Token — sonst könnte Benutzer B Platzhalter aus der Sitzung von
+ * Benutzer A via deanonymize/Schreib-Tools in Klartext auflösen.
+ */
+export function createShared(client: AnymizeClient): Shared {
+  const fileTexts = new Map<string, string>();
+  const sessions = new Map<string, Session>();
+  return {
+    getSession(token: string): Session {
+      let session = sessions.get(token);
+      if (!session) {
+        const mappings = new MappingStore();
+        session = { mappings, anonymizer: new Anonymizer(client, mappings, new AnonCache(fileTexts)) };
+        sessions.set(token, session);
+      }
+      return session;
+    },
+  };
 }
 
 export function startHttpServer(config: McpConfig, shared: Shared): Promise<http.Server> {
@@ -23,7 +49,8 @@ export function startHttpServer(config: McpConfig, shared: Shared): Promise<http
       return;
     }
     const token = header.slice(7);
-    const server = buildMcpServer({ config, anonymizer: shared.anonymizer, mappings: shared.mappings, token });
+    const { anonymizer, mappings } = shared.getSession(token);
+    const server = buildMcpServer({ config, anonymizer, mappings, token });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     res.on('close', () => {
       void transport.close();
@@ -45,9 +72,8 @@ export function startHttpServer(config: McpConfig, shared: Shared): Promise<http
 // Direktstart (nicht in Tests)
 if (process.argv[1]?.endsWith('main.ts')) {
   const config = loadConfig(process.env);
-  const mappings = new MappingStore();
-  const anonymizer = new Anonymizer(new AnymizeClient({ apiUrl: config.anymizeApiUrl, apiKey: config.anymizeApiKey }), mappings, new AnonCache());
-  void startHttpServer(config, { anonymizer, mappings }).then(() =>
+  const shared = createShared(new AnymizeClient({ apiUrl: config.anymizeApiUrl, apiKey: config.anymizeApiKey }));
+  void startHttpServer(config, shared).then(() =>
     console.log(`Digital-Desktop-MCP-Server läuft auf Port ${config.port} (Desk-Server: ${config.deskServerUrl})`),
   );
 }
