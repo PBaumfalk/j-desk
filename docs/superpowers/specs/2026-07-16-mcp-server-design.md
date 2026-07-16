@@ -60,12 +60,16 @@ Bewusst ausgeschlossen: `removeDoc`, `removeStack`, `DELETE /desks/:id`, Mitglie
 
 ## Anonymisierungs-Fluss
 
-- Alle Texte Richtung KI (Desk-, Karten-, Stapelnamen, Link-Notizen, Dokumenttexte) laufen durch die anymize-Text- bzw. File-API.
-- Die **Token↔Klartext-Zuordnung** hält der MCP-Server im Prozessspeicher (gemeinsam mit dem fileId→Text-Cache). Kein Persistieren von Klartext-Mappings auf Platte.
+Die anymize-API ist dokumentiert in `docs/anymize-api.md` (Referenz-Auszug). Kernpunkte:
+
+- Alle Texte Richtung KI (Desk-, Karten-, Stapelnamen, Link-Notizen, Dokumenttexte) laufen durch die anymize-API: Text via `POST /api/anonymize`, PDFs via `POST /api/ocr` (multipart). Beide sind **asynchron** — Ergebnis per Polling über `GET /api/status/{jobId}` (2–5 s Takt, Timeout mit klarer Meldung).
+- Das Mapping Platzhalter↔Original liefert `GET /api/status/{jobId}/strings` (hash_pairs). Die **Token↔Klartext-Zuordnung** hält der MCP-Server im Prozessspeicher (gemeinsam mit dem fileId→Text-Cache). Kein Persistieren von Klartext-Mappings auf Platte.
+- **Credits:** Anonymisierung kostet 1 Credit pro Wort. Deshalb wird jedes Anonymisierungs-Ergebnis gecacht: Dokumenttexte pro fileId, Namen/Notizen pro exaktem String — wiederholte Desk-Reads lösen keine neuen anymize-Aufrufe aus.
+- **ZDR-Vorbehalt:** Bei aktiviertem Zero Data Retention im anymize-Account sind hash_pairs und `POST /api/deanonymize` nicht verfügbar — der De-Anonymisierungs-Rundweg setzt **ZDR = aus** voraus. Der MCP-Server erkennt den Fall (strings-Abruf schlägt fehl) und meldet ihn verständlich.
 - **Schreib-Tools de-anonymisieren serverseitig:** Enthält ein Argument (Stapelname, Link-Notiz, Desk-Name) Platzhalter aus früheren Tool-Antworten, werden sie vor dem Desk-API-Aufruf in Klartext zurückübersetzt. Auf dem Schreibtisch landen nie Platzhalter.
 - Unbekannte Platzhalter (z. B. nach Prozess-Neustart): Fehler mit Hinweis, das Dokument erneut zu lesen — niemals Platzhalter durchschreiben.
 - De-Anonymisierung (Schreib-Tools und `deanonymize`-Tool) erfolgt **lokal über das gehaltene Mapping** — sie funktioniert damit auch, wenn anymize gerade nicht erreichbar ist. anymizes eigener De-Anonymisierungs-Endpunkt ist nur die Rückfalloption, falls die Anonymisierungs-Antwort kein Mapping ausliefert.
-- Die exakten anymize-Endpunkte, Parameter und Mapping-Formate werden zu Beginn der Planphase gegen die offizielle Doku (app.anymize.ai/api-docs) verifiziert (Research-Schritt). Anforderungen an die API laut dieser Spec: Text-Anonymisierung (bevorzugt mit ausgeliefertem Mapping), Datei-Verarbeitung (PDF, OCR).
+- Verbleibender Research-Schritt zu Beginn der Planphase (mit echtem API-Key): das reale Platzhalterformat verifizieren — die Doku zeigt sowohl `[[Type-HASH]]` als auch `[PREFIX-N]`; die Implementierung erkennt beide Formen tolerant.
 
 ## Fehlerbehandlung
 
