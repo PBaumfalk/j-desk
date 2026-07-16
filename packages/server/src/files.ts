@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Db } from './db';
 
@@ -30,8 +30,13 @@ export function storeFile(db: Db, dataDir: string, bytes: Buffer, originalName: 
   const filesDir = join(dataDir, 'files');
   mkdirSync(filesDir, { recursive: true });
   const tmp = join(filesDir, `.tmp-${randomUUID()}`);
-  writeFileSync(tmp, bytes);
-  renameSync(tmp, join(filesDir, `${sha256}.pdf`));
+  try {
+    writeFileSync(tmp, bytes);
+    renameSync(tmp, join(filesDir, `${sha256}.pdf`));
+  } catch (e) {
+    rmSync(tmp, { force: true });
+    throw e;
+  }
 
   const id = randomUUID();
   db.prepare('INSERT INTO files (id, sha256, original_name, size, created_at) VALUES (?, ?, ?, ?, ?)').run(

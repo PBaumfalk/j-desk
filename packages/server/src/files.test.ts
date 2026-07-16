@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { mkdtempSync, existsSync, readFileSync, readdirSync } from 'node:fs';
+import { mkdtempSync, existsSync, readFileSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { openDb, type Db } from './db';
 import { storeFile, getFilePath, fileExists, FileError } from './files';
 
@@ -35,6 +36,15 @@ describe('storeFile', () => {
     expect(() => storeFile(db, dataDir, pdfBytes('x'), 'notiz.txt')).toThrow(FileError);
     expect(() => storeFile(db, dataDir, Buffer.from('kein pdf'), 'a.pdf')).toThrow(FileError);
     expect(() => storeFile(db, dataDir, Buffer.alloc(0), 'a.pdf')).toThrow(FileError);
+  });
+
+  it('räumt die tmp-Datei auf, wenn das Umbenennen fehlschlägt', () => {
+    const bytes = pdfBytes('eins');
+    const sha = createHash('sha256').update(bytes).digest('hex');
+    // Zielpfad als VERZEICHNIS blockieren → renameSync wirft, writeFileSync(tmp) war erfolgreich
+    mkdirSync(join(dataDir, 'files', `${sha}.pdf`), { recursive: true });
+    expect(() => storeFile(db, dataDir, bytes, 'a.pdf')).toThrow();
+    expect(readdirSync(join(dataDir, 'files')).some((f) => f.startsWith('.tmp-'))).toBe(false);
   });
 });
 
