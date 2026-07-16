@@ -77,6 +77,14 @@ export class ApiClient {
     return this.request('POST', '/desks', { name });
   }
 
+  renameDesk(deskId: string, name: string): Promise<{ ok: boolean }> {
+    return this.request('PATCH', `/desks/${deskId}`, { name });
+  }
+
+  deleteDesk(deskId: string): Promise<{ ok: boolean }> {
+    return this.request('DELETE', `/desks/${deskId}`);
+  }
+
   getState(deskId: string): Promise<DeskState> {
     return this.request('GET', `/desks/${deskId}/state`);
   }

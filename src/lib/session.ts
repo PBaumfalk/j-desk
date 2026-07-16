@@ -3,6 +3,7 @@ import { BaseDirectory, exists, readTextFile, remove, writeTextFile } from '@tau
 export interface Session {
   serverUrl: string;
   token: string;
+  lastDeskId?: string;
 }
 
 const FILE = 'session.json';
@@ -12,7 +13,11 @@ export function parseSession(json: string): Session | null {
   try {
     const v = JSON.parse(json) as Session | null;
     if (!v || typeof v.serverUrl !== 'string' || typeof v.token !== 'string') return null;
-    return { serverUrl: v.serverUrl, token: v.token };
+    return {
+      serverUrl: v.serverUrl,
+      token: v.token,
+      ...(typeof v.lastDeskId === 'string' ? { lastDeskId: v.lastDeskId } : {}),
+    };
   } catch {
     return null;
   }
@@ -33,4 +38,10 @@ export async function saveSession(session: Session): Promise<void> {
 
 export async function clearSession(): Promise<void> {
   await remove(FILE, base).catch(() => {});
+}
+
+/** Merkt sich den zuletzt aktiven Schreibtisch (pro Gerät). */
+export async function saveLastDeskId(deskId: string): Promise<void> {
+  const session = await loadSession();
+  if (session) await saveSession({ ...session, lastDeskId: deskId });
 }
