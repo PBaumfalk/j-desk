@@ -1,12 +1,14 @@
 import WebSocket from '@tauri-apps/plugin-websocket';
 import { applyCommand, emptyState, type Command, type DesktopState } from '@digital-desktop/core';
-import type { ApiClient, DeskInfo } from './api';
+import { ApiError, type ApiClient, type DeskInfo, type UserInfo } from './api';
 import { saveLastDeskId } from './session';
 import { showToast } from './ui.svelte';
+import { accessLossMessage } from './wsCodes';
 
 let state = $state<DesktopState>(emptyState());
 let status = $state<'connecting' | 'online' | 'offline' | 'loggedOut'>('loggedOut');
 let desks = $state<DeskInfo[]>([]);
+let me = $state<UserInfo | null>(null);
 let wsGeneration = 0;
 let rev = 0;
 let api: ApiClient | null = null;
@@ -32,6 +34,9 @@ export const desktop = {
   get desks(): DeskInfo[] {
     return desks;
   },
+  get me(): UserInfo | null {
+    return me;
+  },
 
   /** Nach erfolgreichem Login: Schreibtische laden, letzten (oder ersten) öffnen. */
   async start(client: ApiClient, lastDeskId?: string): Promise<void> {
@@ -40,6 +45,7 @@ export const desktop = {
     api = client;
     stopped = false;
     status = 'connecting';
+    me = await client.me();
     desks = await client.listDesks();
     if (desks.length === 0) desks = [await client.createDesk('Schreibtisch 1')];
     const target = desks.find((d) => d.id === lastDeskId) ?? desks[0];
@@ -71,6 +77,11 @@ export const desktop = {
         state = result.state;
       }
     } catch (e) {
+      if (handleAuthLoss(e)) return;
+      if (e instanceof ApiError && e.status === 403) {
+        void recoverAccess('Zugriff wurde entzogen');
+        return;
+      }
       await this.refresh().catch(() => {});
       showToast(e instanceof Error ? e.message : 'Aktion fehlgeschlagen');
     }
@@ -80,10 +91,14 @@ export const desktop = {
   async refresh(): Promise<void> {
     if (stopped) return;
     if (!api || !deskId) return;
-    const result = await api.getState(deskId);
-    if (result.rev >= rev) {
-      rev = result.rev;
-      state = result.state;
+    try {
+      const result = await api.getState(deskId);
+      if (result.rev >= rev) {
+        rev = result.rev;
+        state = result.state;
+      }
+    } catch (e) {
+      if (!handleAuthLoss(e)) throw e;
     }
   },
 
@@ -138,13 +153,16 @@ export const desktop = {
       showToast('Offline — Aktion nicht möglich');
       return;
     }
+    const wechselt = id === deskId;
     try {
-      await api.deleteDesk(id);
-      desks = await api.listDesks();
-      if (id === deskId) {
-        if (desks.length === 0) desks = [await api.createDesk('Schreibtisch 1')];
+      if (wechselt) {
         status = 'connecting';
         await closeWs();
+      }
+      await api.deleteDesk(id);
+      desks = await api.listDesks();
+      if (wechselt) {
+        if (desks.length === 0) desks = [await api.createDesk('Schreibtisch 1')];
         try {
           await loadDesk(desks[0].id);
         } catch (e) {
@@ -154,6 +172,36 @@ export const desktop = {
       }
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Löschen fehlgeschlagen');
+      if (wechselt) onDisconnected();
+    }
+  },
+
+  async leaveDesk(id: string): Promise<void> {
+    if (!api || !me) return;
+    if (status !== 'online') {
+      showToast('Offline — Aktion nicht möglich');
+      return;
+    }
+    const wechselt = id === deskId;
+    try {
+      if (wechselt) {
+        status = 'connecting';
+        await closeWs();
+      }
+      await api.removeMember(id, me.id);
+      desks = await api.listDesks();
+      if (wechselt) {
+        if (desks.length === 0) desks = [await api.createDesk('Schreibtisch 1')];
+        try {
+          await loadDesk(desks[0].id);
+        } catch (e) {
+          showToast(e instanceof Error ? e.message : 'Wechsel fehlgeschlagen');
+          onDisconnected();
+        }
+      }
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Verlassen fehlgeschlagen');
+      if (wechselt) onDisconnected();
     }
   },
 
@@ -161,6 +209,7 @@ export const desktop = {
     clearTimeout(reconnectTimer);
     reconnectTimer = undefined;
     stopped = true;
+    me = null;
     status = 'loggedOut';
     await ws?.disconnect().catch(() => {});
     ws = null;
@@ -215,7 +264,9 @@ async function connectWs(): Promise<void> {
           state = data.state;
         }
       } else if (msg.type === 'Close') {
-        onDisconnected();
+        const meldung = msg.data ? accessLossMessage(msg.data.code) : null;
+        if (meldung) void recoverAccess(meldung);
+        else onDisconnected();
       }
     });
   } catch {
@@ -238,4 +289,29 @@ function onDisconnected(): void {
       await connectWs();
     })();
   }, delay);
+}
+
+/** 401: Sitzung ist weg (z. B. Admin-Passwort-Reset) — abmelden, +page zeigt die Login-Maske. */
+function handleAuthLoss(e: unknown): boolean {
+  if (e instanceof ApiError && e.status === 401) {
+    void desktop.stop();
+    return true;
+  }
+  return false;
+}
+
+/** Zugriff verloren (Close 4001/4003 oder HTTP 403): melden, Liste neu laden, ausweichen. */
+async function recoverAccess(meldung: string): Promise<void> {
+  if (stopped || !api) return;
+  showToast(meldung);
+  wsGeneration++; // alte Listener invalidieren; der Socket ist server-seitig bereits zu
+  ws = null;
+  status = 'connecting';
+  try {
+    desks = await api.listDesks();
+    if (desks.length === 0) desks = [await api.createDesk('Schreibtisch 1')];
+    await loadDesk(desks[0].id);
+  } catch (e) {
+    if (!handleAuthLoss(e)) onDisconnected();
+  }
 }

@@ -12,6 +12,15 @@
   let phase = $state<'loading' | 'login' | 'desk'>('loading');
   let lastServerUrl = $state('http://localhost:4810');
 
+  // Sitzung serverseitig beendet (Abmelden, Passwort-Reset durch Admin) → zurück zur Login-Maske
+  $effect(() => {
+    if (phase === 'desk' && desktop.status === 'loggedOut') {
+      void clearSession().finally(() => {
+        phase = 'login';
+      });
+    }
+  });
+
   async function connect(session: Session): Promise<void> {
     const api = new ApiClient(session.serverUrl, session.token);
     await desktop.start(api, session.lastDeskId);
