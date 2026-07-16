@@ -58,7 +58,8 @@ Rechte auf bestehenden Routen:
 GET    /desks               nur eigene + geteilte; Einträge neu mit ownerName, isOwner
 PATCH  /desks/:id           nur Besitzer (sonst 403)
 DELETE /desks/:id           nur Besitzer (sonst 403)
-GET/POST /desks/:id/state | /commands | /ws    nur Besitzer/Mitglied
+GET/PUT /desks/:id/state, POST /desks/:id/commands, WS /desks/:id/ws
+                            nur Besitzer/Mitglied
 GET    /files/:id           Datei-Download-Regel (sonst 403)
 POST   /files               setzt uploader_id
 ```
@@ -79,7 +80,8 @@ GET    /users               id, username, isAdmin — für alle Eingeloggten
 POST   /users               Admin: {username, password} → Konto anlegen
 PATCH  /users/:id           Admin: {username} umbenennen
 POST   /users/:id/password  Admin: {password} zurücksetzen; löscht alle
-                            Sessions des Betroffenen
+                            Sessions des Betroffenen (auch aufs eigene Konto
+                            anwendbar — loggt den Admin dann selbst aus)
 DELETE /users/:id           Admin: Konto löschen (Kaskade s. o.); eigenes → 400
 POST   /auth/password       Selbst: {oldPassword, newPassword}; andere eigene
                             Sessions bleiben gültig
