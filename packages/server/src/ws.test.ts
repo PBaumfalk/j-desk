@@ -14,7 +14,8 @@ describe('WebSocket-Broadcast', () => {
     const desk = (
       await app.inject({ method: 'POST', url: '/api/v1/desks', headers: authHeaders, payload: { name: 'D' } })
     ).json();
-    const meta = storeFile(db, dataDir, pdf, 'a.pdf', null);
+    const me = (await app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: authHeaders })).json();
+    const meta = storeFile(db, dataDir, pdf, 'a.pdf', me.id);
 
     const ws = new WsClient(`ws://127.0.0.1:${port}/api/v1/desks/${desk.id}/ws?token=${token}`);
     await new Promise((resolve, reject) => {

@@ -74,6 +74,7 @@ describe('Benutzer-Routen', () => {
     expect(db.prepare('SELECT 1 FROM desk_members WHERE user_id = ?').get(bob.userId)).toBeUndefined();
     expect(db.prepare('SELECT 1 FROM sessions WHERE user_id = ?').get(bob.userId)).toBeUndefined();
     expect((db.prepare('SELECT uploader_id AS u FROM files WHERE id = ?').get(meta.id) as { u: string | null }).u).toBeNull();
+    expect(db.prepare('SELECT 1 FROM desks WHERE id = ?').get(meinDesk.id)).toBeDefined();
   });
 
   it('DELETE des eigenen Kontos → 400; als Nicht-Admin → 403', async () => {

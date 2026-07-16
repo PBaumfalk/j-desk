@@ -83,6 +83,21 @@ describe('Datei-Zugriff', () => {
     expect(b.id).toBe(a.id);
     expect((db.prepare('SELECT uploader_id AS u FROM files WHERE id = ?').get(a.id) as { u: string }).u).toBe(me.id);
   });
+
+  it('addDoc mit fileId ohne Leserecht → 400, auch im eigenen Desk', async () => {
+    const { app, db, dataDir, authHeaders } = await createTestApp();
+    const carol = await addUser(db, 'carol');
+    const me = (await app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: authHeaders })).json();
+    const meta = storeFile(db, dataDir, pdf('geheim'), 'geheim.pdf', me.id);
+    const eigenerDesk = (await app.inject({ method: 'POST', url: '/api/v1/desks', headers: carol.authHeaders, payload: { name: 'Carols' } })).json();
+
+    const res = await app.inject({
+      method: 'POST', url: `/api/v1/desks/${eigenerDesk.id}/commands`, headers: carol.authHeaders,
+      payload: { type: 'addDoc', payload: { fileId: meta.id, name: 'geheim.pdf', position: { x: 0, y: 0 }, id: 'doc-2' } },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ error: 'Unbekannte oder nicht zugängliche fileId' });
+  });
 });
 
 describe('WS-Zugriff', () => {

@@ -303,6 +303,8 @@ function handleAuthLoss(e: unknown): boolean {
 /** Zugriff verloren (Close 4001/4003 oder HTTP 403): melden, Liste neu laden, ausweichen. */
 async function recoverAccess(meldung: string): Promise<void> {
   if (stopped || !api) return;
+  clearTimeout(reconnectTimer);
+  reconnectTimer = undefined;
   showToast(meldung);
   wsGeneration++; // alte Listener invalidieren; der Socket ist server-seitig bereits zu
   ws = null;

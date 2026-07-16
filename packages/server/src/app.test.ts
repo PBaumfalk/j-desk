@@ -78,7 +78,8 @@ describe('Kommandos', () => {
   it('führt gültige Kommandos aus, weist ungültige mit 400 ab', async () => {
     const { app, db, dataDir, authHeaders } = await createTestApp();
     const { storeFile } = await import('./files');
-    const meta = storeFile(db, dataDir, pdf, 'a.pdf', null);
+    const me = (await app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: authHeaders })).json();
+    const meta = storeFile(db, dataDir, pdf, 'a.pdf', me.id);
     const desk = (await app.inject({ method: 'POST', url: '/api/v1/desks', headers: authHeaders, payload: { name: 'D' } })).json();
 
     let res = await app.inject({

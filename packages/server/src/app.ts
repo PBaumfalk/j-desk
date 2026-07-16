@@ -11,7 +11,7 @@ import {
   applyDeskCommand, putDeskState, DeskNotFoundError, InvalidStateError,
   listMembers, addMember, removeMember, MemberError,
 } from './deskStore';
-import { storeFile, getFilePath, fileExists, FileError } from './files';
+import { storeFile, getFilePath, FileError } from './files';
 import { ForbiddenError, requireDeskAccess, requireDeskOwner, requireAdmin, canReadFile, isAdminUser } from './guards';
 import { listUsers, renameUser, resetPassword, changeOwnPassword, getUserDesks, deleteUserCascade, UserNotFoundError } from './users';
 import { register, unregister, broadcast, closeDesk, closeUserOnDesk, closeUserEverywhere } from './broadcast';
@@ -41,12 +41,13 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
   await app.register(multipart, { limits: { fileSize: 100 * 1024 * 1024 } });
   await app.register(websocket);
 
-  app.setErrorHandler((err, _req, reply) => {
+  app.setErrorHandler((err, req, reply) => {
     if (err instanceof ForbiddenError) return reply.code(403).send({ error: err.message });
     if (err instanceof DeskNotFoundError || err instanceof UserNotFoundError) return reply.code(404).send({ error: err.message });
     if (err instanceof AuthError || err instanceof CommandError || err instanceof InvalidStateError || err instanceof FileError || err instanceof MemberError || err instanceof InviteError) {
       return reply.code(400).send({ error: err.message });
     }
+    req.log.error(err);
     return reply.send(err);
   });
 
@@ -220,8 +221,8 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
     const { id } = req.params as { id: string };
     requireDeskAccess(db, id, userIdOf(req));
     const cmd = (req.body ?? {}) as Command;
-    if (cmd.type === 'addDoc' && !fileExists(db, String((cmd.payload as { fileId?: unknown })?.fileId ?? ''))) {
-      return reply.code(400).send({ error: 'Unbekannte fileId' });
+    if (cmd.type === 'addDoc' && !canReadFile(db, userIdOf(req), String((cmd.payload as { fileId?: unknown })?.fileId ?? ''))) {
+      return reply.code(400).send({ error: 'Unbekannte oder nicht zugängliche fileId' });
     }
     const result = applyDeskCommand(db, id, cmd);
     broadcast(id, result);
