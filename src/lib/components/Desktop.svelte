@@ -13,6 +13,7 @@
   import StackCard from './StackCard.svelte';
   import LinkLayer from './LinkLayer.svelte';
   import ContextMenu from './ContextMenu.svelte';
+  import DeskSwitcher from './DeskSwitcher.svelte';
 
   let vp = $state<Viewport>({ x: 0, y: 0, scale: 1 });
   let el: HTMLDivElement;
@@ -110,6 +111,7 @@
       <StackCard {stack} {vp} />
     {/each}
   </div>
+  <DeskSwitcher />
   <div class="toolbar">
     <button onclick={() => void addViaDialog()} title="PDF hinzufügen">＋ PDF</button>
     <button onclick={fitAll}>Übersicht</button>
