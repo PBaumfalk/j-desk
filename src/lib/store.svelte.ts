@@ -100,6 +100,12 @@ async function connectWs(): Promise<void> {
     reconnectDelay = 1000;
     status = 'online';
     ws.addListener((msg) => {
+      // Bei abruptem Abriss (Server-Prozess weg) liefert das Plugin statt
+      // eines Close-Frames einen nackten Fehler-String — auch das ist ein Abriss.
+      if (typeof msg === 'string') {
+        onDisconnected();
+        return;
+      }
       if (msg.type === 'Text') {
         const data = JSON.parse(msg.data as string) as { rev: number; state: DesktopState };
         if (data.rev >= rev) {
@@ -116,7 +122,9 @@ async function connectWs(): Promise<void> {
 }
 
 function onDisconnected(): void {
-  if (stopped) return;
+  // Doppel-Feuer (Fehler-String + Close) nicht doppelt einplanen; ein
+  // bereits laufender Reconnect-Timer bleibt maßgeblich.
+  if (stopped || reconnectTimer !== undefined) return;
   status = 'offline';
   ws = null;
   const delay = reconnectDelay;
