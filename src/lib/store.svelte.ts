@@ -1,6 +1,5 @@
 import { exists } from '@tauri-apps/plugin-fs';
-import { emptyState, type DesktopState } from './state/model';
-import { setMissing } from './state/documents';
+import { emptyState, type DesktopState, setMissing } from '@digital-desktop/core';
 import { loadState, saveState } from './persistence';
 import { debounce } from './debounce';
 

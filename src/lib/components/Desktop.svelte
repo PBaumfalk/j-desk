@@ -3,10 +3,9 @@
   import { open as openDialog } from '@tauri-apps/plugin-dialog';
   import { getCurrentWebview } from '@tauri-apps/api/webview';
   import { desktop } from '../store.svelte';
-  import { freeDocs } from '../state/model';
-  import { addDoc } from '../state/documents';
-  import { screenToWorld, zoomAt, zoomToFit, type Viewport } from '../state/viewport';
-  import { allBoxes } from '../state/geometry';
+  import {
+    freeDocs, addDoc, screenToWorld, zoomAt, zoomToFit, type Viewport, allBoxes,
+  } from '@digital-desktop/core';
   import DocCard from './DocCard.svelte';
   import StackCard from './StackCard.svelte';
   import LinkLayer from './LinkLayer.svelte';

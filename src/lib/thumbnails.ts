@@ -3,7 +3,7 @@ import {
 } from '@tauri-apps/plugin-fs';
 import * as pdfjs from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import type { Doc } from './state/model';
+import type { Doc } from '@digital-desktop/core';
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 

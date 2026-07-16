@@ -1,7 +1,8 @@
 <script lang="ts">
   import { desktop } from '../store.svelte';
-  import { CARD_W, CARD_H, findDoc, findStack, stackOf, type Vec2 } from '../state/model';
-  import { removeLink, setLinkNote } from '../state/links';
+  import {
+    CARD_W, CARD_H, findDoc, findStack, stackOf, type Vec2, removeLink, setLinkNote,
+  } from '@digital-desktop/core';
 
   let openLinkId = $state<string | null>(null);
   const openLink = $derived(desktop.state.links.find((l) => l.id === openLinkId) ?? null);

@@ -1,10 +1,8 @@
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener';
-import type { Doc, Stack } from './state/model';
-import { collectLinkedPaths } from './state/links';
-import { setDocPath } from './state/documents';
-import { dissolveStack } from './state/stacks';
-import { removeDoc, removeStack } from './state/removal';
+import {
+  type Doc, type Stack, collectLinkedPaths, setDocPath, dissolveStack, removeDoc, removeStack,
+} from '@digital-desktop/core';
 import { desktop } from './store.svelte';
 import { ui } from './ui.svelte';
 import { invalidateThumbnail } from './thumbnails';

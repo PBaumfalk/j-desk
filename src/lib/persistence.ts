@@ -2,7 +2,7 @@ import {
   BaseDirectory, copyFile, exists, mkdir, readTextFile, writeTextFile,
 } from '@tauri-apps/plugin-fs';
 import { appDataDir } from '@tauri-apps/api/path';
-import { emptyState, type DesktopState } from './state/model';
+import { emptyState, type DesktopState } from '@digital-desktop/core';
 
 const FILE = 'desktop.json';
 const BAK = 'desktop.json.bak';

@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { CARD_W, CARD_H, findDoc, type Stack } from '../state/model';
-  import { screenToWorld, type Viewport } from '../state/viewport';
+  import {
+    CARD_W, CARD_H, findDoc, type Stack, screenToWorld, type Viewport, bringToFront,
+    moveStack, removeFromStack, renameStack, addLink,
+  } from '@digital-desktop/core';
   import { desktop } from '../store.svelte';
-  import { bringToFront } from '../state/documents';
-  import { moveStack, removeFromStack, renameStack } from '../state/stacks';
-  import { addLink } from '../state/links';
   import { openPath } from '@tauri-apps/plugin-opener';
   import { ui } from '../ui.svelte';
   import { showDocMenu, showStackMenu } from '../menus';

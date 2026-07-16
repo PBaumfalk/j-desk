@@ -1,15 +1,12 @@
 <script lang="ts">
-  import { CARD_W, CARD_H, type Doc } from '../state/model';
-  import type { Viewport } from '../state/viewport';
+  import {
+    CARD_W, CARD_H, type Doc, type Viewport, moveDoc, bringToFront, addLink, stackDocs, hitTest,
+  } from '@digital-desktop/core';
   import { desktop } from '../store.svelte';
-  import { moveDoc, bringToFront } from '../state/documents';
   import { openPath } from '@tauri-apps/plugin-opener';
   import { getThumbnail } from '../thumbnails';
-  import { addLink } from '../state/links';
   import { ui } from '../ui.svelte';
   import { showDocMenu } from '../menus';
-  import { stackDocs } from '../state/stacks';
-  import { hitTest } from '../state/geometry';
 
   let { doc, vp }: { doc: Doc; vp: Viewport } = $props();
 

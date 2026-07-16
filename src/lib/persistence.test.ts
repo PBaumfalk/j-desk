@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { emptyState } from './state/model';
-import { addDoc } from './state/documents';
+import { emptyState, addDoc } from '@digital-desktop/core';
 import { deserialize } from './persistence';
 
 describe('deserialize', () => {
