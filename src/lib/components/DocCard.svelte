@@ -4,8 +4,16 @@
   import { desktop } from '../store.svelte';
   import { moveDoc, bringToFront } from '../state/documents';
   import { openPath } from '@tauri-apps/plugin-opener';
+  import { getThumbnail } from '../thumbnails';
 
   let { doc, vp }: { doc: Doc; vp: Viewport } = $props();
+
+  let thumb = $state<string | null>(null);
+  $effect(() => {
+    doc.path; // Abhängigkeit: nach „Neu verknüpfen“ neu rendern
+    if (doc.missing) { thumb = null; return; }
+    void getThumbnail(doc).then((t) => (thumb = t));
+  });
 
   let dragging = false;
   let moved = false;
@@ -41,6 +49,8 @@
   <div class="body">
     {#if doc.missing}
       <div class="warn">⚠️<br />Datei fehlt</div>
+    {:else if thumb}
+      <img src={thumb} alt="" draggable="false" />
     {:else}
       <div class="fallback">PDF</div>
     {/if}
@@ -55,6 +65,7 @@
   .body { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden;
           border-radius: 4px 4px 0 0; }
   .fallback { font-weight: 700; color: #b33; font-size: 22px; }
+  img { width: 100%; height: 100%; object-fit: cover; object-position: top; pointer-events: none; }
   .warn { text-align: center; font-size: 14px; }
   .name { padding: 4px 6px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
           background: rgba(255, 255, 255, .9); border-top: 1px solid #eee; border-radius: 0 0 4px 4px; }
