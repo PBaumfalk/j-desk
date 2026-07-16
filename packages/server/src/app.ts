@@ -14,7 +14,7 @@ import {
 import { storeFile, getFilePath, fileExists, FileError } from './files';
 import { ForbiddenError, requireDeskAccess, requireDeskOwner, requireAdmin, canReadFile, isAdminUser } from './guards';
 import { listUsers, renameUser, resetPassword, changeOwnPassword, getUserDesks, deleteUserCascade, UserNotFoundError } from './users';
-import { register, unregister, broadcast } from './broadcast';
+import { register, unregister, broadcast, closeDesk, closeUserOnDesk, closeUserEverywhere } from './broadcast';
 import { createInvite, listInvites, getInvite, revokeInvite, redeemInvite, InviteError } from './invites';
 
 export interface AppOptions {
@@ -171,7 +171,9 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
     requireAdmin(db, userIdOf(req));
     const { id } = req.params as { id: string };
     if (id === userIdOf(req)) throw new AuthError('Eigenes Konto kann nicht gelöscht werden');
-    deleteUserCascade(db, id);
+    const eigeneDesks = deleteUserCascade(db, id);
+    for (const deskId of eigeneDesks) closeDesk(deskId);
+    closeUserEverywhere(id);
     return { ok: true };
   });
 
@@ -202,6 +204,7 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
     const { id } = req.params as { id: string };
     requireDeskOwner(db, id, userIdOf(req));
     deleteDesk(db, id);
+    closeDesk(id);
     return { ok: true };
   });
 
@@ -254,6 +257,7 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
     if (userId !== userIdOf(req)) requireDeskOwner(db, id, userIdOf(req));
     else requireDeskAccess(db, id, userIdOf(req));
     removeMember(db, id, userId);
+    closeUserOnDesk(id, userId);
     return { ok: true };
   });
 
@@ -285,7 +289,7 @@ export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInst
       socket.close(e instanceof ForbiddenError ? 4003 : 4001, e instanceof ForbiddenError ? 'access-revoked' : 'desk-deleted');
       return;
     }
-    register(id, socket);
+    register(id, socket, userIdOf(req));
     socket.on('close', () => unregister(id, socket));
   });
 
