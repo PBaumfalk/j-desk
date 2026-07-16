@@ -6,6 +6,9 @@ export class AuthError extends Error {}
 
 const SESSION_MAX_IDLE_MS = 30 * 24 * 60 * 60 * 1000;
 
+// Vergleichs-Hash für unbekannte Benutzernamen — hält die Login-Dauer konstant (kein Benutzer-Enumerieren per Timing)
+const DUMMY_HASH = argon2.hash('dummy-passwort-gegen-timing', { type: argon2.argon2id });
+
 export function needsSetup(db: Db): boolean {
   const row = db.prepare('SELECT COUNT(*) AS n FROM users').get() as { n: number };
   return row.n === 0;
@@ -26,7 +29,10 @@ export async function login(db: Db, username: string, password: string): Promise
   const user = db
     .prepare('SELECT id, password_hash FROM users WHERE username = ?')
     .get(username.trim()) as { id: string; password_hash: string } | undefined;
-  if (!user) return null;
+  if (!user) {
+    await argon2.verify(await DUMMY_HASH, password).catch(() => false);
+    return null;
+  }
   if (!(await argon2.verify(user.password_hash, password))) return null;
   const token = randomBytes(32).toString('hex');
   db.prepare('INSERT INTO sessions (token, user_id, created_at, last_used_at) VALUES (?, ?, ?, ?)').run(
