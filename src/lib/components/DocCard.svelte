@@ -8,6 +8,8 @@
   import { addLink } from '../state/links';
   import { ui } from '../ui.svelte';
   import { showDocMenu } from '../menus';
+  import { stackDocs } from '../state/stacks';
+  import { hitTest } from '../state/geometry';
 
   let { doc, vp }: { doc: Doc; vp: Viewport } = $props();
 
@@ -49,7 +51,11 @@
   function onPointerUp() {
     if (!dragging) return;
     dragging = false;
-    if (moved) desktop.apply((s) => s); // persistiert die Endposition
+    if (!moved) return;
+    const center = { x: doc.position.x + CARD_W / 2, y: doc.position.y + CARD_H / 2 };
+    const hit = hitTest(desktop.state, center, doc.id);
+    if (hit) desktop.apply((s) => stackDocs(s, doc.id, hit.id));
+    else desktop.apply((s) => s); // persistiert die Endposition
   }
 </script>
 

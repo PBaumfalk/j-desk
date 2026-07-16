@@ -8,6 +8,7 @@
   import { screenToWorld, zoomAt, zoomToFit, type Viewport } from '../state/viewport';
   import { allBoxes } from '../state/geometry';
   import DocCard from './DocCard.svelte';
+  import StackCard from './StackCard.svelte';
   import LinkLayer from './LinkLayer.svelte';
   import ContextMenu from './ContextMenu.svelte';
   import { ui } from '../ui.svelte';
@@ -81,6 +82,9 @@
     <LinkLayer />
     {#each freeDocs(desktop.state) as doc (doc.id)}
       <DocCard {doc} {vp} />
+    {/each}
+    {#each desktop.state.stacks as stack (stack.id)}
+      <StackCard {stack} {vp} />
     {/each}
   </div>
   <div class="toolbar">
