@@ -6,7 +6,7 @@ import { stackDocs, removeFromStack, dissolveStack, renameStack, moveStack } fro
 
 function docs(n: number): DesktopState {
   let s = emptyState();
-  for (let i = 0; i < n; i++) s = addDoc(s, `/tmp/${i}.pdf`, { x: i * 10, y: i * 10 }, `id-${i}`);
+  for (let i = 0; i < n; i++) s = addDoc(s, `file-${i}`, `${i}.pdf`, { x: i * 10, y: i * 10 }, `id-${i}`);
   return s;
 }
 

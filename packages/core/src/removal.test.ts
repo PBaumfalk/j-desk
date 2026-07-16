@@ -7,7 +7,7 @@ import { removeDoc, removeStack } from './removal';
 
 function base(): DesktopState {
   let s = emptyState();
-  for (let i = 0; i < 4; i++) s = addDoc(s, `/tmp/${i}.pdf`, { x: 0, y: 0 }, `id-${i}`);
+  for (let i = 0; i < 4; i++) s = addDoc(s, `file-${i}`, `${i}.pdf`, { x: 0, y: 0 }, `id-${i}`);
   return s;
 }
 

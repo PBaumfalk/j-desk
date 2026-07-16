@@ -1,4 +1,4 @@
-import { findDoc, findStack, type DesktopState } from './model';
+import { findDoc, findStack, type DesktopState, type Doc } from './model';
 
 export function addLink(
   s: DesktopState,
@@ -32,22 +32,22 @@ export function linkedEntityIds(s: DesktopState, entityId: string): string[] {
     .map((l) => (l.fromId === entityId ? l.toId : l.fromId));
 }
 
-/** Pfade der Entität selbst plus aller direkt verknüpften Entitäten (Stapel → alle enthaltenen Dokumente). */
-export function collectLinkedPaths(s: DesktopState, entityId: string): string[] {
-  const paths: string[] = [];
+/** Dokumente der Entität selbst plus aller direkt verknüpften Entitäten (Stapel → enthaltene Dokumente), dedupliziert. */
+export function collectLinkedDocs(s: DesktopState, entityId: string): Doc[] {
+  const docs = new Map<string, Doc>();
   const addEntity = (id: string) => {
     const st = findStack(s, id);
     if (st) {
       for (const docId of st.docIds) {
         const d = findDoc(s, docId);
-        if (d && !d.missing) paths.push(d.path);
+        if (d) docs.set(d.id, d);
       }
       return;
     }
     const d = findDoc(s, id);
-    if (d && !d.missing) paths.push(d.path);
+    if (d) docs.set(d.id, d);
   };
   addEntity(entityId);
   for (const other of linkedEntityIds(s, entityId)) addEntity(other);
-  return [...new Set(paths)];
+  return [...docs.values()];
 }

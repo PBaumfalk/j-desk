@@ -2,11 +2,11 @@ export interface Vec2 { x: number; y: number }
 
 export interface Doc {
   id: string;
-  path: string;        // absoluter Dateipfad (nur Referenz)
+  fileId: string;      // Server-Datei (files-Tabelle)
+  name: string;        // Anzeigename (Original-Dateiname)
   position: Vec2;      // Weltkoordinaten, linke obere Ecke
   rotation: number;    // Grad, feste leichte Zufallsdrehung
   zIndex: number;
-  missing: boolean;    // Datei aktuell nicht auffindbar
 }
 
 export interface Link {
@@ -51,4 +51,18 @@ export function stackOf(s: DesktopState, docId: string): Stack | undefined {
 
 export function freeDocs(s: DesktopState): Doc[] {
   return s.docs.filter((d) => !stackOf(s, d.id));
+}
+
+export function isValidState(v: unknown): v is DesktopState {
+  if (!v || typeof v !== 'object') return false;
+  const s = v as DesktopState;
+  return (
+    Array.isArray(s.docs) &&
+    Array.isArray(s.links) &&
+    Array.isArray(s.stacks) &&
+    s.docs.every(
+      (d) =>
+        !!d && typeof d.id === 'string' && typeof d.fileId === 'string' && typeof d.name === 'string',
+    )
+  );
 }

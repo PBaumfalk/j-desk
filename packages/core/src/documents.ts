@@ -13,12 +13,13 @@ export function rotationFor(id: string): number {
 
 export function addDoc(
   s: DesktopState,
-  path: string,
+  fileId: string,
+  name: string,
   position: Vec2,
   id: string = crypto.randomUUID(),
 ): DesktopState {
-  if (s.docs.some((d) => d.path === path)) return s; // liegt schon auf dem Tisch
-  const doc = { id, path, position, rotation: rotationFor(id), zIndex: maxZ(s) + 1, missing: false };
+  if (s.docs.some((d) => d.fileId === fileId)) return s; // liegt schon auf dem Tisch
+  const doc = { id, fileId, name, position, rotation: rotationFor(id), zIndex: maxZ(s) + 1 };
   return { ...s, docs: [...s.docs, doc] };
 }
 
@@ -36,10 +37,3 @@ export function bringToFront(s: DesktopState, id: string): DesktopState {
   };
 }
 
-export function setDocPath(s: DesktopState, id: string, path: string): DesktopState {
-  return { ...s, docs: s.docs.map((d) => (d.id === id ? { ...d, path, missing: false } : d)) };
-}
-
-export function setMissing(s: DesktopState, id: string, missing: boolean): DesktopState {
-  return { ...s, docs: s.docs.map((d) => (d.id === id ? { ...d, missing } : d)) };
-}

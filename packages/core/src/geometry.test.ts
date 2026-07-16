@@ -5,9 +5,9 @@ import { stackDocs } from './stacks';
 import { docBox, stackBox, allBoxes, hitTest } from './geometry';
 
 function base(): DesktopState {
-  let s = addDoc(emptyState(), '/tmp/a.pdf', { x: 0, y: 0 }, 'id-a');
-  s = addDoc(s, '/tmp/b.pdf', { x: 50, y: 50 }, 'id-b');
-  return addDoc(s, '/tmp/c.pdf', { x: 1000, y: 1000 }, 'id-c');
+  let s = addDoc(emptyState(), 'file-a', 'a.pdf', { x: 0, y: 0 }, 'id-a');
+  s = addDoc(s, 'file-b', 'b.pdf', { x: 50, y: 50 }, 'id-b');
+  return addDoc(s, 'file-c', 'c.pdf', { x: 1000, y: 1000 }, 'id-c');
 }
 
 describe('Boxen', () => {
