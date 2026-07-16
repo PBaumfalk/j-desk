@@ -1,0 +1,20 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Digital Desktop: Dateizugriff, Dialoge, Öffnen in Standard-App",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "fs:default",
+    { "identifier": "fs:allow-read-file", "allow": [{ "path": "**" }, { "path": "$HOME/**" }] },
+    { "identifier": "fs:allow-read-text-file", "allow": [{ "path": "**" }, { "path": "$APPDATA/**" }] },
+    { "identifier": "fs:allow-write-file", "allow": [{ "path": "$APPDATA/**" }] },
+    { "identifier": "fs:allow-write-text-file", "allow": [{ "path": "$APPDATA/**" }] },
+    { "identifier": "fs:allow-copy-file", "allow": [{ "path": "$APPDATA/**" }] },
+    { "identifier": "fs:allow-mkdir", "allow": [{ "path": "$APPDATA/**" }] },
+    { "identifier": "fs:allow-exists", "allow": [{ "path": "**" }, { "path": "$HOME/**" }] },
+    { "identifier": "opener:allow-open-path", "allow": [{ "path": "**" }] },
+    { "identifier": "opener:allow-reveal-item-in-dir", "allow": [{ "path": "**" }] }
+  ]
+}
