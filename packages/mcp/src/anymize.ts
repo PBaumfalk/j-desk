@@ -40,10 +40,18 @@ export class AnymizeClient {
     return res;
   }
 
+  private async json<T>(res: Response): Promise<T> {
+    try {
+      return (await res.json()) as T;
+    } catch {
+      throw new AnymizeError('Anonymisierung nicht verfügbar — unerwartete Antwort von anymize', 'unavailable');
+    }
+  }
+
   private async job(path: string, init: RequestInit): Promise<{ text: string; pairs: HashPair[] }> {
     const start = await this.call(path, init);
     if (!start.ok) throw new AnymizeError(`Anonymisierung nicht verfügbar (anymize HTTP ${start.status})`, 'unavailable');
-    const { job_id: jobId } = (await start.json()) as { job_id: string };
+    const { job_id: jobId } = await this.json<{ job_id: string }>(start);
 
     const frist = Date.now() + this.timeout;
     let result: { text: string; entities_found?: number } | undefined;
@@ -51,9 +59,12 @@ export class AnymizeClient {
       if (Date.now() > frist) throw new AnymizeError('Anonymisierung dauert zu lange (Timeout)', 'timeout');
       const res = await this.call(`/api/status/${jobId}`, { method: 'GET' });
       if (!res.ok) throw new AnymizeError(`Anonymisierung nicht verfügbar (anymize HTTP ${res.status})`, 'unavailable');
-      const status = (await res.json()) as { status: string; result?: { text: string; entities_found?: number } };
+      const status = await this.json<{ status: string; result?: { text: string; entities_found?: number } }>(res);
       if (status.status === 'failed') throw new AnymizeError('Anonymisierung fehlgeschlagen (anymize-Job failed)', 'failed');
-      if (status.status === 'completed' && status.result) {
+      if (status.status === 'completed') {
+        if (!status.result) {
+          throw new AnymizeError('Anonymisierung fehlgeschlagen (anymize-Antwort ohne Ergebnis)', 'failed');
+        }
         result = status.result;
         break;
       }
@@ -67,7 +78,7 @@ export class AnymizeClient {
         'zdr',
       );
     }
-    const body = (await strings.json()) as { hash_pairs: { original: string; hash: string }[] };
+    const body = await this.json<{ hash_pairs: { original: string; hash: string }[] }>(strings);
     const pairs: HashPair[] = (body.hash_pairs ?? []).map((p) => ({ original: p.original, placeholder: p.hash }));
     if (pairs.length === 0 && (result.entities_found ?? 0) > 0) {
       throw new AnymizeError(

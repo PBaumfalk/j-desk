@@ -73,4 +73,21 @@ describe('AnymizeClient', () => {
     }));
     await expect(zdr.anonymizeText('x')).rejects.toMatchObject({ kind: 'zdr' });
   });
+
+  it('ok-Antwort mit Nicht-JSON-Body → unavailable', async () => {
+    const badJson = new AnymizeClient(cfg, fakeFetch((url, init) => {
+      if (init?.method === 'POST') return new Response('<html>', { status: 202 });
+      return undefined;
+    }));
+    await expect(badJson.anonymizeText('x')).rejects.toMatchObject({ kind: 'unavailable' });
+  });
+
+  it('Poll liefert completed OHNE result → failed', async () => {
+    const noResult = new AnymizeClient(cfg, fakeFetch((url, init) => {
+      if (init?.method === 'POST') return json(202, { job_id: 'j', status: 'processing' });
+      if (url.endsWith('/api/status/j')) return json(200, { status: 'completed' });
+      return undefined;
+    }));
+    await expect(noResult.anonymizeText('x')).rejects.toMatchObject({ kind: 'failed' });
+  });
 });
