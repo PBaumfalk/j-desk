@@ -27,4 +27,9 @@ export const desktop = {
     state = fn(state);
     if (!opts.transient) saveSoon();
   },
+
+  async saveNow(): Promise<void> {
+    saveSoon.cancel();
+    await saveState($state.snapshot(state));
+  },
 };

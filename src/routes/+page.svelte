@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { getCurrentWindow } from '@tauri-apps/api/window';
   import Desktop from '../lib/components/Desktop.svelte';
   import { desktop } from '../lib/store.svelte';
 
@@ -7,6 +8,12 @@
   onMount(async () => {
     window.addEventListener('contextmenu', (e) => e.preventDefault());
     await desktop.init();
+    const win = getCurrentWindow();
+    await win.onCloseRequested(async (event) => {
+      event.preventDefault();
+      await desktop.saveNow();
+      await win.destroy();
+    });
     ready = true;
   });
 </script>

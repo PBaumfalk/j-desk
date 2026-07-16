@@ -14,4 +14,15 @@ describe('debounce', () => {
     expect(fn).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
   });
+
+  it('cancel verhindert den ausstehenden Aufruf', () => {
+    vi.useFakeTimers();
+    const fn = vi.fn();
+    const d = debounce(400, fn);
+    d();
+    d.cancel();
+    vi.advanceTimersByTime(1000);
+    expect(fn).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
 });

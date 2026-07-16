@@ -43,7 +43,10 @@ export async function loadState(): Promise<DesktopState> {
 export async function saveState(s: DesktopState): Promise<void> {
   await ensureAppDataDir();
   if (await exists(FILE, base)) {
-    await copyFile(FILE, BAK, { fromPathBaseDir: BaseDirectory.AppData, toPathBaseDir: BaseDirectory.AppData });
+    const current = await readTextFile(FILE, base).catch(() => null);
+    if (current !== null && deserialize(current)) {
+      await copyFile(FILE, BAK, { fromPathBaseDir: BaseDirectory.AppData, toPathBaseDir: BaseDirectory.AppData });
+    }
   }
   await writeTextFile(FILE, JSON.stringify(s, null, 2), base);
 }

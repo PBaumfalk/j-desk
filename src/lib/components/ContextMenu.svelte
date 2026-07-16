@@ -3,7 +3,7 @@
 </script>
 
 {#if ui.menu}
-  <div class="backdrop" onpointerdown={() => (ui.menu = null)} oncontextmenu={(e) => { e.preventDefault(); ui.menu = null; }}></div>
+  <div class="backdrop" onpointerdown={(e) => { e.stopPropagation(); ui.menu = null; }} oncontextmenu={(e) => { e.preventDefault(); ui.menu = null; }}></div>
   <div class="menu" style:left="{ui.menu.x}px" style:top="{ui.menu.y}px">
     {#each ui.menu.items as item (item.label)}
       <button onpointerdown={(e) => e.stopPropagation()} onclick={() => { item.action(); ui.menu = null; }}>

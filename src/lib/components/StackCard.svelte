@@ -7,7 +7,7 @@
   import { addLink } from '../state/links';
   import { openPath } from '@tauri-apps/plugin-opener';
   import { ui } from '../ui.svelte';
-  import { showStackMenu } from '../menus';
+  import { showDocMenu, showStackMenu } from '../menus';
   import { getThumbnail } from '../thumbnails';
 
   let { stack, vp }: { stack: Stack; vp: Viewport } = $props();
@@ -88,7 +88,9 @@
   <div class="sheet s2"></div>
   <div class="sheet s1"></div>
   <div class="sheet top">
-    {#if thumb}
+    {#if topDoc?.missing}
+      <div class="warn">⚠️<br />Datei fehlt</div>
+    {:else if thumb}
       <img src={thumb} alt="" draggable="false" />
     {:else}
       <div class="fallback">PDF</div>
@@ -108,8 +110,9 @@
       {#each stack.docIds as docId (docId)}
         {@const d = findDoc(desktop.state, docId)}
         {#if d}
-          <div class="fan-card" onpointerdown={(e) => fanPointerDown(e, docId)}>
-            {d.path.split('/').pop()}
+          <div class="fan-card" onpointerdown={(e) => fanPointerDown(e, docId)}
+               oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showDocMenu(e, d); }}>
+            {d.missing ? '⚠️ ' : ''}{d.path.split('/').pop()}
           </div>
         {/if}
       {/each}
@@ -126,6 +129,7 @@
   .sheet.top { left: 0; top: 0; display: flex; align-items: center; justify-content: center; }
   .sheet img { width: 100%; height: 100%; object-fit: cover; object-position: top; pointer-events: none; }
   .fallback { font-weight: 700; color: #b33; font-size: 22px; }
+  .warn { text-align: center; font-size: 14px; }
   .badge { position: absolute; top: -10px; right: 2px; min-width: 22px; height: 22px; border-radius: 11px;
            background: #d9534f; color: #fff; font-size: 12px; font-weight: 700;
            display: flex; align-items: center; justify-content: center; padding: 0 5px; }

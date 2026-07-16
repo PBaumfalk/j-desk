@@ -28,6 +28,7 @@
     }
   }
   function onPointerDown(e: PointerEvent) {
+    if (e.button !== 0 || e.target !== el) return;
     panning = true;
     el.setPointerCapture(e.pointerId);
   }
