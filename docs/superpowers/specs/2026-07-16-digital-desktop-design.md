@@ -78,6 +78,10 @@ Regeln:
 - **Vitest (automatisiert):** die gesamte Zustandslogik als reine TypeScript-Funktionen ohne UI-Abhängigkeit — Dokumente hinzufügen/entfernen, Verknüpfungen anlegen/lösen, Stapel bilden/auffächern/auflösen, Aufräumen hängender Verknüpfungen, Laden/Migration der Zustandsdatei inkl. Backup-Fallback.
 - **Manuell:** Canvas-Interaktionen (Ziehen, Zoomen, Pan, Drag & Drop aus dem Finder) in der laufenden App.
 
+## Bekannte Einschränkungen (v1)
+
+- Beenden über das Dock-Menü, Abmelden oder Herunterfahren läuft auf macOS über `terminate:` direkt am System vorbei am App-Menü — dabei kann das letzte Autosave-Fenster (≤400 ms bzw. eine ununterbrochene Tipp-Serie) verloren gehen. Alle normalen Wege (Cmd+Q, Cmd+W, roter Schließen-Knopf) speichern vorher zuverlässig. Ohne eigenen Rust-Code (bewusst ausgeschlossen) ist dieser Pfad nicht abfangbar.
+
 ## Nicht im Umfang (v1)
 
 - Integrierter PDF-Viewer
