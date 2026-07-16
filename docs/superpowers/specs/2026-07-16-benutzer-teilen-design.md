@@ -75,8 +75,13 @@ DELETE /desks/:id/members/:userId  Besitzer entfernt jeden; jeder darf sich
                                    selbst entfernen („verlassen")
 
 — Benutzer —
+GET    /auth/me             id, username, isAdmin des eingeloggten Benutzers
+                            (Client braucht die eigene Identität nach
+                            Session-Restore: Konto-Menü, Besitzer-Logik)
 GET    /users               id, username, isAdmin — für alle Eingeloggten
                             (der Teilen-Dialog braucht die Namensliste)
+GET    /users/:id/desks     Admin: id, name der Schreibtische, die der
+                            Benutzer besitzt (für den Lösch-Bestätigungsdialog)
 POST   /users               Admin: {username, password} → Konto anlegen
 PATCH  /users/:id           Admin: {username} umbenennen
 POST   /users/:id/password  Admin: {password} zurücksetzen; löscht alle
@@ -110,7 +115,7 @@ Der Client unterscheidet diese Codes vom Netz-Abriss: **kein** Reconnect, sonder
 ## Client-UI
 
 - **Konto-Menü** (neu, Toolbar oben rechts): Button mit eigenem Benutzernamen öffnet Dropdown: *Passwort ändern…*, *Benutzerverwaltung…* (nur Admin), *Abmelden* (bisher ohne UI — `api.logout()` existiert ungenutzt).
-- **Benutzerverwaltung** (Dialog, nur Admin): Tabelle aller Konten (Name, Admin-Kennzeichen); pro Zeile umbenennen, Passwort zurücksetzen, löschen (Bestätigungsdialog listet vorher die mitzulöschenden Schreibtische — der Client holt sie vor dem Löschen vom Server). Oben: *Neues Konto* (Name + Anfangspasswort) und *Konto-Einladung erstellen* → Code zum Kopieren; Liste offener Einladungen mit Widerrufen.
+- **Benutzerverwaltung** (Dialog, nur Admin): Tabelle aller Konten (Name, Admin-Kennzeichen); pro Zeile umbenennen, Passwort zurücksetzen, löschen (Bestätigungsdialog listet vorher die mitzulöschenden Schreibtische — der Client holt sie via `GET /users/:id/desks`). Oben: *Neues Konto* (Name + Anfangspasswort) und *Konto-Einladung erstellen* → Code zum Kopieren; Liste offener Einladungen mit Widerrufen.
 - **Teilen-Dialog** (pro Desk, nur Besitzer; Eintrag *Teilen…* an der Desk-Zeile im DeskSwitcher): Mitgliederliste (entfernen per ✕), *Mitglied hinzufügen* als Auswahl aus `GET /users` (ohne Besitzer und bestehende Mitglieder), *Einladung für diesen Schreibtisch erstellen* → Code zum Kopieren; offene Einladungen des Desks mit Widerrufen.
 - **DeskSwitcher:** fremde (geteilte) Desks mit Zusatz „von *ownerName*"; dort ersetzt *Verlassen* die Besitzer-Aktionen (Umbenennen/Löschen/Teilen entfallen).
 - **Login-Maske:** dritter Modus „Einladung einlösen": Server-URL + Einladungscode, dann Wunsch-Benutzername + Passwort. `GET /auth/invite/:token` validiert vorab und zeigt ggf. „Du wirst zu Schreibtisch ‚X' eingeladen". Nach `redeem` direkt eingeloggt.
