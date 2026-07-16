@@ -1,10 +1,13 @@
 import WebSocket from '@tauri-apps/plugin-websocket';
 import { applyCommand, emptyState, type Command, type DesktopState } from '@digital-desktop/core';
-import type { ApiClient } from './api';
+import type { ApiClient, DeskInfo } from './api';
+import { saveLastDeskId } from './session';
 import { showToast } from './ui.svelte';
 
 let state = $state<DesktopState>(emptyState());
 let status = $state<'connecting' | 'online' | 'offline' | 'loggedOut'>('loggedOut');
+let desks = $state<DeskInfo[]>([]);
+let wsGeneration = 0;
 let rev = 0;
 let api: ApiClient | null = null;
 let deskId: string | null = null;
@@ -26,20 +29,21 @@ export const desktop = {
   get deskId(): string | null {
     return deskId;
   },
+  get desks(): DeskInfo[] {
+    return desks;
+  },
 
-  /** Nach erfolgreichem Login: ersten Schreibtisch laden (oder anlegen) und WS verbinden. */
-  async start(client: ApiClient): Promise<void> {
+  /** Nach erfolgreichem Login: Schreibtische laden, letzten (oder ersten) öffnen. */
+  async start(client: ApiClient, lastDeskId?: string): Promise<void> {
     clearTimeout(reconnectTimer);
     reconnectTimer = undefined;
     api = client;
     stopped = false;
     status = 'connecting';
-    const desks = await client.listDesks();
-    deskId = desks[0]?.id ?? (await client.createDesk('Schreibtisch 1')).id;
-    const result = await client.getState(deskId);
-    rev = result.rev;
-    state = result.state;
-    await connectWs();
+    desks = await client.listDesks();
+    if (desks.length === 0) desks = [await client.createDesk('Schreibtisch 1')];
+    const target = desks.find((d) => d.id === lastDeskId) ?? desks[0];
+    await loadDesk(target.id);
   },
 
   /** Nur lokal anwenden (Drag-Zwischenschritte) — der Server erfährt nichts. */
@@ -83,6 +87,71 @@ export const desktop = {
     }
   },
 
+  async switchDesk(id: string): Promise<void> {
+    if (!api || id === deskId) return;
+    if (status !== 'online') {
+      showToast('Offline — Aktion nicht möglich');
+      return;
+    }
+    status = 'connecting';
+    await closeWs();
+    try {
+      await loadDesk(id);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Wechsel fehlgeschlagen');
+      onDisconnected();
+    }
+  },
+
+  async createDesk(name: string): Promise<void> {
+    if (!api) return;
+    if (status !== 'online') {
+      showToast('Offline — Aktion nicht möglich');
+      return;
+    }
+    try {
+      const desk = await api.createDesk(name);
+      desks = await api.listDesks();
+      await this.switchDesk(desk.id);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Anlegen fehlgeschlagen');
+    }
+  },
+
+  async renameDesk(id: string, name: string): Promise<void> {
+    if (!api) return;
+    if (status !== 'online') {
+      showToast('Offline — Aktion nicht möglich');
+      return;
+    }
+    try {
+      await api.renameDesk(id, name);
+      desks = await api.listDesks();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Umbenennen fehlgeschlagen');
+    }
+  },
+
+  async deleteDesk(id: string): Promise<void> {
+    if (!api) return;
+    if (status !== 'online') {
+      showToast('Offline — Aktion nicht möglich');
+      return;
+    }
+    try {
+      await api.deleteDesk(id);
+      desks = await api.listDesks();
+      if (id === deskId) {
+        if (desks.length === 0) desks = [await api.createDesk('Schreibtisch 1')];
+        status = 'connecting';
+        await closeWs();
+        await loadDesk(desks[0].id);
+      }
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Löschen fehlgeschlagen');
+    }
+  },
+
   async stop(): Promise<void> {
     clearTimeout(reconnectTimer);
     reconnectTimer = undefined;
@@ -93,15 +162,42 @@ export const desktop = {
   },
 };
 
+/** Lädt Zustand + rev des Schreibtischs und verbindet den WebSocket. */
+async function loadDesk(id: string): Promise<void> {
+  if (!api) return;
+  deskId = id;
+  const result = await api.getState(id);
+  rev = result.rev; // Zähler gehört zum neuen Schreibtisch — nicht vergleichen
+  state = result.state;
+  await saveLastDeskId(id).catch(() => {});
+  await connectWs();
+}
+
+/** Trennt den aktuellen Socket und invalidiert dessen Listener (Generationswechsel). */
+async function closeWs(): Promise<void> {
+  wsGeneration++;
+  clearTimeout(reconnectTimer);
+  reconnectTimer = undefined;
+  const socket = ws;
+  ws = null;
+  await socket?.disconnect().catch(() => {});
+}
+
 async function connectWs(): Promise<void> {
   if (!api || !deskId || stopped) return;
+  const generation = ++wsGeneration;
   try {
     ws = await WebSocket.connect(api.wsUrl(deskId));
+    if (generation !== wsGeneration) {
+      // Während des Verbindens wurde gewechselt/geschlossen — diesen Socket verwerfen.
+      await ws?.disconnect().catch(() => {});
+      return;
+    }
     reconnectDelay = 1000;
     status = 'online';
     ws.addListener((msg) => {
-      // Bei abruptem Abriss (Server-Prozess weg) liefert das Plugin statt
-      // eines Close-Frames einen nackten Fehler-String — auch das ist ein Abriss.
+      if (generation !== wsGeneration) return;
+      // Bei abruptem Abriss liefert das Plugin statt eines Close-Frames einen Fehler-String.
       if (typeof msg === 'string') {
         onDisconnected();
         return;
@@ -117,7 +213,7 @@ async function connectWs(): Promise<void> {
       }
     });
   } catch {
-    onDisconnected();
+    if (generation === wsGeneration) onDisconnected();
   }
 }
 

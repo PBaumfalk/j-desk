@@ -14,7 +14,7 @@
 
   async function connect(session: Session): Promise<void> {
     const api = new ApiClient(session.serverUrl, session.token);
-    await desktop.start(api);
+    await desktop.start(api, session.lastDeskId);
     phase = 'desk';
     void maybeOfferV1Import(api);
   }
