@@ -42,7 +42,8 @@ Stapel:       id, name (optional), dokumentIds (geordnet), position {x, y}
 Regeln:
 
 - Ein Dokument liegt entweder frei auf der Fläche **oder** in genau einem Stapel.
-- Verknüpfungen können zwischen freien Dokumenten sowie zu/von Stapeln bestehen (Endpunkt ist Dokument- oder Stapel-id).
+- Verknüpfungen können zwischen Dokumenten sowie zu/von Stapeln bestehen (Endpunkt ist Dokument- oder Stapel-id).
+- Wandert ein verknüpftes Dokument in einen Stapel, bleibt die Verknüpfung am Dokument bestehen; die Linie endet visuell am Stapel, solange das Dokument darin liegt. Beim Herausziehen endet sie wieder am Dokument.
 - Beim Entfernen eines Dokuments/Stapels werden alle daran hängenden Verknüpfungen mit entfernt.
 - Miniaturen werden beim ersten Laden erzeugt und als PNG im App-Datenordner gecacht (Schlüssel: Dokument-id).
 
@@ -63,6 +64,8 @@ Regeln:
 **Öffnen:** Doppelklick → PDF in Vorschau (macOS-Standard-App).
 
 **Kontextmenü (Dokument):** Öffnen · Mit allen Verknüpften öffnen · Verknüpfen… · Im Finder zeigen · Vom Schreibtisch entfernen (löscht nie die Datei, nur die Karte).
+
+**Kontextmenü (Stapel):** Auffächern · Benennen… · Verknüpfen… · Stapel auflösen (Dokumente liegen danach einzeln daneben) · Vom Schreibtisch entfernen (entfernt alle enthaltenen Karten, löscht nie Dateien).
 
 ## Fehlerbehandlung
 
