@@ -44,7 +44,12 @@ export async function buildApp({ db, dataDir, webDir }: AppOptions): Promise<Fas
   }
 
   app.addHook('onRequest', async (req, reply) => {
-    const path = req.url.split('?')[0];
+    let path = req.url.split('?')[0];
+    try {
+      path = decodeURIComponent(path);
+    } catch {
+      return reply.code(400).send({ error: 'Ungültiger Pfad' });
+    }
     if (!path.startsWith('/api/')) return; // statische Auslieferung ist öffentlich
     if (PUBLIC_PATHS.has(path)) return;
     const token = bearerToken(req);

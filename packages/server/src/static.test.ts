@@ -48,6 +48,23 @@ describe('statische Auslieferung der Web-App', () => {
     expect([401, 404]).toContain(res.statusCode); // Auth-Hook greift vor dem Routing
   });
 
+  it('erkennt prozent-kodierte /api-Pfade im Auth-Hook (Bypass-Regression): /%61pi/v1/desks ohne Token 401', async () => {
+    // "%61" ist das kodierte "a" — Fastifys Router dekodiert den Pfad und matcht ihn auf /api/v1/desks,
+    // daher muss der Auth-Hook denselben dekodierten Pfad prüfen, sonst greift der Hook nicht (Bypass).
+    const res = await app.inject({ method: 'GET', url: '/%61pi/v1/desks' });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('erkennt prozent-kodierte /api-Pfade im Auth-Hook (Bypass-Regression): /%61pi/v1/files/xyz ohne Token 401', async () => {
+    const res = await app.inject({ method: 'GET', url: '/%61pi/v1/files/xyz' });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('lehnt ungültig kodierte Pfade mit 400 ab', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/%E0%A4%A' });
+    expect(res.statusCode).toBe(400);
+  });
+
   it('funktioniert ohne webDir wie bisher (kein Fallback)', async () => {
     const bare = await buildApp({ db, dataDir: dir });
     const res = await bare.inject({ method: 'GET', url: '/' });
