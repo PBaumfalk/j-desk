@@ -1,13 +1,11 @@
-import { BaseDirectory, exists, mkdir, readFile, writeFile } from '@tauri-apps/plugin-fs';
 import * as pdfjs from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { Doc } from '@digital-desktop/core';
 import type { ApiClient } from './api';
+import { THUMB_STORE, idbGet, idbPut } from './idb';
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
-const base = { baseDir: BaseDirectory.AppData };
-const cachePath = (fileId: string) => `thumbnails/${fileId}.png`;
 const urls = new Map<string, string>();
 
 function remember(fileId: string, bytes: Uint8Array): string {
@@ -21,9 +19,8 @@ export async function getThumbnail(api: ApiClient, doc: Doc): Promise<string | n
   const cached = urls.get(doc.fileId);
   if (cached) return cached;
   try {
-    if (await exists(cachePath(doc.fileId), base)) {
-      return remember(doc.fileId, await readFile(cachePath(doc.fileId), base));
-    }
+    const stored = await idbGet(THUMB_STORE, doc.fileId).catch(() => null);
+    if (stored) return remember(doc.fileId, stored);
     const data = await api.fetchFile(doc.fileId);
     const pdf = await pdfjs.getDocument({ data }).promise;
     const page = await pdf.getPage(1);
@@ -37,8 +34,7 @@ export async function getThumbnail(api: ApiClient, doc: Doc): Promise<string | n
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob fehlgeschlagen'))), 'image/png'),
     );
     const bytes = new Uint8Array(await blob.arrayBuffer());
-    await mkdir('thumbnails', { ...base, recursive: true }).catch(() => {});
-    await writeFile(cachePath(doc.fileId), bytes, base).catch(() => {});
+    await idbPut(THUMB_STORE, doc.fileId, bytes).catch(() => {});
     return remember(doc.fileId, bytes);
   } catch {
     return null; // defekt oder (noch) nicht ladbar → generisches Symbol
