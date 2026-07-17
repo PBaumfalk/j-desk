@@ -1,4 +1,3 @@
-import WebSocket from '@tauri-apps/plugin-websocket';
 import { applyCommand, emptyState, type Command, type DesktopState } from '@digital-desktop/core';
 import type { ApiClient, DeskInfo } from './api';
 import { saveLastDeskId } from './session';
@@ -11,7 +10,7 @@ let wsGeneration = 0;
 let rev = 0;
 let api: ApiClient | null = null;
 let deskId: string | null = null;
-let ws: Awaited<ReturnType<typeof WebSocket.connect>> | null = null;
+let ws: WebSocket | null = null;
 let reconnectDelay = 1000;
 let stopped = false;
 let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
@@ -94,7 +93,7 @@ export const desktop = {
       return;
     }
     status = 'connecting';
-    await closeWs();
+    closeWs();
     try {
       await loadDesk(id);
     } catch (e) {
@@ -144,7 +143,7 @@ export const desktop = {
       if (id === deskId) {
         if (desks.length === 0) desks = [await api.createDesk('Schreibtisch 1')];
         status = 'connecting';
-        await closeWs();
+        closeWs();
         try {
           await loadDesk(desks[0].id);
         } catch (e) {
@@ -162,7 +161,7 @@ export const desktop = {
     reconnectTimer = undefined;
     stopped = true;
     status = 'loggedOut';
-    await ws?.disconnect().catch(() => {});
+    ws?.close();
     ws = null;
   },
 };
@@ -174,53 +173,53 @@ async function loadDesk(id: string): Promise<void> {
   const result = await api.getState(id);
   rev = result.rev; // Zähler gehört zum neuen Schreibtisch — nicht vergleichen
   state = result.state;
-  await saveLastDeskId(id).catch(() => {});
-  await connectWs();
+  saveLastDeskId(id);
+  connectWs();
 }
 
 /** Trennt den aktuellen Socket und invalidiert dessen Listener (Generationswechsel). */
-async function closeWs(): Promise<void> {
+function closeWs(): void {
   wsGeneration++;
   clearTimeout(reconnectTimer);
   reconnectTimer = undefined;
   const socket = ws;
   ws = null;
-  await socket?.disconnect().catch(() => {});
+  socket?.close();
 }
 
-async function connectWs(): Promise<void> {
+function connectWs(): void {
   if (!api || !deskId || stopped) return;
   const generation = ++wsGeneration;
+  let socket: WebSocket;
   try {
-    const socket = await WebSocket.connect(api.wsUrl(deskId));
+    socket = new WebSocket(api.wsUrl(deskId));
+  } catch {
+    onDisconnected();
+    return;
+  }
+  socket.onopen = () => {
     if (generation !== wsGeneration) {
       // Während des Verbindens wurde gewechselt/geschlossen — diesen Socket verwerfen.
-      await socket.disconnect().catch(() => {});
+      socket.close();
       return;
     }
     ws = socket;
     reconnectDelay = 1000;
     status = 'online';
-    ws.addListener((msg) => {
-      if (generation !== wsGeneration) return;
-      // Bei abruptem Abriss liefert das Plugin statt eines Close-Frames einen Fehler-String.
-      if (typeof msg === 'string') {
-        onDisconnected();
-        return;
-      }
-      if (msg.type === 'Text') {
-        const data = JSON.parse(msg.data as string) as { rev: number; state: DesktopState };
-        if (data.rev >= rev) {
-          rev = data.rev;
-          state = data.state;
-        }
-      } else if (msg.type === 'Close') {
-        onDisconnected();
-      }
-    });
-  } catch {
+  };
+  socket.onmessage = (ev) => {
+    if (generation !== wsGeneration) return;
+    const data = JSON.parse(ev.data as string) as { rev: number; state: DesktopState };
+    if (data.rev >= rev) {
+      rev = data.rev;
+      state = data.state;
+    }
+  };
+  socket.onclose = () => {
+    // Der native WebSocket feuert onclose auch nach onerror und nach fehlgeschlagenem
+    // Verbindungsaufbau — ein einziger Einstiegspunkt für die Reconnect-Logik.
     if (generation === wsGeneration) onDisconnected();
-  }
+  };
 }
 
 function onDisconnected(): void {
