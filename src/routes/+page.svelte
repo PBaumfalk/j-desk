@@ -7,7 +7,6 @@
   import { desktop } from '../lib/store.svelte';
   import { ApiClient, ApiError } from '../lib/api';
   import { loadSession, clearSession, type Session } from '../lib/session';
-  import { maybeOfferV1Import } from '../lib/importV1';
 
   let phase = $state<'loading' | 'login' | 'desk'>('loading');
   let lastServerUrl = $state('http://localhost:4810');
@@ -16,7 +15,6 @@
     const api = new ApiClient(session.serverUrl, session.token);
     await desktop.start(api, session.lastDeskId);
     phase = 'desk';
-    void maybeOfferV1Import(api);
   }
 
   onMount(async () => {
