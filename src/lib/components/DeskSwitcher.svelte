@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { ask } from '@tauri-apps/plugin-dialog';
   import { desktop } from '../store.svelte';
 
   let open = $state(false);
@@ -33,9 +32,8 @@
 
   async function loeschen() {
     if (!desktop.deskId || !aktiv) return;
-    const ja = await ask(
+    const ja = confirm(
       `„${aktiv.name}" löschen? Karten und Verknüpfungen dieses Schreibtischs werden entfernt. Die PDF-Dateien bleiben in der Server-Ablage erhalten.`,
-      { title: 'Digital Desktop', kind: 'warning' },
     );
     if (ja) {
       await desktop.deleteDesk(desktop.deskId);

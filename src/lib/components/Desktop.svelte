@@ -1,8 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { open as openDialog } from '@tauri-apps/plugin-dialog';
-  import { readFile } from '@tauri-apps/plugin-fs';
-  import { getCurrentWebview } from '@tauri-apps/api/webview';
   import {
     freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes,
     type Vec2, type Viewport,
@@ -19,6 +16,7 @@
   let el: HTMLDivElement;
   let panning = $state(false);
   let spaceDown = $state(false);
+  let fileInput: HTMLInputElement;
 
   function onWheel(e: WheelEvent) {
     e.preventDefault();
@@ -44,25 +42,34 @@
     vp = zoomToFit(allBoxes(desktop.state), { w: el.clientWidth, h: el.clientHeight });
   }
 
-  async function addPdfFromPath(path: string, position: Vec2): Promise<void> {
+  async function addPdfFile(file: File, position: Vec2): Promise<void> {
     if (!desktop.api) return;
-    const name = path.split('/').pop() ?? 'Dokument.pdf';
     try {
-      const fileId = await desktop.api.uploadFile(await readFile(path), name);
-      await desktop.command('addDoc', { fileId, name, position, id: crypto.randomUUID() });
+      const fileId = await desktop.api.uploadFile(new Uint8Array(await file.arrayBuffer()), file.name);
+      await desktop.command('addDoc', { fileId, name: file.name, position, id: crypto.randomUUID() });
     } catch (e) {
-      showToast(e instanceof Error ? e.message : `Upload fehlgeschlagen: ${name}`);
+      showToast(e instanceof Error ? e.message : `Upload fehlgeschlagen: ${file.name}`);
     }
   }
 
-  async function addViaDialog(): Promise<void> {
-    const picked = await openDialog({ multiple: true, filters: [{ name: 'PDF', extensions: ['pdf'] }] });
-    if (!picked) return;
+  function onFilesPicked(): void {
+    const files = Array.from(fileInput.files ?? []);
+    fileInput.value = '';
     const center = screenToWorld(vp, { x: el.clientWidth / 2, y: el.clientHeight / 2 });
-    const paths = Array.isArray(picked) ? picked : [picked];
-    for (const [i, p] of paths.entries()) {
-      await addPdfFromPath(p, { x: center.x + i * 28, y: center.y + i * 20 });
-    }
+    files.forEach((f, i) => void addPdfFile(f, { x: center.x + i * 28, y: center.y + i * 20 }));
+  }
+
+  function onDragOver(e: DragEvent): void {
+    e.preventDefault();
+  }
+
+  function onDrop(e: DragEvent): void {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer?.files ?? []).filter(
+      (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'),
+    );
+    const world = screenToWorld(vp, { x: e.clientX, y: e.clientY });
+    files.forEach((f, i) => void addPdfFile(f, { x: world.x + i * 28, y: world.y + i * 20 }));
   }
 
   onMount(() => {
@@ -78,30 +85,17 @@
     };
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
-    let unlisten: (() => void) | undefined;
-    getCurrentWebview()
-      .onDragDropEvent((e) => {
-        if (e.payload.type !== 'drop') return;
-        const dpr = window.devicePixelRatio;
-        const world = screenToWorld(vp, { x: e.payload.position.x / dpr, y: e.payload.position.y / dpr });
-        e.payload.paths
-          .filter((p) => p.toLowerCase().endsWith('.pdf'))
-          .forEach((p, i) => void addPdfFromPath(p, { x: world.x + i * 28, y: world.y + i * 20 }));
-      })
-      .then((u) => {
-        unlisten = u;
-      });
     return () => {
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
-      unlisten?.();
     };
   });
 
 </script>
 
 <div class="desk" bind:this={el} class:grabbing={spaceDown || panning}
-     onwheel={onWheel} onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp}>
+     onwheel={onWheel} onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp}
+     ondragover={onDragOver} ondrop={onDrop}>
   <div class="world" style:transform="translate({vp.x}px, {vp.y}px) scale({vp.scale})">
     <LinkLayer />
     {#each freeDocs(desktop.state) as doc (doc.id)}
@@ -113,7 +107,15 @@
   </div>
   <DeskSwitcher />
   <div class="toolbar">
-    <button onclick={() => void addViaDialog()} title="PDF hinzufügen">＋ PDF</button>
+    <input
+      bind:this={fileInput}
+      type="file"
+      accept="application/pdf,.pdf"
+      multiple
+      hidden
+      onchange={onFilesPicked}
+    />
+    <button onclick={() => fileInput.click()} title="PDF hinzufügen">＋ PDF</button>
     <button onclick={fitAll}>Übersicht</button>
   </div>
   {#if ui.linkingFromId}
