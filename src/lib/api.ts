@@ -1,4 +1,3 @@
-import { fetch } from '@tauri-apps/plugin-http';
 import type { Command, DesktopState } from '@digital-desktop/core';
 
 export class ApiError extends Error {
@@ -19,10 +18,7 @@ export interface DeskState {
 }
 
 export class ApiClient {
-  constructor(
-    public baseUrl: string,
-    public token: string | null = null,
-  ) {}
+  constructor(public baseUrl = '', public token: string | null = null) {}
 
   private authHeaders(): Record<string, string> {
     return this.token ? { authorization: `Bearer ${this.token}` } : {};
@@ -116,6 +112,7 @@ export class ApiClient {
   }
 
   wsUrl(deskId: string): string {
-    return `${this.baseUrl.replace(/^http/, 'ws')}/api/v1/desks/${deskId}/ws?token=${this.token ?? ''}`;
+    const base = this.baseUrl || location.origin;
+    return `${base.replace(/^http/, 'ws')}/api/v1/desks/${deskId}/ws?token=${this.token ?? ''}`;
   }
 }
