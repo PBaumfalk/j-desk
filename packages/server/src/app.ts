@@ -3,6 +3,7 @@ import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import websocket from '@fastify/websocket';
+import fastifyStatic from '@fastify/static';
 import { CommandError, type Command } from '@digital-desktop/core';
 import type { Db } from './db';
 import { needsSetup, createUser, login, logout, validateToken, AuthError } from './auth';
@@ -16,6 +17,7 @@ import { register, unregister, broadcast } from './broadcast';
 export interface AppOptions {
   db: Db;
   dataDir: string;
+  webDir?: string;
 }
 
 const PUBLIC_PATHS = new Set(['/api/v1/auth/status', '/api/v1/auth/login', '/api/v1/auth/setup']);
@@ -27,14 +29,23 @@ function bearerToken(req: FastifyRequest): string | null {
   return query?.token ?? null;
 }
 
-export async function buildApp({ db, dataDir }: AppOptions): Promise<FastifyInstance> {
+export async function buildApp({ db, dataDir, webDir }: AppOptions): Promise<FastifyInstance> {
   const app = Fastify();
   await app.register(cors, { origin: true });
   await app.register(multipart, { limits: { fileSize: 100 * 1024 * 1024 } });
   await app.register(websocket);
+  if (webDir) {
+    await app.register(fastifyStatic, { root: webDir, wildcard: false });
+    // SPA-Fallback: unbekannte GET-Pfade außerhalb der API liefern die App.
+    app.setNotFoundHandler((req, reply) => {
+      if (req.method === 'GET' && !req.url.startsWith('/api/')) return reply.sendFile('index.html');
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    });
+  }
 
   app.addHook('onRequest', async (req, reply) => {
     const path = req.url.split('?')[0];
+    if (!path.startsWith('/api/')) return; // statische Auslieferung ist öffentlich
     if (PUBLIC_PATHS.has(path)) return;
     const token = bearerToken(req);
     const session = token ? validateToken(db, token) : null;
