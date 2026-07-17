@@ -1,23 +1,24 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { ApiClient, ApiError } from '../api';
   import { saveSession, type Session } from '../session';
 
-  let { onConnected, initialServerUrl = 'http://localhost:4810' }: { onConnected: (s: Session) => Promise<void>; initialServerUrl?: string } = $props();
+  let { onConnected }: { onConnected: (s: Session) => Promise<void> } = $props();
 
-  let serverUrl = $state(initialServerUrl);
   let username = $state('');
   let password = $state('');
   let needsSetup = $state<boolean | null>(null);
   let error = $state('');
   let busy = $state(false);
 
+  onMount(() => void checkServer());
+
   async function checkServer(): Promise<void> {
     error = '';
-    needsSetup = null;
     try {
-      needsSetup = (await new ApiClient(serverUrl).status()).needsSetup;
+      needsSetup = (await new ApiClient().status()).needsSetup;
     } catch {
-      error = 'Server nicht erreichbar — URL prüfen';
+      error = 'Server nicht erreichbar — später erneut versuchen';
     }
   }
 
@@ -26,11 +27,11 @@
     error = '';
     try {
       if (needsSetup === null) await checkServer();
-      const api = new ApiClient(serverUrl);
+      const api = new ApiClient();
       if (needsSetup) await api.setup(username, password);
       else await api.login(username, password);
-      const session = { serverUrl, token: api.token! };
-      await saveSession(session);
+      const session = { token: api.token! };
+      saveSession(session);
       await onConnected(session);
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Verbindung fehlgeschlagen';
@@ -43,14 +44,11 @@
 <div class="wrap">
   <form class="card" onsubmit={(e) => { e.preventDefault(); void submit(); }}>
     <h1>Digital Desktop</h1>
-    <label>Server-URL
-      <input bind:value={serverUrl} onblur={() => void checkServer()} placeholder="http://192.168.1.10:4810" />
-    </label>
     {#if needsSetup}<p class="hint">Ersteinrichtung: Lege das erste Konto an (Passwort min. 8 Zeichen).</p>{/if}
     <label>Benutzername <input bind:value={username} autocomplete="username" /></label>
     <label>Passwort <input type="password" bind:value={password} autocomplete="current-password" /></label>
     {#if error}<p class="error">{error}</p>{/if}
-    <button disabled={busy || !serverUrl || !username || !password}>
+    <button disabled={busy || !username || !password}>
       {needsSetup ? 'Konto anlegen' : 'Anmelden'}
     </button>
   </form>
