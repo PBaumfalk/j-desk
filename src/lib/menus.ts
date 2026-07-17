@@ -1,16 +1,18 @@
-import { save as saveDialog } from '@tauri-apps/plugin-dialog';
-import { openPath } from '@tauri-apps/plugin-opener';
-import { writeFile } from '@tauri-apps/plugin-fs';
 import { collectLinkedDocs, type Doc, type Stack } from '@digital-desktop/core';
 import { desktop } from './store.svelte';
 import { ui, showToast } from './ui.svelte';
-import { ensureCached } from './fileCache';
+import { getFileUrl } from './fileCache';
 
 export async function openDoc(doc: Doc): Promise<void> {
   if (!desktop.api) return;
+  // Fenster synchron zur Nutzergeste öffnen, sonst greift der Popup-Blocker.
+  const win = window.open('', '_blank');
   try {
-    await openPath(await ensureCached(desktop.api, doc.fileId));
+    const url = await getFileUrl(desktop.api, doc.fileId);
+    if (win) win.location.href = url;
+    else window.open(url, '_blank');
   } catch (e) {
+    win?.close();
     showToast(e instanceof Error ? e.message : 'Öffnen fehlgeschlagen');
   }
 }
@@ -21,11 +23,12 @@ export function openWithLinked(entityId: string): void {
 
 export async function downloadDoc(doc: Doc): Promise<void> {
   if (!desktop.api) return;
-  const target = await saveDialog({ defaultPath: doc.name });
-  if (typeof target !== 'string') return;
   try {
-    await writeFile(target, await desktop.api.fetchFile(doc.fileId));
-    showToast(`Gespeichert: ${doc.name}`);
+    const a = document.createElement('a');
+    a.href = await getFileUrl(desktop.api, doc.fileId);
+    a.download = doc.name;
+    a.click();
+    showToast(`Heruntergeladen: ${doc.name}`);
   } catch (e) {
     showToast(e instanceof Error ? e.message : 'Herunterladen fehlgeschlagen');
   }
