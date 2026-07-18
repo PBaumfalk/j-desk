@@ -124,6 +124,25 @@ describe('Kommandos', () => {
   });
 });
 
+describe('Konverter-Ticket-Quelle', () => {
+  it('convert-source: Einmal-Ticket liefert Originalbytes genau einmal, ohne Auth-Header', async () => {
+    const { app, db, dataDir } = await createTestApp();
+    const { storeFile } = await import('./files');
+    const meta = storeFile(db, dataDir, pdf, 'a.pdf');
+    const ticket = app.fileTickets.issue({ fileId: meta.id });
+
+    const res1 = await app.inject({ method: 'GET', url: `/api/v1/convert-source/${ticket}` });
+    expect(res1.statusCode).toBe(200);
+    expect(res1.rawPayload.subarray(0, 5).toString()).toBe('%PDF-');
+
+    const res2 = await app.inject({ method: 'GET', url: `/api/v1/convert-source/${ticket}` });
+    expect(res2.statusCode).toBe(404); // verbraucht
+
+    const res3 = await app.inject({ method: 'GET', url: '/api/v1/convert-source/quatsch' });
+    expect(res3.statusCode).toBe(404);
+  });
+});
+
 describe('Dateien (echter HTTP-Server für multipart)', () => {
   it('Upload, Dedup, Ablehnung und Download', async () => {
     const { app, authHeaders } = await createTestApp();

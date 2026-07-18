@@ -110,3 +110,37 @@ export function createWsTickets(ttlMs = 30_000): WsTickets {
     },
   };
 }
+
+/** Payload eines Konverter-Tickets — Task 5 ergänzt hier bei Bedarf j-lawyer-Felder (z. B. caseId). */
+export interface FileTicketPayload {
+  fileId: string;
+}
+
+export interface FileTickets {
+  issue(payload: FileTicketPayload): string;
+  consume(ticket: string): FileTicketPayload | null;
+}
+
+/**
+ * Kurzlebige Einmal-Tickets für den Dokument-Konverter: der externe Konverter holt
+ * sich die Originalbytes per einfachem GET ohne Auth-Header — das Ticket ersetzt hier
+ * die Authentifizierung. Selbes Muster wie createWsTickets, nur TTL 60 s und für
+ * Dateizugriff statt WebSocket-Aufbau.
+ */
+export function createFileTickets(ttlMs = 60_000): FileTickets {
+  const tickets = new Map<string, { payload: FileTicketPayload; expires: number }>();
+  return {
+    issue(payload) {
+      for (const [t, v] of tickets) if (v.expires < Date.now()) tickets.delete(t);
+      const ticket = randomBytes(32).toString('hex');
+      tickets.set(ticket, { payload, expires: Date.now() + ttlMs });
+      return ticket;
+    },
+    consume(ticket) {
+      const entry = tickets.get(ticket);
+      if (!entry) return null;
+      tickets.delete(ticket); // Einmal-Nutzung
+      return entry.expires < Date.now() ? null : entry.payload;
+    },
+  };
+}

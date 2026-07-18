@@ -8,8 +8,8 @@ import fastifyStatic from '@fastify/static';
 import { CommandError, addDoc, removeDoc, trashedFileIds, type Command, type DesktopState } from '@digital-desktop/core';
 import type { Db } from './db';
 import {
-  needsSetup, createUser, login, logout, validateToken, createWsTickets,
-  createSession, ensureExternalUser, AuthError,
+  needsSetup, createUser, login, logout, validateToken, createWsTickets, createFileTickets,
+  createSession, ensureExternalUser, AuthError, type FileTickets,
 } from './auth';
 import {
   validateLogin, listCases, listDocuments, getDocumentMeta, getDocumentContent,
@@ -31,6 +31,13 @@ export interface AppOptions {
 }
 
 const PUBLIC_PATHS = new Set(['/api/v1/auth/status', '/api/v1/auth/login', '/api/v1/auth/setup']);
+const CONVERT_SOURCE_PREFIX = '/api/v1/convert-source/';
+
+declare module 'fastify' {
+  interface FastifyInstance {
+    fileTickets: FileTickets;
+  }
+}
 
 function bearerToken(req: FastifyRequest): string | null {
   // Nur der Authorization-Header — Tokens in Query-Strings landen in Logs und Proxies.
@@ -43,6 +50,8 @@ const WS_PATH = /^\/api\/v1\/desks\/[^/]+\/ws$/;
 export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions): Promise<FastifyInstance> {
   const app = Fastify();
   const wsTickets = createWsTickets();
+  const fileTickets = createFileTickets();
+  app.decorate('fileTickets', fileTickets);
   // j-lawyer-Modus: Basic-Credentials der Sitzungen leben ausschließlich im RAM
   // (nie persistiert; nach Server-Neustart melden sich alle neu an — Spec-Entscheidung).
   const jlCreds = new Map<string, { username: string; password: string }>();
@@ -67,6 +76,8 @@ export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions):
     }
     if (!path.startsWith('/api/')) return; // statische Auslieferung ist öffentlich
     if (PUBLIC_PATHS.has(path)) return;
+    // Konverter-Quelle: das Einmal-Ticket in der URL ersetzt die Auth (einmalig + kurzlebig, s. Route unten).
+    if (path.startsWith(CONVERT_SOURCE_PREFIX)) return;
     if (WS_PATH.test(path)) {
       // Browser-WebSockets können keine Header setzen — hier gilt ausschließlich das Einmal-Ticket.
       const ticket = (req.query as { ticket?: string })?.ticket;
@@ -370,6 +381,18 @@ export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions):
     app.post('/api/v1/files', async (_req, reply) =>
       reply.code(400).send({ error: 'Uploads erfolgen in die Akte (POST /api/v1/cases/:id/documents)' }));
   }
+
+  // ---- Konverter-Quelle (Einmal-Ticket statt Auth, s. Hook-Ausnahme oben) ----
+  app.get('/api/v1/convert-source/:ticket', async (req, reply) => {
+    const { ticket } = req.params as { ticket: string };
+    const payload = fileTickets.consume(ticket);
+    if (!payload) return reply.code(404).send({ error: 'Ticket ungültig oder abgelaufen' });
+    const path = getFilePath(db, dataDir, payload.fileId);
+    if (!path) return reply.code(404).send({ error: 'Datei nicht gefunden' });
+    // Kein content-type-Rätselraten hier — der DocumentServer sniffed selbst.
+    reply.header('content-type', 'application/octet-stream');
+    return readFileSync(path);
+  });
 
   // ---- WebSocket ----
   app.post('/api/v1/ws-ticket', async (req) => ({
