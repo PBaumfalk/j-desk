@@ -20,7 +20,17 @@ export interface FakeConvertServer {
   /** Quell-URLs, die der Fake tatsächlich selbst abgerufen hat. */
   fetchedSourceUrls: string[];
   /** Verhalten für einen bestimmten cacheKey festlegen (vor dem jeweiligen Aufruf). */
-  configure(key: string, opts: { pollsUntilDone?: number; errorCode?: string }): void;
+  configure(
+    key: string,
+    opts: {
+      pollsUntilDone?: number;
+      errorCode?: string;
+      /** Fehlercode ohne endConvert:true melden (reale OnlyOffice-/Euro-Office-Server tun das). */
+      errorWithoutEndConvert?: boolean;
+      /** Request annehmen, aber nie antworten (simuliert einen hängenden DS). */
+      hang?: boolean;
+    },
+  ): void;
   stop(): Promise<void>;
 }
 
@@ -30,7 +40,10 @@ export function startFakeConvertServer(secret = 'test-convert-secret'): Promise<
   const requests: string[] = [];
   const convertCalls: string[] = [];
   const fetchedSourceUrls: string[] = [];
-  const configs = new Map<string, { pollsUntilDone: number; errorCode?: string }>();
+  const configs = new Map<
+    string,
+    { pollsUntilDone: number; errorCode?: string; errorWithoutEndConvert?: boolean; hang?: boolean }
+  >();
   const pollCounts = new Map<string, number>();
   const fetchedKeys = new Set<string>();
   let baseUrl = '';
@@ -78,8 +91,12 @@ export function startFakeConvertServer(secret = 'test-convert-secret'): Promise<
           }
         }
         const cfg = configs.get(key) ?? { pollsUntilDone: 0 };
+        if (cfg.hang) {
+          // Nie antworten: simuliert einen hängenden DocumentServer.
+          return;
+        }
         if (cfg.errorCode) {
-          return json(200, { endConvert: true, percent: 100, error: cfg.errorCode });
+          return json(200, { endConvert: !cfg.errorWithoutEndConvert, percent: 100, error: cfg.errorCode });
         }
         const count = (pollCounts.get(key) ?? 0) + 1;
         pollCounts.set(key, count);
@@ -112,9 +129,20 @@ export function startFakeConvertServer(secret = 'test-convert-secret'): Promise<
         convertCalls,
         fetchedSourceUrls,
         configure(key, opts) {
-          configs.set(key, { pollsUntilDone: opts.pollsUntilDone ?? 0, errorCode: opts.errorCode });
+          configs.set(key, {
+            pollsUntilDone: opts.pollsUntilDone ?? 0,
+            errorCode: opts.errorCode,
+            errorWithoutEndConvert: opts.errorWithoutEndConvert,
+            hang: opts.hang,
+          });
         },
-        stop: () => new Promise<void>((r) => server.close(() => r())),
+        stop: () =>
+          new Promise<void>((r) => {
+            // closeAllConnections: hängende (nie beantwortete) Requests dürfen den Server-Shutdown
+            // in Tests nicht blockieren.
+            server.closeAllConnections();
+            server.close(() => r());
+          }),
       });
     });
   });

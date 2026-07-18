@@ -54,12 +54,21 @@ interface ConvertResponse {
   error?: unknown;
 }
 
+/** Erzeugt einen AbortController, der spätestens zur übergebenen Deadline (Date.now()-Timestamp) abbricht. */
+function deadlineController(deadline: number): { controller: AbortController; clear: () => void } {
+  const controller = new AbortController();
+  const remaining = Math.max(1, deadline - Date.now());
+  const timer = setTimeout(() => controller.abort(), remaining);
+  return { controller, clear: () => clearTimeout(timer) };
+}
+
 async function attemptConvert(
   config: ConvertConfig,
   fileId: string,
   cacheKey: string,
   sourceName: string,
   sourceUrl: (fileId: string) => string,
+  deadline: number,
 ): Promise<ConvertResponse> {
   const bodyWithoutToken = {
     async: true,
@@ -75,6 +84,7 @@ async function attemptConvert(
   const authToken = signJwtHS256({ payload: body }, config.jwtSecret);
 
   let res: Response;
+  const { controller, clear } = deadlineController(deadline);
   try {
     res = await fetch(`${config.url.replace(/\/+$/, '')}/ConvertService.ashx`, {
       method: 'POST',
@@ -84,9 +94,12 @@ async function attemptConvert(
         authorization: `Bearer ${authToken}`,
       },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
   } catch {
     throw new ConvertError('Vorschau-Dienst nicht erreichbar', 'unavailable');
+  } finally {
+    clear();
   }
   if (!res.ok) {
     throw new ConvertError(`Konvertierung fehlgeschlagen (Code ${res.status})`, 'failed');
@@ -94,12 +107,15 @@ async function attemptConvert(
   return (await res.json()) as ConvertResponse;
 }
 
-async function downloadToCache(fileUrl: string, cacheDir: string, cachePath: string): Promise<void> {
+async function downloadToCache(fileUrl: string, cacheDir: string, cachePath: string, deadline: number): Promise<void> {
   let res: Response;
+  const { controller, clear } = deadlineController(deadline);
   try {
-    res = await fetch(fileUrl);
+    res = await fetch(fileUrl, { signal: controller.signal });
   } catch {
     throw new ConvertError('Vorschau-Dienst nicht erreichbar', 'unavailable');
+  } finally {
+    clear();
   }
   if (!res.ok) {
     throw new ConvertError(`Konvertierung fehlgeschlagen (Code ${res.status})`, 'failed');
@@ -116,6 +132,13 @@ async function downloadToCache(fileUrl: string, cacheDir: string, cachePath: str
   }
 }
 
+/** Reale OnlyOffice-/Euro-Office-Server melden Fehlschläge oft als {error: -N} OHNE endConvert:true. */
+function checkError(result: ConvertResponse): void {
+  if (result.error !== undefined && result.error !== null) {
+    throw new ConvertError(`Konvertierung fehlgeschlagen (Code ${result.error})`, 'failed');
+  }
+}
+
 async function convert(
   config: ConvertConfig,
   fileId: string,
@@ -128,21 +151,21 @@ async function convert(
   timeoutMs: number,
 ): Promise<string> {
   const start = Date.now();
-  let result = await attemptConvert(config, fileId, cacheKey, sourceName, sourceUrl);
+  const deadline = start + timeoutMs;
+  let result = await attemptConvert(config, fileId, cacheKey, sourceName, sourceUrl, deadline);
+  checkError(result);
   while (!result.endConvert) {
     if (Date.now() - start > timeoutMs) {
       throw new ConvertError('Konvertierung dauert zu lange', 'failed');
     }
     await sleep(pollIntervalMs);
-    result = await attemptConvert(config, fileId, cacheKey, sourceName, sourceUrl);
-  }
-  if (result.error !== undefined && result.error !== null) {
-    throw new ConvertError(`Konvertierung fehlgeschlagen (Code ${result.error})`, 'failed');
+    result = await attemptConvert(config, fileId, cacheKey, sourceName, sourceUrl, deadline);
+    checkError(result);
   }
   if (!result.fileUrl) {
     throw new ConvertError('Konvertierung fehlgeschlagen (keine fileUrl)', 'failed');
   }
-  await downloadToCache(result.fileUrl, cacheDir, cachePath);
+  await downloadToCache(result.fileUrl, cacheDir, cachePath, deadline);
   return cachePath;
 }
 

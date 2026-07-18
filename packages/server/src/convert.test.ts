@@ -113,4 +113,32 @@ describe('Euro-Office-Konvertierung (convert.ts)', () => {
     expect(fake.fetchedSourceUrls).toContain(expectedUrl);
     expect(source.requests.some((r) => r.includes('/f7'))).toBe(true);
   });
+
+  it('meldet DS-Fehler ohne endConvert sofort als failed (nicht erst nach Voll-Timeout)', async () => {
+    fake.configure('cache-8', { errorCode: '-3', errorWithoutEndConvert: true });
+    const conv = makeConverter({ timeoutMs: 2000, pollIntervalMs: 5 });
+    const startedAt = Date.now();
+    await expect(conv.ensurePreview('f8', 'cache-8', 'Fehler.docx')).rejects.toMatchObject({
+      reason: 'failed',
+      message: expect.stringContaining('-3'),
+    });
+    const durationMs = Date.now() - startedAt;
+    // Muss deutlich schneller als das volle timeoutMs-Budget scheitern.
+    expect(durationMs).toBeLessThan(1000);
+  });
+
+  it('bricht einen hängenden DS-Request innerhalb des timeoutMs-Budgets ab', async () => {
+    fake.configure('cache-9', { hang: true });
+    const conv = makeConverter({ timeoutMs: 300, pollIntervalMs: 5 });
+    const startedAt = Date.now();
+    // Der Fake nimmt den Request an, antwortet aber nie -> der AbortController muss
+    // den fetch innerhalb des timeoutMs-Budgets abbrechen (statt unbegrenzt zu hängen).
+    // Da dies bereits beim allerersten attemptConvert-Aufruf (vor der Poll-Schleife)
+    // passiert, greift der catch-Block in attemptConvert -> reason 'unavailable'.
+    await expect(conv.ensurePreview('f9', 'cache-9', 'Haenger.docx')).rejects.toMatchObject({
+      reason: 'unavailable',
+    });
+    const durationMs = Date.now() - startedAt;
+    expect(durationMs).toBeLessThan(1000);
+  });
 });
