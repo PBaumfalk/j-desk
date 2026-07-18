@@ -53,6 +53,21 @@ describe('applyDeskCommand', () => {
   });
 });
 
+describe('deskStore reicht Viewer-Commands durch', () => {
+  it('expandDoc/setDocPage/resizeDoc landen im gespeicherten Zustand', () => {
+    const desk = createDesk(db, 'u1', 'Neu');
+    applyDeskCommand(db, desk.id, {
+      type: 'addDoc',
+      payload: { fileId: 'f', name: 'a.pdf', position: { x: 0, y: 0 }, id: 'id-a' },
+    });
+    applyDeskCommand(db, desk.id, { type: 'expandDoc', payload: { id: 'id-a' } });
+    applyDeskCommand(db, desk.id, { type: 'setDocPage', payload: { id: 'id-a', page: 3 } });
+    applyDeskCommand(db, desk.id, { type: 'resizeDoc', payload: { id: 'id-a', size: { w: 800, h: 600 } } });
+    const { state } = getDeskState(db, desk.id)!;
+    expect(state.docs[0]).toMatchObject({ open: true, page: 3, openSize: { w: 800, h: 600 } });
+  });
+});
+
 describe('putDeskState', () => {
   it('ersetzt den Zustand komplett und validiert die Struktur', () => {
     const desk = createDesk(db, 'u1', 'Neu');
