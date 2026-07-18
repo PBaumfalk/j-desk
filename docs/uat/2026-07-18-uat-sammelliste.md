@@ -38,7 +38,7 @@ Für A2 ein **mehrseitiges** PDF bereithalten.
 - [ ] A1.7 Zweites Browser-Fenster (gleiches Konto): Karte in Fenster A verschieben → Fenster B folgt live.
 - [ ] A1.8 Server stoppen → Banner „Verbindung getrennt", Aktionen gesperrt; Server starten → verbindet selbst neu.
 - [ ] A1.9 Abmelden, Schreibtisch anlegen/umbenennen/löschen (confirm-Dialog) funktionieren.
-- [ ] A1.10 Docker: `docker build -f packages/server/Dockerfile -t dd-test . && docker run --rm -p 4811:4810 dd-test` → `http://localhost:4811` zeigt die App. *(bisher nie lokal getestet)*
+- [x] A1.10 Docker: `docker build -f packages/server/Dockerfile -t dd-test . && docker run --rm -p 4811:4810 dd-test` → `http://localhost:4811` zeigt die App. *(maschinell verifiziert 2026-07-18: Build ok, API antwortet, App wird ausgeliefert — eigener Testlauf optional)*
 
 ### A2 — Inline-Viewer (PDF „aufschlagen")
 
