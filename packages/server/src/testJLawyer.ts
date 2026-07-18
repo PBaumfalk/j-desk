@@ -44,16 +44,16 @@ export function startFakeJLawyer(user = 'anwalt', pass = 'kanzlei123'): Promise<
       res.end(JSON.stringify(body));
     };
     const url = req.url ?? '';
-    if (url === '/j-lawyer-io/v1/cases/list') {
+    if (url === '/j-lawyer-io/rest/v1/cases/list') {
       return json(200, cases.map((c) => ({ ...c, externalId: null, dateChanged: 1750000000000 })));
     }
-    let m = url.match(/^\/j-lawyer-io\/v1\/cases\/([^/]+)\/documents$/);
+    let m = url.match(/^\/j-lawyer-io\/rest\/v1\/cases\/([^/]+)\/documents$/);
     if (m) {
       const docs = documents.get(decodeURIComponent(m[1]));
       if (!docs) return json(500, {});
-      return json(200, docs.map(({ bytes, ...rest }) => ({ ...rest, externalId: null, creationDate: rest.changeDate, favorite: false, tags: [] })));
+      return json(200, docs.map(({ bytes, ...rest }) => ({ ...rest, changeDate: new Date(rest.changeDate).toISOString().replace('.000Z', 'Z') + '[UTC]', externalId: null, creationDate: rest.changeDate, favorite: false, tags: [] })));
     }
-    m = url.match(/^\/j-lawyer-io\/v1\/cases\/document\/([^/]+)\/content$/);
+    m = url.match(/^\/j-lawyer-io\/rest\/v1\/cases\/document\/([^/]+)\/content$/);
     if (m) {
       const docId = decodeURIComponent(m[1]);
       for (const docs of documents.values()) {
@@ -62,7 +62,7 @@ export function startFakeJLawyer(user = 'anwalt', pass = 'kanzlei123'): Promise<
       }
       return json(500, {});
     }
-    m = url.match(/^\/j-lawyer-io\/v1\/cases\/document\/([^/]+)$/);
+    m = url.match(/^\/j-lawyer-io\/rest\/v1\/cases\/document\/([^/]+)$/);
     if (m && req.method === 'GET') {
       const docId = decodeURIComponent(m[1]);
       for (const docs of documents.values()) {
@@ -71,7 +71,7 @@ export function startFakeJLawyer(user = 'anwalt', pass = 'kanzlei123'): Promise<
       }
       return json(500, {});
     }
-    if (url === '/j-lawyer-io/v1/cases/document/create' && req.method === 'PUT') {
+    if (url === '/j-lawyer-io/rest/v1/cases/document/create' && req.method === 'PUT') {
       let body = '';
       req.on('data', (c) => (body += c));
       req.on('end', () => {

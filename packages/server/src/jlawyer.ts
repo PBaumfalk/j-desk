@@ -30,8 +30,14 @@ function basicAuth(username: string, password: string): string {
   return 'Basic ' + Buffer.from(`${username}:${password}`, 'utf8').toString('base64');
 }
 
+/** Nimmt beide Schreibweisen an: …/j-lawyer-io und …/j-lawyer-io/rest (echte Instanz braucht /rest). */
+export function normalizeBase(baseUrl: string): string {
+  const b = baseUrl.replace(/\/+$/, '');
+  return b.endsWith('/rest') ? b : `${b}/rest`;
+}
+
 async function jlFetch(baseUrl: string, path: string, username: string, password: string): Promise<Response> {
-  const url = `${baseUrl.replace(/\/+$/, '')}${path}`;
+  const url = `${normalizeBase(baseUrl)}${path}`;
   try {
     return await fetch(url, {
       headers: { authorization: basicAuth(username, password) },
@@ -57,11 +63,12 @@ async function jlJson(baseUrl: string, path: string, username: string, password:
   return res.json();
 }
 
-/** j-lawyer serialisiert java.util.Date je nach Konfiguration als Millis oder ISO-String. */
+/** j-lawyer serialisiert java.util.Date als Millis oder ISO-String — die echte Instanz
+    liefert ISO mit Zonen-Suffix in eckigen Klammern ("2026-07-18T14:44:38Z[UTC]"). */
 function toMillis(v: unknown): number {
   if (typeof v === 'number') return v;
   if (typeof v === 'string') {
-    const t = Date.parse(v);
+    const t = Date.parse(v.replace(/\[[^\]]*\]$/, ''));
     if (!Number.isNaN(t)) return t;
   }
   return 0;
@@ -104,7 +111,7 @@ export async function getDocumentContent(baseUrl: string, username: string, pass
 
 /** Legt ein Dokument in der Akte an (PUT document/create) und liefert die neue Dokument-ID. */
 export async function createDocument(baseUrl: string, username: string, password: string, caseId: string, fileName: string, bytes: Buffer): Promise<{ id: string }> {
-  const url = `${baseUrl.replace(/\/+$/, '')}/v1/cases/document/create`;
+  const url = `${normalizeBase(baseUrl)}/v1/cases/document/create`;
   let res: Response;
   try {
     res = await fetch(url, {

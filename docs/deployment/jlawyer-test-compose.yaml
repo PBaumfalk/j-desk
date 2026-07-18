@@ -1,0 +1,28 @@
+services:
+  db:
+    image: jlawyerorg/jlawyer-db:latest
+    environment:
+      MARIADB_ROOT_PASSWORD: mysql
+      MARIADB_DATABASE: jlawyerdb
+      MARIADB_USER: jlawyer
+      MARIADB_PASSWORD: jlawyer
+    volumes:
+      - jl_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-pmysql"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+  server:
+    image: jlawyerorg/jlawyer-srv:latest
+    volumes:
+      - jl_data:/opt/jboss/j-lawyer-data
+    ports:
+      - "8000:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  jl_db:
+  jl_data:
