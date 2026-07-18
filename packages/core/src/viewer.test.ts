@@ -89,4 +89,18 @@ describe('extractPage (Enthefterzange)', () => {
     expect(() => extractPage(emptyState(), 'nix', 1, { x: 0, y: 0 })).toThrow(/nicht gefunden/);
     expect(() => extractPage(withDoc(), 'id-a', 0, { x: 0, y: 0 })).toThrow(/Ungültige Seite/);
   });
+
+  it('vererbt die Datei-Art der Quelle an die herausgelöste Karte', () => {
+    const s0 = expandDoc(addDoc(emptyState(), 'file-b', 'b.docx', pos, 'id-b', 'convertible'), 'id-b');
+    const s = extractPage(s0, 'id-b', 2, { x: 0, y: 0 }, 'seite-2');
+    const seite = s.docs.find((d) => d.id === 'seite-2')!;
+    expect(seite.kind).toBe('convertible');
+  });
+
+  it('lässt kind fehlen, wenn die Quelle kind-los ist', () => {
+    const s0 = expandDoc(withDoc(), 'id-a');
+    const s = extractPage(s0, 'id-a', 2, { x: 0, y: 0 }, 'seite-2');
+    const seite = s.docs.find((d) => d.id === 'seite-2')!;
+    expect(seite.kind).toBeUndefined();
+  });
 });

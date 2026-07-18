@@ -57,6 +57,7 @@ export function extractPage(
     rotation: rotationFor(neueId),
     zIndex: Math.max(0, ...s.docs.map((d) => d.zIndex), ...s.stacks.map((st) => st.zIndex)) + 1,
     pageOnly: page,
+    ...(quelle.kind !== undefined ? { kind: quelle.kind } : {}),
   };
   return { ...s, docs: [...s.docs, doc] };
 }
