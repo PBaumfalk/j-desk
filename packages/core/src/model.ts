@@ -1,5 +1,7 @@
 export interface Vec2 { x: number; y: number }
 
+export interface Size { w: number; h: number }
+
 export interface Doc {
   id: string;
   fileId: string;      // Server-Datei (files-Tabelle)
@@ -7,6 +9,9 @@ export interface Doc {
   position: Vec2;      // Weltkoordinaten, linke obere Ecke
   rotation: number;    // Grad, feste leichte Zufallsdrehung
   zIndex: number;
+  open?: boolean;      // aufgeschlagen (große Karte) statt Miniatur
+  openSize?: Size;     // Größe der großen Karte (Weltkoordinaten)
+  page?: number;       // aktuell sichtbare Seite, 1-basiert
 }
 
 export interface Link {

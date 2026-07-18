@@ -15,3 +15,15 @@ describe('isValidState', () => {
     expect(isValidState({ docs: [{ id: 'x' }], links: [], stacks: [] })).toBe(false);
   });
 });
+
+describe('Doc-Viewer-Felder (Abwärtskompatibilität)', () => {
+  it('akzeptiert einen Zustand OHNE die neuen Viewer-Felder', () => {
+    const s = { docs: [{ id: 'a', fileId: 'f', name: 'a.pdf', position: { x: 0, y: 0 }, rotation: 0, zIndex: 1 }], links: [], stacks: [] };
+    expect(isValidState(s)).toBe(true);
+  });
+
+  it('akzeptiert einen Zustand MIT open/openSize/page', () => {
+    const s = { docs: [{ id: 'a', fileId: 'f', name: 'a.pdf', position: { x: 0, y: 0 }, rotation: 0, zIndex: 1, open: true, openSize: { w: 560, h: 720 }, page: 3 }], links: [], stacks: [] };
+    expect(isValidState(s)).toBe(true);
+  });
+});
