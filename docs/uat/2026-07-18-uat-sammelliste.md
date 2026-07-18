@@ -1,6 +1,6 @@
 # UAT-Sammelliste — alle offenen manuellen Tests (Stand 2026-07-18)
 
-Konsolidiert alle „pending user verification"-Punkte. **91 Punkte in vier Blöcken** — jeder
+Konsolidiert alle „pending user verification"-Punkte. **96 Punkte in vier Blöcken** — jeder
 Block hat ein eigenes Setup, innerhalb eines Blocks kann in einer Sitzung durchgetestet werden.
 
 **Empfohlene Reihenfolge:** Block A (aktueller Branch, enthält jetzt auch Zettel A7 und
@@ -132,9 +132,10 @@ npm run mcp                                 # Terminal 2
 
 ---
 
-## Block D — j-lawyer-Login-Modus (TP-B-Kern, braucht deine j-lawyer-Test-Instanz, 9 Punkte)
+## Block D — j-lawyer-Modus komplett: TP-B + TP-C (braucht deine j-lawyer-Test-Instanz, 14 Punkte)
 
-**Setup** (auf `feature/inline-viewer`):
+**Setup** (auf `feature/inline-viewer`; TP-C ist gegen einen quellcode-genauen Fake-j-lawyer
+vollständig E2E-vorverifiziert — gegen die **echte** Instanz ist es der erste Lauf):
 
 ```bash
 npm run build
@@ -144,12 +145,17 @@ JLAWYER_URL=http://<host>:8080/j-lawyer-io DATA_DIR=/tmp/dd-jl npm run server
 - [ ] D1 Login-Maske zeigt **keine** Ersteinrichtung; Anmeldung mit j-lawyer-Benutzername/-Passwort klappt.
 - [ ] D2 Falsches Passwort → „Benutzername oder Passwort falsch".
 - [ ] D3 j-lawyer gestoppt → Login meldet „j-lawyer ist nicht erreichbar" (kein Hänger, ~10 s Timeout).
-- [ ] D4 Nach Login: Schreibtisch-Funktionen wie gewohnt (Karten, Zettel, Zeichnen, Live-Sync).
-- [ ] D5 `GET /api/v1/cases` (z. B. via `curl -H "Authorization: Bearer <token>"`) liefert deine Aktenliste mit Aktenzeichen/Rubrum. *(Die Akten-UI kommt mit TP-C.)*
-- [ ] D6 Server neu starten → alte Sitzung wird beim nächsten Aktenzugriff abgemeldet (Credentials leben nur im RAM); Neuanmeldung klappt.
-- [ ] D7 Zweiter j-lawyer-Nutzer meldet sich an → sieht dieselben Schreibtische (kanzlei-weit geteilt, Rework-Semantik).
-- [ ] D8 `npm run mcp:token` mit j-lawyer-Zugangsdaten → MCP funktioniert im j-lawyer-Modus.
-- [ ] D9 **API-Spike-Vorbereitung für TP-C:** Stelle Zugangsdaten der Test-Instanz bereit — der Spike klärt Feldnamen/Kodierung, bevor Akten-Schreibtische gebaut werden (Plan: `docs/superpowers/plans/2026-07-18-tp-c-akten-schreibtische.md`).
+- [ ] D4 Nach Login öffnet sich die erste Akte; die Kopfzeile links zeigt Aktenzeichen + Rubrum, das Dropdown listet deine Akten **mit Suchfeld** (keine Anlegen/Umbenennen/Löschen-Einträge).
+- [ ] D5 Beim Öffnen einer Akte liegen deren j-lawyer-Dokumente als Karten im „Eingang" (links oben gestaffelt).
+- [ ] D6 Karte aufschlagen → das echte PDF rendert (Inhalt kommt Base64-dekodiert aus j-lawyer, serverseitig gecacht — zweites Öffnen spürbar schneller).
+- [ ] D7 PDF per „＋ PDF" oder Drag-and-drop hochladen → Dokument liegt danach **in j-lawyer in der Akte**; die Karte erscheint erst nach Bestätigung.
+- [ ] D8 Dokument in j-lawyer löschen, Akte neu öffnen/neu laden → die Karte verschwindet.
+- [ ] D9 Karten/Zettel/Zeichnen/Stapeln funktionieren auf dem Akten-Desk wie gewohnt; zweites Fenster (auch anderer j-lawyer-Nutzer) sieht dieselbe Akte live (kanzlei-weit geteilt).
+- [ ] D10 Server neu starten → nächster Aktenzugriff verlangt Neuanmeldung (Credentials leben nur im RAM); Neuanmeldung klappt.
+- [ ] D11 `npm run mcp:token` mit j-lawyer-Zugangsdaten → MCP funktioniert im j-lawyer-Modus.
+- [ ] D12 **Feldnamen-Gegenprobe an der echten Instanz:** Aktenzeichen/Rubrum/„wegen" erscheinen korrekt (Quellcode-Stand 2026-07-18; ältere j-lawyer-Versionen könnten abweichen).
+- [ ] D13 **Datumsformat-Gegenprobe:** Nach zweimaligem Öffnen derselben Akte entstehen keine doppelten Karten (changeDate-Parsing; tolerant für Millis und ISO-Strings gebaut).
+- [ ] D14 Große PDFs (> 10 MB) aus der Akte öffnen und hochladen → funktioniert in akzeptabler Zeit (Base64-Overhead).
 
 ---
 
