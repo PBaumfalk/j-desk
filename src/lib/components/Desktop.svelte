@@ -65,7 +65,18 @@
     ui.deskPointers = pointers.size;
     if (pointers.size === 1) { panning = true; panLast = { x: e.clientX, y: e.clientY }; }
   }
+  // Lupe folgt dem Zeiger (auch ohne gedrückte Taste)
+  const LUPE = 260;
+  let lupePos = $state<{ x: number; y: number } | null>(null);
+  const lupenVp = $derived.by(() => {
+    if (!lupePos) return null;
+    const z = vp.scale * 2.5;
+    const w = screenToWorld(vp, lupePos);
+    return { x: LUPE / 2 - w.x * z, y: LUPE / 2 - w.y * z, scale: z };
+  });
+
   function onPointerMove(e: PointerEvent) {
+    if (ui.lupe) lupePos = { x: e.clientX, y: e.clientY };
     if (!pointers.has(e.pointerId)) return;
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size === 1 && panLast) {
@@ -191,21 +202,33 @@
      onwheel={onWheel} onpointerdown={onPointerDown} onpointermove={onPointerMove}
      onpointerup={endPointer} onpointercancel={endPointer}
      ondragover={onDragOver} ondrop={onDrop}>
-  <div class="world" style:transform="translate({vp.x}px, {vp.y}px) scale({vp.scale})">
+  {#snippet weltInhalt(v: Viewport, inLupe: boolean)}
     <LinkLayer />
-    {#each freeDocs(desktop.state).filter((d) => imSichtfenster(docBox(d))) as doc (doc.id)}
-      <DocCard {doc} {vp} />
+    {#each freeDocs(desktop.state).filter((d) => imSichtfenster(docBox(d)) && (!inLupe || !d.open)) as doc (doc.id)}
+      <DocCard {doc} vp={v} />
     {/each}
     {#each desktop.state.stacks.filter((st) => imSichtfenster(stackBox(st))) as stack (stack.id)}
-      <StackCard {stack} {vp} />
+      <StackCard {stack} vp={v} />
     {/each}
     {#each (desktop.state.notes ?? []).filter((n) => imSichtfenster(noteBox(n))) as note (note.id)}
-      <NoteCard {note} {vp} />
+      <NoteCard {note} vp={v} />
     {/each}
     {#each (desktop.state.cutouts ?? []).filter((c) => imSichtfenster(cutoutBox(c))) as cutout (cutout.id)}
-      <CutoutCard {cutout} {vp} />
+      <CutoutCard {cutout} vp={v} />
     {/each}
+  {/snippet}
+
+  <div class="world" style:transform="translate({vp.x}px, {vp.y}px) scale({vp.scale})">
+    {@render weltInhalt(vp, false)}
   </div>
+  {#if ui.lupe && lupePos && lupenVp}
+    <div class="lupe" style:left="{lupePos.x - LUPE / 2}px" style:top="{lupePos.y - LUPE / 2}px"
+         style:width="{LUPE}px" style:height="{LUPE}px" aria-hidden="true">
+      <div class="lupenwelt" style:transform="translate({lupenVp.x}px, {lupenVp.y}px) scale({lupenVp.scale})">
+        {@render weltInhalt(lupenVp, true)}
+      </div>
+    </div>
+  {/if}
   <DeskSwitcher />
   <DeskControls
     onzoom={(f) => (vp = zoomAt(vp, { x: el.clientWidth / 2, y: el.clientHeight / 2 }, f))}
@@ -245,6 +268,10 @@
           background: radial-gradient(1200px 800px at 40% 30%, #3a5c4e, #27423a 70%, #1d332d); }
   .desk.grabbing { cursor: grabbing; }
   .world { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+  .lupe { position: fixed; z-index: 9500; border-radius: 50%; overflow: hidden; pointer-events: none;
+          border: 3px solid rgba(242, 226, 184, .85); box-shadow: 0 10px 34px rgba(0, 0, 0, .5), inset 0 0 20px rgba(0, 0, 0, .15);
+          background: radial-gradient(1200px 800px at 40% 30%, #3a5c4e, #27423a 70%, #1d332d); }
+  .lupenwelt { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
   .toolbar { position: fixed; top: 12px; right: 12px; display: flex; gap: 8px; z-index: 9000; }
   .toolbar button { font-size: 13px; padding: 6px 12px; border-radius: 8px; border: none;
                     background: rgba(255, 255, 255, .92); cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }

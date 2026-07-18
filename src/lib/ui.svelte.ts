@@ -12,6 +12,8 @@ export const ui = $state({
   toast: null as string | null,
   /** Aktive Desk-Pointer (Pan/Pinch) — Karten lassen weitere Finger dann zum Desk durch. */
   deskPointers: 0,
+  /** Lupe: runder vergrößerter Ausschnitt folgt dem Zeiger. */
+  lupe: false,
 });
 
 export function showToast(message: string): void {

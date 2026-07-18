@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { ui } from '../ui.svelte';
+
   let { onzoom, onpan, onfit }: { onzoom: (f: number) => void; onpan: (dx: number, dy: number) => void; onfit: () => void } = $props();
   const STEP = 120;
 </script>
@@ -15,6 +17,7 @@
     <button onclick={() => onzoom(1 / 1.25)} aria-label="Verkleinern">−</button>
     <button class="fit" onclick={onfit} aria-label="Übersicht">⤢</button>
     <button onclick={() => onzoom(1.25)} aria-label="Vergrößern">＋</button>
+    <button class:on={ui.lupe} onclick={() => (ui.lupe = !ui.lupe)} aria-pressed={ui.lupe} aria-label="Lupe" title="Lupe">🔍</button>
   </div>
 </div>
 
@@ -43,6 +46,7 @@
   button:hover { background: rgba(242, 226, 184, .14); }
   button:active { background: rgba(242, 226, 184, .22); transform: translateY(1px); }
   button:focus-visible { outline: 2px solid rgba(242, 226, 184, .75); outline-offset: 1px; }
+  button.on { background: rgba(242, 226, 184, .25); }
   @media (prefers-reduced-motion: reduce) {
     button { transition: none; }
     button:active { transform: none; }

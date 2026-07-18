@@ -15,6 +15,9 @@
   const size = $derived(doc.openSize ?? DEFAULT_OPEN_SIZE);
   const pageWidth = $derived(Math.round(size.w - 20));
 
+  // Lichttisch: Viewer wird durchscheinend — Seiten lassen sich zum Vergleich übereinanderlegen
+  let lichttisch = $state(false);
+
   // Zeichen-/Schneidwerkzeuge: aktives Werkzeug gilt pro Viewer
   let inkTool = $state<InkTool | 'scissors' | null>(null);
   let baseSize = $state<Size | null>(null);
@@ -165,7 +168,7 @@
 <svelte:window onkeydown={(e) => { if (document.activeElement === wrapEl) onKey(e); }} />
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -- der Viewer ist bewusst fokussierbar: Pfeiltasten blättern -->
-<div class="viewer" role="group" aria-label={doc.name} bind:this={wrapEl} tabindex="0"
+<div class="viewer" class:licht={lichttisch} role="group" aria-label={doc.name} bind:this={wrapEl} tabindex="0"
      style:left="{doc.position.x}px" style:top="{doc.position.y}px" style:z-index={doc.zIndex}
      style:width="{size.w}px" style:height="{size.h}px">
   <div class="head" role="toolbar" tabindex="-1" aria-label="Dokumentleiste" onpointerdown={onHeaderPointerDown} onpointermove={onHeaderPointerMove} onpointerup={onHeaderPointerUp} onpointercancel={onHeaderPointerUp}>
@@ -176,6 +179,7 @@
                 aria-label="Seite herauslösen" title="Seite herauslösen (Enthefterzange)">⧉</button>
       {/if}
       <button class:on={inkTool === 'scissors'} onclick={() => toggleTool('scissors')} aria-pressed={inkTool === 'scissors'} aria-label="Schere" title="Schere: Ausschnitt aufziehen">✄</button>
+      <button class:on={lichttisch} onclick={() => (lichttisch = !lichttisch)} aria-pressed={lichttisch} aria-label="Lichttisch" title="Lichttisch: durchscheinend übereinanderlegen">◐</button>
       <button class:on={inkTool === 'pen'} onclick={() => toggleTool('pen')} aria-pressed={inkTool === 'pen'} aria-label="Stift" title="Stift">✎</button>
       <button class:on={inkTool === 'marker'} onclick={() => toggleTool('marker')} aria-pressed={inkTool === 'marker'} aria-label="Textmarker" title="Textmarker"><span class="marker-chip"></span></button>
       <button class:on={inkTool === 'eraser'} onclick={() => toggleTool('eraser')} aria-pressed={inkTool === 'eraser'} aria-label="Radierer" title="Radierer">⌫</button>
@@ -217,6 +221,9 @@
   .viewer { position: absolute; display: flex; flex-direction: column; background: #fff; border-radius: 6px;
             box-shadow: 0 10px 34px rgba(0, 0, 0, .45); overflow: hidden; touch-action: none; }
   .viewer:focus { outline: 2px solid #2c5aa0; }
+  /* Lichttisch: Papier wird durchscheinend, darunterliegende Seiten schimmern durch */
+  .viewer.licht { opacity: .58; }
+  .viewer.licht .body { background: transparent; }
   .head { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #f2f4f8;
           border-bottom: 1px solid #e4e8ef; cursor: grab; user-select: none; }
   .title { flex: 1; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
