@@ -1,9 +1,10 @@
 # UAT-Sammelliste — alle offenen manuellen Tests (Stand 2026-07-18)
 
 Konsolidiert alle „pending user verification"-Punkte aus TP-A (Browser-Port), Inline-Viewer,
-Schreibtisch-Navigation/Touch (inkl. der drei Nachzügler-Fixes), TP3 (Benutzerverwaltung & Teilen)
-und TP4 (MCP-Server mit anymize). **57 Punkte in drei Blöcken** — jeder Block hat ein eigenes
-Setup, innerhalb eines Blocks kann in einer Sitzung durchgetestet werden.
+Schreibtisch-Navigation/Touch (inkl. der drei Nachzügler-Fixes), der Backlog-Runde vom
+2026-07-18 (A5), TP3 (Benutzerverwaltung & Teilen) und TP4 (MCP-Server mit anymize).
+**67 Punkte in drei Blöcken** — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
+kann in einer Sitzung durchgetestet werden.
 
 **Empfohlene Reihenfolge:** Block A (aktueller Branch) → Block B → Block C (Branch von B enthält TP3).
 
@@ -13,7 +14,7 @@ Setup, innerhalb eines Blocks kann in einer Sitzung durchgetestet werden.
 
 ---
 
-## Block A — Browser-App (Branch `feature/inline-viewer`, 34 Punkte)
+## Block A — Browser-App (Branch `feature/inline-viewer`, 44 Punkte)
 
 **Setup:**
 
@@ -76,6 +77,19 @@ iPad:
 - [ ] A4.3 **Mac:** Pfeiltasten ↑↓←→ schwenken den Schreibtisch (gleiche Schrittweite wie das Pfeilpad).
 - [ ] A4.4 **Mac:** Viewer aufschlagen und fokussieren → ←/→ blättern (Schreibtisch schwenkt **nicht**); Stapel-Namensfeld fokussieren → Pfeiltasten bewegen den Cursor, kein Schwenken.
 - [ ] A4.5 **Optik:** Bedienfeld unten wirkt als zusammenhängendes dunkles Panel im Tisch-Stil (Creme-Symbole, Trennlinie) — gefällt es auf Mac **und** iPad?
+
+### A5 — Backlog-Runde vom 2026-07-18 (automatisiert in Chrome vorgeprüft; auf echten Geräten bestätigen, besonders iPad/Safari)
+
+- [ ] A5.1 „Abmelden" (Toolbar oben rechts) → Login-Maske; Neuladen landet wieder auf der Login-Maske (Session gelöscht).
+- [ ] A5.2 Im Viewer schnell mehrfach blättern (‹/› oder Pfeiltasten) → flüssig ohne Ruckeln; nach Neuladen stimmt die zuletzt gesehene Seite.
+- [ ] A5.3 Karte aufschlagen → Pfeiltasten blättern **sofort**, ohne dass man den Viewer erst anklicken muss.
+- [ ] A5.4 Viewer groß ziehen, dann „⤢ Übersicht" → der ganze Viewer ist im Bild (nicht nur die Miniatur-Fläche).
+- [ ] A5.5 Karte verknüpfen und aufschlagen → die Schnur ankert in der Mitte des offenen Viewers.
+- [ ] A5.6 Miniatur-Karte auf einen offenen Viewer ziehen → es entsteht **kein** Stapel (offene Papiere sind kein Stapelziel).
+- [ ] A5.7 **Verhaltensänderung bestätigen:** Klick auf einen Eintrag im aufgefächerten Stapel zieht das Papier neben den Stapel und schlägt es auf (vorher: neuer Browser-Tab). Einverstanden?
+- [ ] A5.8 **iPad:** Ein Finger auf dem Filz, zweiter Finger auf einer Karte → Pinch zoomt den Tisch (die Karte wird nicht verschoben).
+- [ ] A5.9 **iPad:** Lang-Druck mit leicht zitterndem Finger → Karte bleibt exakt liegen, Menü erscheint leicht versetzt; auch nach **langem** Halten löst das Loslassen keinen Menüeintrag aus.
+- [ ] A5.10 Server währenddessen stoppen: Aktionen melden „Offline — Aktion nicht möglich"; direkt nach Server-Neustart kurz „Verbindung wird aufgebaut".
 
 ---
 
