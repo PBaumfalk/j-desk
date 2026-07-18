@@ -7,7 +7,9 @@
   import { debounce } from '../debounce';
   import { desktop } from '../store.svelte';
   import { getPageCount } from '../pageCounts';
+  import { showToast } from '../ui.svelte';
   import PageRenderer from './PageRenderer.svelte';
+  import ImagePage from './ImagePage.svelte';
   import InkOverlay, { type InkTool } from './InkOverlay.svelte';
   import MarkLayer from './MarkLayer.svelte';
   import StampLayer from './StampLayer.svelte';
@@ -17,18 +19,38 @@
 
   // Seitenzahlen aller Mitglieder laden -> pages ist null, bis alles bekannt ist
   let pageCounts = $state<Record<string, number>>({});
+  let pageCountFehlerGemeldet = false;
   $effect(() => {
     const api = desktop.api;
     if (!api) return;
     for (const docId of stack.docIds) {
       const d = desktop.state.docs.find((x) => x.id === docId);
       if (!d || d.pageOnly !== undefined || pageCounts[d.fileId] !== undefined) continue;
-      void getPageCount(api, d.fileId).then((n) => { pageCounts = { ...pageCounts, [d.fileId]: n }; });
+      const kind = d.kind ?? 'pdf';
+      if (kind === 'image') {
+        // Bild-Mitglied: eine "Seite" (die Bildpixel selbst) — kein pdfjs nötig.
+        pageCounts = { ...pageCounts, [d.fileId]: 1 };
+        continue;
+      }
+      const quelle = kind === 'convertible' ? 'preview' : 'original';
+      getPageCount(api, d.fileId, quelle)
+        .then((n) => { pageCounts = { ...pageCounts, [d.fileId]: n }; })
+        .catch((e) => {
+          // Fehler darf das Konvolut nicht dauerhaft blockieren — Lade-Hinweis bleibt stehen,
+          // aber einmalig melden statt endlos leise zu scheitern.
+          console.error('Seitenzahl konnte nicht ermittelt werden', d.fileId, e);
+          if (!pageCountFehlerGemeldet) {
+            pageCountFehlerGemeldet = true;
+            showToast('Eine Seitenzahl konnte nicht ermittelt werden.');
+          }
+        });
     }
   });
   const pages = $derived(konvolutPages(desktop.state, stack, pageCounts));
   const globalPage = $derived(Math.min(stack.page ?? 1, pages?.length ?? 1));
   const aktuelle = $derived<KonvolutPage | null>(pages?.[globalPage - 1] ?? null);
+  const aktuelleDoc = $derived(aktuelle ? desktop.state.docs.find((d) => d.id === aktuelle.docId) : undefined);
+  const aktuelleKind = $derived(aktuelleDoc?.kind ?? 'pdf');
   const size = $derived(stack.openSize ?? DEFAULT_OPEN_SIZE);
   const pageWidth = $derived(Math.round(size.w - 20));
   let baseSize = $state<Size | null>(null);
@@ -222,7 +244,15 @@
   <div class="body" role="presentation" onwheel={(e) => { if (!e.ctrlKey && !e.metaKey) e.stopPropagation(); }} onpointerdown={onBodyPointerDown} onpointerup={onBodyPointerUp}>
     {#if desktop.api && aktuelle}
       <div class="pagewrap">
-        <PageRenderer api={desktop.api} fileId={aktuelle.fileId} page={aktuelle.page} targetWidth={pageWidth} onbasesize={(s) => (baseSize = s)} />
+        {#if aktuelleKind === 'image'}
+          <ImagePage api={desktop.api} fileId={aktuelle.fileId} name={aktuelleDoc?.name ?? ''} targetWidth={pageWidth}
+            onbasesize={(s) => (baseSize = s)} />
+        {:else if aktuelleKind === 'convertible'}
+          <PageRenderer api={desktop.api} fileId={aktuelle.fileId} page={aktuelle.page} targetWidth={pageWidth}
+            source="preview" onbasesize={(s) => (baseSize = s)} />
+        {:else}
+          <PageRenderer api={desktop.api} fileId={aktuelle.fileId} page={aktuelle.page} targetWidth={pageWidth} onbasesize={(s) => (baseSize = s)} />
+        {/if}
         <InkOverlay docId={aktuelle.docId} page={aktuelle.page} base={baseSize} renderedWidth={pageWidth}
                     tool={inkTool === 'tippex' || inkTool === 'redact' ? null : inkTool} />
         {#if rectTool && baseSize}
