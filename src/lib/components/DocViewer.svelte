@@ -220,8 +220,6 @@
           onpagecount={(n) => (pageCount = n)} onbasesize={(s) => (baseSize = s)} />
         <InkOverlay docId={doc.id} {page} base={baseSize} renderedWidth={pageWidth}
           tool={inkTool === 'scissors' || inkTool === 'tippex' || inkTool === 'redact' ? null : inkTool} />
-        <MarkLayer docId={doc.id} {page} base={baseSize} renderedWidth={pageWidth}
-                   active={inkTool === 'tippex' || inkTool === 'redact' ? inkTool : null} />
         {#if rectTool && baseSize}
           <div class="schnittflaeche" role="presentation"
                onpointerdown={schnittDown} onpointermove={schnittMove} onpointerup={schnittUp}
@@ -233,6 +231,8 @@
             {/if}
           </div>
         {/if}
+        <MarkLayer docId={doc.id} {page} base={baseSize} renderedWidth={pageWidth}
+                   active={inkTool === 'tippex' || inkTool === 'redact' ? inkTool : null} />
       </div>
     {/if}
   </div>
