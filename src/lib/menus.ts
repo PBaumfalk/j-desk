@@ -39,7 +39,8 @@ export function showDocMenu(e: MouseEvent, doc: Doc): void {
     x: e.clientX,
     y: e.clientY,
     items: [
-      { label: 'Öffnen', action: () => void openDoc(doc) },
+      { label: 'Aufschlagen', action: () => void desktop.command('expandDoc', { id: doc.id }) },
+      { label: 'In neuem Tab öffnen', action: () => void openDoc(doc) },
       { label: 'Mit allen Verknüpften öffnen', action: () => openWithLinked(doc.id) },
       { label: 'Verknüpfen…', action: () => { ui.linkingFromId = doc.id; } },
       { label: 'Herunterladen…', action: () => void downloadDoc(doc) },

@@ -6,6 +6,7 @@
   import { ui } from '../ui.svelte';
   import { showDocMenu, openDoc } from '../menus';
   import { getThumbnail } from '../thumbnails';
+  import DocViewer from './DocViewer.svelte';
 
   let { doc, vp }: { doc: Doc; vp: Viewport } = $props();
 
@@ -54,22 +55,26 @@
 
 </script>
 
-<div class="card"
-     style:left="{doc.position.x}px" style:top="{doc.position.y}px"
-     style:z-index={doc.zIndex} style:transform="rotate({doc.rotation}deg)"
-     style:width="{CARD_W}px" style:height="{CARD_H}px"
-     onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp}
-     ondblclick={() => void openDoc(doc)}
-     oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showDocMenu(e, doc); }}>
-  <div class="body">
-    {#if thumb}
-      <img src={thumb} alt="" draggable="false" />
-    {:else}
-      <div class="fallback">PDF</div>
-    {/if}
+{#if doc.open}
+  <DocViewer {doc} {vp} />
+{:else}
+  <div class="card"
+       style:left="{doc.position.x}px" style:top="{doc.position.y}px"
+       style:z-index={doc.zIndex} style:transform="rotate({doc.rotation}deg)"
+       style:width="{CARD_W}px" style:height="{CARD_H}px"
+       onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp}
+       ondblclick={() => void desktop.command('expandDoc', { id: doc.id })}
+       oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showDocMenu(e, doc); }}>
+    <div class="body">
+      {#if thumb}
+        <img src={thumb} alt="" draggable="false" />
+      {:else}
+        <div class="fallback">PDF</div>
+      {/if}
+    </div>
+    <div class="name">{doc.name}</div>
   </div>
-  <div class="name">{doc.name}</div>
-</div>
+{/if}
 
 <style>
   .card { position: absolute; display: flex; flex-direction: column; background: #fff; border-radius: 4px;
