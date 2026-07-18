@@ -47,15 +47,35 @@ export async function idbPut(store: string, key: string, bytes: Uint8Array): Pro
   await trimStore(store, MAX_ENTRIES);
 }
 
-/** Verdrängung nach Alter: behält höchstens `max` Einträge, löscht die ältesten. */
+/**
+ * Verdrängung nach Alter: behält höchstens `max` Einträge, löscht die ältesten.
+ * Läuft in einer einzigen readwrite-Transaktion — parallele Puts können also weder
+ * die Schlüssel-/Wert-Zuordnung verschieben noch zwischen Lesen und Löschen funken.
+ */
 export async function trimStore(store: string, max: number): Promise<void> {
-  const [keys, entries] = await Promise.all([
-    tx<IDBValidKey[]>(store, 'readonly', (s) => s.getAllKeys()),
-    tx<Entry[]>(store, 'readonly', (s) => s.getAll() as IDBRequest<Entry[]>),
-  ]);
-  if (keys.length <= max) return;
-  const byAge = keys.map((key, i) => ({ key, ts: entries[i]?.ts ?? 0 })).sort((a, b) => a.ts - b.ts);
-  for (const { key } of byAge.slice(0, keys.length - max)) {
-    await tx(store, 'readwrite', (s) => s.delete(key));
-  }
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const t = db.transaction(store, 'readwrite');
+    const s = t.objectStore(store);
+    const countReq = s.count();
+    countReq.onsuccess = () => {
+      const excess = countReq.result - max;
+      if (excess <= 0) return; // nichts zu tun — Transaktion läuft leer aus
+      const items: { key: IDBValidKey; ts: number }[] = [];
+      const cursorReq = s.openCursor();
+      cursorReq.onsuccess = () => {
+        const cursor = cursorReq.result;
+        if (cursor) {
+          items.push({ key: cursor.key, ts: (cursor.value as Entry).ts ?? 0 });
+          cursor.continue();
+        } else {
+          items.sort((a, b) => a.ts - b.ts);
+          for (const { key } of items.slice(0, excess)) s.delete(key);
+        }
+      };
+    };
+    t.oncomplete = () => resolve();
+    t.onerror = () => reject(t.error ?? new Error('IndexedDB-Zugriff fehlgeschlagen'));
+    t.onabort = () => reject(t.error ?? new Error('IndexedDB-Transaktion abgebrochen'));
+  });
 }

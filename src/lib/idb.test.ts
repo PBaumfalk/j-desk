@@ -20,4 +20,12 @@ describe('idb', () => {
     expect(await idbGet(FILE_STORE, 'alt')).toBeNull();
     expect(await idbGet(FILE_STORE, 'neu')).toEqual(new Uint8Array([2]));
   });
+
+  it('lässt Stores unterhalb der Obergrenze unangetastet', async () => {
+    await idbPut(FILE_STORE, 'x1', new Uint8Array([1]));
+    await idbPut(FILE_STORE, 'x2', new Uint8Array([2]));
+    await trimStore(FILE_STORE, 10);
+    expect(await idbGet(FILE_STORE, 'x1')).toEqual(new Uint8Array([1]));
+    expect(await idbGet(FILE_STORE, 'x2')).toEqual(new Uint8Array([2]));
+  });
 });
