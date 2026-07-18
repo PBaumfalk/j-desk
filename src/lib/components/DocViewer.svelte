@@ -15,12 +15,64 @@
   const size = $derived(doc.openSize ?? DEFAULT_OPEN_SIZE);
   const pageWidth = $derived(Math.round(size.w - 20));
 
-  // Zeichenwerkzeuge (Teilprojekt E): aktives Werkzeug gilt pro Viewer
-  let inkTool = $state<InkTool | null>(null);
+  // Zeichen-/Schneidwerkzeuge: aktives Werkzeug gilt pro Viewer
+  let inkTool = $state<InkTool | 'scissors' | null>(null);
   let baseSize = $state<Size | null>(null);
-  function toggleTool(t: InkTool) {
+  function toggleTool(t: InkTool | 'scissors') {
     inkTool = inkTool === t ? null : t;
   }
+
+  // Schere: Rechteck auf der Seite aufziehen -> Ausschnitt als eigenes Objekt daneben
+  let schnitt = $state<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  let schnittPointer: number | null = null;
+  function pagePoint(e: PointerEvent): { x: number; y: number } | null {
+    const wrap = (e.currentTarget as HTMLElement).closest('.pagewrap');
+    if (!wrap || !baseSize) return null;
+    const r = wrap.getBoundingClientRect();
+    const f = baseSize.w / pageWidth; // Overlay-Pixel -> Basiskoordinaten
+    return { x: (e.clientX - r.left) * f, y: (e.clientY - r.top) * f };
+  }
+  function schnittDown(e: PointerEvent) {
+    if (e.button !== 0 || schnittPointer !== null) return;
+    e.stopPropagation();
+    const p = pagePoint(e);
+    if (!p) return;
+    schnittPointer = e.pointerId;
+    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* Komfort */ }
+    schnitt = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
+  }
+  function schnittMove(e: PointerEvent) {
+    if (e.pointerId !== schnittPointer || !schnitt) return;
+    const p = pagePoint(e);
+    if (p) schnitt = { ...schnitt, x1: p.x, y1: p.y };
+  }
+  function schnittUp(e: PointerEvent) {
+    if (e.pointerId !== schnittPointer) return;
+    schnittPointer = null;
+    const sn = schnitt;
+    schnitt = null;
+    if (!sn) return;
+    const rect = {
+      x: Math.min(sn.x0, sn.x1), y: Math.min(sn.y0, sn.y1),
+      w: Math.abs(sn.x1 - sn.x0), h: Math.abs(sn.y1 - sn.y0),
+    };
+    if (rect.w < 12 || rect.h < 12) return; // Mini-Wischer verwerfen
+    inkTool = null;
+    void desktop.command('addCutout', {
+      docId: doc.id, page, rect,
+      position: { x: doc.position.x + size.w + 24, y: doc.position.y + 40 },
+    });
+  }
+  const schnittCss = $derived.by(() => {
+    if (!schnitt || !baseSize) return null;
+    const f = pageWidth / baseSize.w; // Basiskoordinaten -> Overlay-Pixel
+    return {
+      left: Math.min(schnitt.x0, schnitt.x1) * f,
+      top: Math.min(schnitt.y0, schnitt.y1) * f,
+      w: Math.abs(schnitt.x1 - schnitt.x0) * f,
+      h: Math.abs(schnitt.y1 - schnitt.y0) * f,
+    };
+  });
 
   // Aufgeschlagene Karte direkt fokussieren, damit die Pfeiltasten sofort blättern.
   onMount(() => wrapEl?.focus({ preventScroll: true }));
@@ -123,6 +175,7 @@
         <button onclick={() => void desktop.command('extractPage', { docId: doc.id, page, position: { x: doc.position.x + size.w + 24, y: doc.position.y } })}
                 aria-label="Seite herauslösen" title="Seite herauslösen (Enthefterzange)">⧉</button>
       {/if}
+      <button class:on={inkTool === 'scissors'} onclick={() => toggleTool('scissors')} aria-pressed={inkTool === 'scissors'} aria-label="Schere" title="Schere: Ausschnitt aufziehen">✄</button>
       <button class:on={inkTool === 'pen'} onclick={() => toggleTool('pen')} aria-pressed={inkTool === 'pen'} aria-label="Stift" title="Stift">✎</button>
       <button class:on={inkTool === 'marker'} onclick={() => toggleTool('marker')} aria-pressed={inkTool === 'marker'} aria-label="Textmarker" title="Textmarker"><span class="marker-chip"></span></button>
       <button class:on={inkTool === 'eraser'} onclick={() => toggleTool('eraser')} aria-pressed={inkTool === 'eraser'} aria-label="Radierer" title="Radierer">⌫</button>
@@ -143,7 +196,17 @@
       <div class="pagewrap">
         <PageRenderer api={desktop.api} fileId={doc.fileId} {page} targetWidth={pageWidth}
           onpagecount={(n) => (pageCount = n)} onbasesize={(s) => (baseSize = s)} />
-        <InkOverlay docId={doc.id} {page} base={baseSize} renderedWidth={pageWidth} tool={inkTool} />
+        <InkOverlay docId={doc.id} {page} base={baseSize} renderedWidth={pageWidth} tool={inkTool === 'scissors' ? null : inkTool} />
+        {#if inkTool === 'scissors' && baseSize}
+          <div class="schnittflaeche" role="presentation"
+               onpointerdown={schnittDown} onpointermove={schnittMove} onpointerup={schnittUp}
+               onpointercancel={() => { schnittPointer = null; schnitt = null; }}>
+            {#if schnittCss}
+              <div class="schnittrahmen" style:left="{schnittCss.left}px" style:top="{schnittCss.top}px"
+                   style:width="{schnittCss.w}px" style:height="{schnittCss.h}px"></div>
+            {/if}
+          </div>
+        {/if}
       </div>
     {/if}
   </div>
@@ -174,4 +237,7 @@
           background: #52616b; padding: 10px; }
   .grip { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize;
           background: linear-gradient(135deg, transparent 50%, #b8c0cc 50%); }
+  .schnittflaeche { position: absolute; inset: 0; cursor: crosshair; touch-action: none; }
+  .schnittrahmen { position: absolute; border: 2px dashed #c0392b; background: rgba(192, 57, 43, .08);
+                   pointer-events: none; }
 </style>

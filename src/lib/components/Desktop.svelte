@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
-    freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes, panBy, docBox, stackBox, noteBox,
+    freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes, panBy, docBox, stackBox, noteBox, cutoutBox,
     NOTE_KINDS, NOTE_W, NOTE_H, type Box, type NoteKind, type Vec2, type Viewport,
   } from '@digital-desktop/core';
   import { uid } from '../uid';
@@ -13,6 +13,7 @@
   import DocCard from './DocCard.svelte';
   import StackCard from './StackCard.svelte';
   import NoteCard from './NoteCard.svelte';
+  import CutoutCard from './CutoutCard.svelte';
   import LinkLayer from './LinkLayer.svelte';
   import ContextMenu from './ContextMenu.svelte';
   import DeskSwitcher from './DeskSwitcher.svelte';
@@ -200,6 +201,9 @@
     {/each}
     {#each (desktop.state.notes ?? []).filter((n) => imSichtfenster(noteBox(n))) as note (note.id)}
       <NoteCard {note} {vp} />
+    {/each}
+    {#each (desktop.state.cutouts ?? []).filter((c) => imSichtfenster(cutoutBox(c))) as cutout (cutout.id)}
+      <CutoutCard {cutout} {vp} />
     {/each}
   </div>
   <DeskSwitcher />

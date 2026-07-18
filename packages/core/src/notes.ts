@@ -24,6 +24,7 @@ function maxZ(s: DesktopState): number {
     ...s.docs.map((d) => d.zIndex),
     ...s.stacks.map((st) => st.zIndex),
     ...(s.notes ?? []).map((n) => n.zIndex),
+    ...(s.cutouts ?? []).map((c) => c.zIndex),
   );
 }
 

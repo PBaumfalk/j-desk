@@ -8,8 +8,10 @@
 
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
-  let { api, fileId, page, targetWidth, onpagecount, onbasesize }:
+  let { api, fileId, page, targetWidth, sourceRect, onpagecount, onbasesize }:
     { api: ApiClient; fileId: string; page: number; targetWidth: number;
+      /** Nur diesen Seitenausschnitt rendern (Basiskoordinaten) — für Scheren-Ausschnitte. */
+      sourceRect?: { x: number; y: number; w: number; h: number };
       onpagecount?: (n: number) => void;
       /** Seitengröße im Basisraum (PDF-Viewport bei scale = 1) — für die Zeichenebene. */
       onbasesize?: (s: { w: number; h: number }) => void } = $props();
@@ -32,7 +34,7 @@
     const token = ++renderToken;
     failed = false;
     try {
-      const key = pageCacheKey(fileId, page, targetWidth);
+      const key = pageCacheKey(fileId, page, targetWidth) + (sourceRect ? `:${sourceRect.x},${sourceRect.y},${sourceRect.w},${sourceRect.h}` : '');
       let bmp = cache.get(key);
       if (!bmp) {
         const data = await bytesFor(fileId);
@@ -46,11 +48,14 @@
           const pg = await pdf.getPage(p);
           const baseVp = pg.getViewport({ scale: 1 });
           baseSizes.set(`${fileId}:${page}`, { w: baseVp.width, h: baseVp.height });
-          const scale = (targetWidth * (window.devicePixelRatio || 1)) / baseVp.width;
-          const viewport = pg.getViewport({ scale });
+          const scale = (targetWidth * (window.devicePixelRatio || 1)) / (sourceRect?.w ?? baseVp.width);
+          const viewport = pg.getViewport({
+            scale,
+            ...(sourceRect ? { offsetX: -sourceRect.x * scale, offsetY: -sourceRect.y * scale } : {}),
+          });
           const off = document.createElement('canvas');
-          off.width = Math.ceil(viewport.width);
-          off.height = Math.ceil(viewport.height);
+          off.width = Math.ceil(sourceRect ? sourceRect.w * scale : viewport.width);
+          off.height = Math.ceil(sourceRect ? sourceRect.h * scale : viewport.height);
           await pg.render({ canvas: off, canvasContext: off.getContext('2d')!, viewport }).promise;
           if (token !== renderToken) return;
           bmp = await createImageBitmap(off);
@@ -73,7 +78,7 @@
 
   $effect(() => {
     // Abhängig von fileId/page/targetWidth neu rendern
-    fileId; page; targetWidth;
+    fileId; page; targetWidth; sourceRect;
     if (canvas) void render();
   });
 

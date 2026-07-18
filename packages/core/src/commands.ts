@@ -6,6 +6,7 @@ import { removeDoc, removeStack } from './removal';
 import { expandDoc, collapseDoc, setDocPage, resizeDoc, extractPage } from './viewer';
 import { addStroke, removeStroke, type Stroke, type StrokeTool } from './ink';
 import { addNote, editNote, moveNote, removeNote, type NoteKind } from './notes';
+import { addCutout, moveCutout, removeCutout } from './cutouts';
 
 export class CommandError extends Error {}
 
@@ -83,7 +84,18 @@ const handlers: Record<string, (s: DesktopState, p: Record<string, unknown>) => 
   editNote: (s, p) => wrap(() => editNote(s, id(p.id, 'id'), text(p.text, 'text'))),
   moveNote: (s, p) => wrap(() => moveNote(s, id(p.id, 'id'), vec(p.position, 'position'))),
   removeNote: (s, p) => wrap(() => removeNote(s, id(p.id, 'id'))),
+  addCutout: (s, p) => wrap(() => addCutout(s, id(p.docId, 'docId'), num(p.page, 'page'), rect(p.rect), vec(p.position, 'position'), optId(p.id))),
+  moveCutout: (s, p) => wrap(() => moveCutout(s, id(p.id, 'id'), vec(p.position, 'position'))),
+  removeCutout: (s, p) => wrap(() => removeCutout(s, id(p.id, 'id'))),
 };
+
+function rect(v: unknown): { x: number; y: number; w: number; h: number } {
+  const r = v as { x: number; y: number; w: number; h: number } | undefined;
+  if (!r || typeof r !== 'object' || !Number.isFinite(r.x) || !Number.isFinite(r.y) || !Number.isFinite(r.w) || !Number.isFinite(r.h)) {
+    throw new CommandError('Feld "rect" fehlt oder ist kein Rechteck {x, y, w, h}');
+  }
+  return { x: r.x, y: r.y, w: r.w, h: r.h };
+}
 
 function strokePayload(v: unknown): Omit<Stroke, 'id'> & { id?: string } {
   const st = v as Partial<Stroke> | undefined;

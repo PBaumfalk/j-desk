@@ -38,13 +38,15 @@ export interface DesktopState {
   strokes?: import('./ink').Stroke[];
   /** Notizzettel/Gedankenobjekte; fehlt in älteren Staaten. */
   notes?: import('./notes').Note[];
+  /** Scheren-Ausschnitte von PDF-Seiten; fehlt in älteren Staaten. */
+  cutouts?: import('./cutouts').Cutout[];
 }
 
 export const CARD_W = 180;
 export const CARD_H = 240;
 
 export function emptyState(): DesktopState {
-  return { docs: [], links: [], stacks: [], strokes: [], notes: [] };
+  return { docs: [], links: [], stacks: [], strokes: [], notes: [], cutouts: [] };
 }
 
 export function findDoc(s: DesktopState, id: string): Doc | undefined {
@@ -72,6 +74,7 @@ export function isValidState(v: unknown): v is DesktopState {
     Array.isArray(s.stacks) &&
     (s.strokes === undefined || Array.isArray(s.strokes)) &&
     (s.notes === undefined || Array.isArray(s.notes)) &&
+    (s.cutouts === undefined || Array.isArray(s.cutouts)) &&
     s.docs.every(
       (d) =>
         !!d && typeof d.id === 'string' && typeof d.fileId === 'string' && typeof d.name === 'string',

@@ -7,6 +7,7 @@ function maxZ(s: DesktopState): number {
     ...s.docs.map((d) => d.zIndex),
     ...s.stacks.map((st) => st.zIndex),
     ...(s.notes ?? []).map((n) => n.zIndex),
+    ...(s.cutouts ?? []).map((c) => c.zIndex),
   );
 }
 
@@ -41,6 +42,7 @@ export function bringToFront(s: DesktopState, id: string): DesktopState {
     docs: s.docs.map((d) => (d.id === id ? { ...d, zIndex: z } : d)),
     stacks: s.stacks.map((st) => (st.id === id ? { ...st, zIndex: z } : st)),
     ...(s.notes ? { notes: s.notes.map((n) => (n.id === id ? { ...n, zIndex: z } : n)) } : {}),
+    ...(s.cutouts ? { cutouts: s.cutouts.map((c) => (c.id === id ? { ...c, zIndex: z } : c)) } : {}),
   };
 }
 
