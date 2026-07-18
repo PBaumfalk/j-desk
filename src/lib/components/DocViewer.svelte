@@ -83,7 +83,7 @@
     </span>
     <button class="close" onclick={() => void desktop.command('collapseDoc', { id: doc.id })} aria-label="Schließen">✕</button>
   </div>
-  <div class="body" onwheel={(e) => e.stopPropagation()} onpointerdown={onBodyPointerDown} onpointerup={onBodyPointerUp}>
+  <div class="body" onwheel={(e) => { if (!e.ctrlKey && !e.metaKey) e.stopPropagation(); }} onpointerdown={onBodyPointerDown} onpointerup={onBodyPointerUp}>
     {#if desktop.api}
       <PageRenderer api={desktop.api} fileId={doc.fileId} {page} targetWidth={Math.round(size.w - 20)} onpagecount={(n) => (pageCount = n)} />
     {/if}
