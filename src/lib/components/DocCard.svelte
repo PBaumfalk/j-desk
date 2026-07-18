@@ -6,16 +6,43 @@
   import { desktop } from '../store.svelte';
   import { ui, showToast, pointerUeberKorb } from '../ui.svelte';
   import { showDocMenu, showDocMenuAt } from '../menus';
-  import { getThumbnail } from '../thumbnails';
+  import { getThumbnail, imageMime } from '../thumbnails';
+  import { getFileUrl } from '../fileCache';
+  import { PreviewError } from '../previewPoll';
   import { moveGroupLocal, commitGroupMove, groupOf } from '../groupDrag';
   import DocViewer from './DocViewer.svelte';
 
   let { doc, vp }: { doc: Doc; vp: Viewport } = $props();
 
+  const kind = $derived(doc.kind ?? 'pdf');
+  const dateiEndung = $derived((doc.name.split('.').pop() || '?').toUpperCase().slice(0, 5));
+
   let thumb = $state<string | null>(null);
+  let imgUrl = $state<string | null>(null);
+  let vorschauStatus = $state<'wartet' | 'bereit' | 'fehler'>('wartet');
+  let vorschauMeldung = $state<string | null>(null);
+
   $effect(() => {
     doc.fileId;
-    if (desktop.api) void getThumbnail(desktop.api, doc).then((t) => (thumb = t));
+    const k = kind;
+    if (!desktop.api) return;
+    if (k === 'image') {
+      void getFileUrl(desktop.api, doc.fileId, imageMime(doc.name)).then((u) => (imgUrl = u));
+    } else if (k === 'convertible') {
+      vorschauStatus = 'wartet';
+      vorschauMeldung = null;
+      getThumbnail(desktop.api, doc, 'preview')
+        .then((t) => {
+          thumb = t;
+          vorschauStatus = t ? 'bereit' : 'fehler';
+        })
+        .catch((e) => {
+          vorschauStatus = 'fehler';
+          vorschauMeldung = e instanceof PreviewError ? e.message : null;
+        });
+    } else if (k !== 'other') {
+      void getThumbnail(desktop.api, doc).then((t) => (thumb = t));
+    }
   });
   const kartenStempel = $derived(stampsFor(desktop.state, doc.id, doc.pageOnly ?? 1));
   const kartenFahnen = $derived(flagsFor(desktop.state, doc.id));
@@ -121,12 +148,32 @@
        style:z-index={doc.zIndex} style:transform="rotate({doc.rotation}deg)"
        style:width="{CARD_W}px" style:height="{CARD_H}px"
        onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp} onpointercancel={onPointerUp}
-       ondblclick={() => void desktop.command('expandDoc', { id: doc.id })}
+       ondblclick={() => { if (kind !== 'other') void desktop.command('expandDoc', { id: doc.id }); }}
        oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showDocMenu(e, doc); }}>
     {#if taped}<div class="tape" aria-hidden="true"></div>{/if}
     {#if geklammert}<div class="klammer" aria-hidden="true">🖇</div>{/if}
-    <div class="body">
-      {#if thumb}
+    <div class="body" class:polaroid={kind === 'image'} class:other={kind === 'other'}>
+      {#if kind === 'image'}
+        {#if imgUrl}
+          <img class="photo" src={imgUrl} alt="" draggable="false" />
+        {:else}
+          <div class="fallback">🖼️</div>
+        {/if}
+      {:else if kind === 'other'}
+        <div class="other-icon" aria-hidden="true">📄</div>
+        <div class="other-ext">{dateiEndung}</div>
+      {:else if kind === 'convertible'}
+        {#if vorschauStatus === 'bereit' && thumb}
+          <img src={thumb} alt="" draggable="false" />
+        {:else if vorschauStatus === 'fehler'}
+          <div class="fallback fehler" title={vorschauMeldung ?? undefined}>
+            ⚠️
+            {#if vorschauMeldung}<span class="fehlertext">{vorschauMeldung}</span>{/if}
+          </div>
+        {:else}
+          <div class="fallback wartend">⏳ Vorschau wird erstellt…</div>
+        {/if}
+      {:else if thumb}
         <img src={thumb} alt="" draggable="false" />
       {:else}
         <div class="fallback">PDF</div>
@@ -153,6 +200,15 @@
           border-radius: 4px 4px 0 0; }
   img { width: 100%; height: 100%; object-fit: cover; object-position: top; pointer-events: none; }
   .fallback { font-weight: 700; color: #b33; font-size: 22px; }
+  .fallback.wartend { font-size: 12px; font-weight: 600; color: #666; text-align: center; padding: 0 10px; }
+  .fallback.fehler { flex-direction: column; align-items: center; gap: 4px; font-size: 20px; color: #b33; }
+  .fehlertext { font-size: 10px; font-weight: 500; color: #944; max-width: 92%; overflow: hidden;
+                text-overflow: ellipsis; white-space: nowrap; }
+  .body.polaroid { background: #fff; box-sizing: border-box; padding: 10px 10px 22px; }
+  .photo { width: 100%; height: 100%; object-fit: contain; object-position: center; pointer-events: none; }
+  .body.other { background: #d9d0bb; flex-direction: column; gap: 4px; }
+  .other-icon { font-size: 32px; }
+  .other-ext { font-weight: 800; font-size: 15px; letter-spacing: .05em; color: #5b5540; }
   .mini-stamp { position: absolute; pointer-events: none; border: 3px solid #b3261e; color: #b3261e;
                 border-radius: 6px; padding: 2px 10px; opacity: .82; font-weight: 800; letter-spacing: .12em;
                 font-size: 20px; white-space: nowrap; transform-origin: center; }

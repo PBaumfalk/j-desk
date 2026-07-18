@@ -60,10 +60,13 @@ export async function downloadDoc(doc: Doc): Promise<void> {
 }
 
 export function showDocMenuAt(x: number, y: number, doc: Doc): void {
+  const kind = doc.kind ?? 'pdf';
   ui.menu = {
     x, y,
     items: [
-      { label: 'Aufschlagen', action: () => void desktop.command('expandDoc', { id: doc.id }) },
+      ...(kind !== 'other'
+        ? [{ label: 'Aufschlagen', action: () => void desktop.command('expandDoc', { id: doc.id }) }]
+        : []),
       { label: 'In neuem Tab öffnen', action: () => void openDoc(doc) },
       { label: 'Mit allen Verknüpften öffnen', action: () => openWithLinked(doc.id) },
       { label: 'Verknüpfen…', action: () => { ui.linkingFromId = doc.id; } },

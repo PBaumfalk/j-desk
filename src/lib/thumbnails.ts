@@ -3,24 +3,50 @@ import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { Doc } from '@digital-desktop/core';
 import type { ApiClient } from './api';
 import { THUMB_STORE, idbGet, idbPut } from './idb';
-import { fetchPreviewBytes } from './previewPoll';
+import { PreviewError, fetchPreviewBytes } from './previewPoll';
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
 const urls = new Map<string, string>();
 
-function remember(fileId: string, bytes: Uint8Array): string {
-  const url = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
-  urls.set(fileId, url);
+function remember(key: string, bytes: Uint8Array, mime = 'image/png'): string {
+  const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+  urls.set(key, url);
   return url;
 }
 
+/** Leitet den Bild-MIME-Typ aus der Dateiendung ab (der Server liefert keinen MIME-Typ beim Abruf). */
+export function imageMime(name: string): string {
+  const ext = name.split('.').pop()?.toLowerCase();
+  if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+  if (ext === 'gif') return 'image/gif';
+  if (ext === 'webp') return 'image/webp';
+  return 'image/png';
+}
+
 /**
- * Object-URL der Miniatur (erste bzw. herausgelöste Seite; PNG-Cache); null, wenn nicht renderbar.
- * `source: 'preview'` lädt die konvertierte Vorschau-PDF (mit Poll) statt der Originaldatei —
- * der Bild-Kurzweg (direkt aus Bilddateien) kommt in einer Folgeänderung.
+ * Object-URL der Miniatur; null, wenn nicht renderbar. Bilddateien (`doc.kind === 'image'`)
+ * nehmen einen Kurzweg — Bytes direkt als Bild-URL, kein pdfjs (das würde an Bilddaten scheitern).
+ * `source: 'preview'` lädt bei PDFs die konvertierte Vorschau-PDF (mit Poll) statt der Originaldatei.
+ * Bei Konvertierungsfehlern/Zeitüberschreitung wirft diese Funktion `PreviewError` weiter, damit der
+ * Aufrufer die Servermeldung anzeigen kann; andere Fehler (defekt/nicht ladbar) liefern still `null`.
  */
 export async function getThumbnail(api: ApiClient, doc: Doc, source: 'original' | 'preview' = 'original'): Promise<string | null> {
+  if (doc.kind === 'image') {
+    const key = `image:${doc.fileId}`;
+    const cached = urls.get(key);
+    if (cached) return cached;
+    const mime = imageMime(doc.name);
+    try {
+      const stored = await idbGet(THUMB_STORE, key).catch(() => null);
+      if (stored) return remember(key, stored, mime);
+      const bytes = await api.fetchFile(doc.fileId);
+      await idbPut(THUMB_STORE, key, bytes).catch(() => {});
+      return remember(key, bytes, mime);
+    } catch {
+      return null;
+    }
+  }
   const seite = doc.pageOnly ?? 1;
   const base = seite === 1 ? doc.fileId : `${doc.fileId}:${seite}`;
   const key = source === 'preview' ? `preview:${base}` : base;
@@ -44,7 +70,8 @@ export async function getThumbnail(api: ApiClient, doc: Doc, source: 'original' 
     const bytes = new Uint8Array(await blob.arrayBuffer());
     await idbPut(THUMB_STORE, key, bytes).catch(() => {});
     return remember(key, bytes);
-  } catch {
+  } catch (e) {
+    if (e instanceof PreviewError) throw e;
     return null; // defekt oder (noch) nicht ladbar → generisches Symbol
   }
 }

@@ -104,7 +104,7 @@
     vp = zoomToFit(allBoxes(desktop.state), { w: el.clientWidth, h: el.clientHeight });
   }
 
-  async function addPdfFile(file: File, position: Vec2): Promise<void> {
+  async function addFile(file: File, position: Vec2): Promise<void> {
     if (!desktop.api || !desktop.deskId) return;
     try {
       if (desktop.mode === 'jlawyer') {
@@ -113,7 +113,7 @@
         desktop.acceptServerState(result);
         return;
       }
-      const r = await desktop.api.uploadFile(new Uint8Array(await file.arrayBuffer()), file.name, file.type);
+      const r = await desktop.api.uploadFile(new Uint8Array(await file.arrayBuffer()), file.name, file.type || undefined);
       await desktop.command('addDoc', { fileId: r.fileId, name: file.name, position, id: uid(), kind: r.kind });
     } catch (e) {
       showToast(e instanceof Error ? e.message : `Upload fehlgeschlagen: ${file.name}`);
@@ -124,7 +124,7 @@
     const files = Array.from(fileInput.files ?? []);
     fileInput.value = '';
     const center = screenToWorld(vp, { x: el.clientWidth / 2, y: el.clientHeight / 2 });
-    files.forEach((f, i) => void addPdfFile(f, { x: center.x + i * 28, y: center.y + i * 20 }));
+    files.forEach((f, i) => void addFile(f, { x: center.x + i * 28, y: center.y + i * 20 }));
   }
 
   function onDragOver(e: DragEvent): void {
@@ -132,9 +132,9 @@
   }
 
   /** Zettel-Typ wählen, dann einen leeren Zettel in der Bildschirmmitte anlegen und bearbeiten. */
-  function neuerZettel(e: MouseEvent): void {
+  function zettelTypAuswahl(x: number, y: number): void {
     ui.menu = {
-      x: e.clientX, y: e.clientY,
+      x, y,
       items: NOTE_KINDS.map((kind: NoteKind) => ({
         label: NOTE_KIND_LABELS[kind],
         action: () => {
@@ -145,6 +145,21 @@
             .then(() => (ui.editingNoteId = id));
         },
       })),
+    };
+  }
+
+  /** „＋"-Menü: Datei-Upload oder Zettel anlegen. Das Zettel-Untermenü ersetzt den Menüinhalt
+   *  erst, nachdem ContextMenu.svelte den Klick verarbeitet (und ui.menu synchron auf null setzt) —
+   *  daher die Verzögerung auf den nächsten Tick statt einer echten Verschachtelung. */
+  function plusMenu(e: MouseEvent): void {
+    const x = e.clientX;
+    const y = e.clientY;
+    ui.menu = {
+      x, y,
+      items: [
+        { label: 'Datei…', action: () => fileInput.click() },
+        { label: 'Zettel…', action: () => setTimeout(() => zettelTypAuswahl(x, y), 0) },
+      ],
     };
   }
 
@@ -159,11 +174,9 @@
 
   function onDrop(e: DragEvent): void {
     e.preventDefault();
-    const files = Array.from(e.dataTransfer?.files ?? []).filter(
-      (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'),
-    );
+    const files = Array.from(e.dataTransfer?.files ?? []);
     const world = screenToWorld(vp, { x: e.clientX, y: e.clientY });
-    files.forEach((f, i) => void addPdfFile(f, { x: world.x + i * 28, y: world.y + i * 20 }));
+    files.forEach((f, i) => void addFile(f, { x: world.x + i * 28, y: world.y + i * 20 }));
   }
 
   onMount(() => {
@@ -242,13 +255,11 @@
     <input
       bind:this={fileInput}
       type="file"
-      accept="application/pdf,.pdf"
       multiple
       hidden
       onchange={onFilesPicked}
     />
-    <button onclick={() => fileInput.click()} title="PDF hinzufügen">＋ PDF</button>
-    <button onclick={neuerZettel} title="Notizzettel hinzufügen">＋ Zettel</button>
+    <button onclick={plusMenu} title="Hinzufügen">＋</button>
     <button onclick={() => void abmelden()} title="Abmelden">Abmelden</button>
   </div>
   {#if ui.linkingFromId}
