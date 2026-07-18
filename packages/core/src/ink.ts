@@ -1,7 +1,7 @@
 import { findDoc, type DesktopState, type Vec2 } from './model';
 import { uid } from './uid';
 
-export type StrokeTool = 'pen' | 'marker';
+export type StrokeTool = 'pen' | 'marker' | 'pencil';
 
 export interface Stroke {
   id: string;
@@ -13,7 +13,7 @@ export interface Stroke {
   points: Vec2[];      // >= 2 Punkte im PDF-Seitenraum bei scale = 1
 }
 
-const TOOLS: readonly StrokeTool[] = ['pen', 'marker'];
+const TOOLS: readonly StrokeTool[] = ['pen', 'marker', 'pencil'];
 
 function validPoints(points: Vec2[]): boolean {
   return (

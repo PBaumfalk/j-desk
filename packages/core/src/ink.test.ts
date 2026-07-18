@@ -44,6 +44,11 @@ describe('addStroke', () => {
     expect(() => addStroke(base(), stroke({ docId: 'nix' }))).toThrow(/nicht gefunden/);
   });
 
+  it('akzeptiert das Bleistift-Werkzeug', () => {
+    const s = addStroke(base(), stroke({ tool: 'pencil', color: '#5c6672', width: 1.2, points: [{ x: 0, y: 0 }, { x: 3, y: 3 }] }));
+    expect(s.strokes?.[0]?.tool).toBe('pencil');
+  });
+
   it('wirft bei ungültiger Seite, zu wenig Punkten, unendlichen Koordinaten und width <= 0', () => {
     expect(() => addStroke(base(), stroke({ page: 0 }))).toThrow();
     expect(() => addStroke(base(), stroke({ page: 1.5 }))).toThrow();

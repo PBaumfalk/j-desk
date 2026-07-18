@@ -174,15 +174,18 @@
   <div class="head" role="toolbar" tabindex="-1" aria-label="Dokumentleiste" onpointerdown={onHeaderPointerDown} onpointermove={onHeaderPointerMove} onpointerup={onHeaderPointerUp} onpointercancel={onHeaderPointerUp}>
     <span class="title">{doc.name}</span>
     <span class="tools">
+      <button class:on={inkTool === 'pencil'} onclick={() => toggleTool('pencil')} aria-pressed={inkTool === 'pencil'} aria-label="Bleistift" title="Bleistift">✏</button>
+      <button class:on={inkTool === 'pen'} onclick={() => toggleTool('pen')} aria-pressed={inkTool === 'pen'} aria-label="Kugelschreiber" title="Kugelschreiber">✎</button>
+      <button class:on={inkTool === 'marker'} onclick={() => toggleTool('marker')} aria-pressed={inkTool === 'marker'} aria-label="Textmarker" title="Textmarker"><span class="marker-chip"></span></button>
+      <button class:on={inkTool === 'line'} onclick={() => toggleTool('line')} aria-pressed={inkTool === 'line'} aria-label="Lineal" title="Lineal: gerade Linie ziehen">⟍</button>
+      <button class:on={inkTool === 'eraser'} onclick={() => toggleTool('eraser')} aria-pressed={inkTool === 'eraser'} aria-label="Radierer" title="Radierer (nur Striche)">⌫</button>
+      <span class="sep"></span>
       {#if !seitenfix}
         <button onclick={() => void desktop.command('extractPage', { docId: doc.id, page, position: { x: doc.position.x + size.w + 24, y: doc.position.y } })}
                 aria-label="Seite herauslösen" title="Seite herauslösen (Enthefterzange)">⧉</button>
       {/if}
       <button class:on={inkTool === 'scissors'} onclick={() => toggleTool('scissors')} aria-pressed={inkTool === 'scissors'} aria-label="Schere" title="Schere: Ausschnitt aufziehen">✄</button>
       <button class:on={lichttisch} onclick={() => (lichttisch = !lichttisch)} aria-pressed={lichttisch} aria-label="Lichttisch" title="Lichttisch: durchscheinend übereinanderlegen">◐</button>
-      <button class:on={inkTool === 'pen'} onclick={() => toggleTool('pen')} aria-pressed={inkTool === 'pen'} aria-label="Stift" title="Stift">✎</button>
-      <button class:on={inkTool === 'marker'} onclick={() => toggleTool('marker')} aria-pressed={inkTool === 'marker'} aria-label="Textmarker" title="Textmarker"><span class="marker-chip"></span></button>
-      <button class:on={inkTool === 'eraser'} onclick={() => toggleTool('eraser')} aria-pressed={inkTool === 'eraser'} aria-label="Radierer" title="Radierer">⌫</button>
     </span>
     {#if seitenfix}
       <span class="pos">S. {page}</span>
@@ -228,11 +231,12 @@
           border-bottom: 1px solid #e4e8ef; cursor: grab; user-select: none; }
   .title { flex: 1; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pager { display: flex; align-items: center; gap: 6px; }
-  .tools { display: flex; align-items: center; gap: 4px; }
+  .tools { display: flex; align-items: center; gap: 4px; overflow-x: auto; scrollbar-width: none; }
   .tools button { border: none; background: #e7ebf2; border-radius: 5px; cursor: pointer;
           width: 24px; height: 24px; font-size: 13px; line-height: 1;
           display: inline-flex; align-items: center; justify-content: center; }
   .tools button.on { background: #2c5aa0; color: #fff; }
+  .sep { width: 1px; height: 16px; background: #d3d9e3; margin: 0 2px; flex: none; }
   .marker-chip { width: 12px; height: 12px; border-radius: 3px; background: #ffd166; display: inline-block; }
   .tools button.on .marker-chip { outline: 2px solid #fff; }
   .pagewrap { position: relative; width: fit-content; }

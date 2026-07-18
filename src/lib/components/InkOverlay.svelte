@@ -5,12 +5,19 @@
   import { toBase, toScreen, hitStroke } from '../inkMath';
   import { desktop } from '../store.svelte';
 
-  export type InkTool = StrokeTool | 'eraser';
+  export type InkTool = StrokeTool | 'eraser' | 'line';
 
   const TOOL_STYLE: Record<StrokeTool, { color: string; width: number; alpha: number }> = {
-    pen: { color: '#1d3557', width: 1.5, alpha: 1 },
-    marker: { color: '#ffd166', width: 9, alpha: 0.35 },
+    pen: { color: '#1d3557', width: 1.5, alpha: 1 },        // Kugelschreiber
+    marker: { color: '#ffd166', width: 9, alpha: 0.35 },     // Textmarker
+    pencil: { color: '#5c6672', width: 1.2, alpha: 0.9 },    // Bleistift
   };
+  /** Der Lineal-Modus zeichnet mit Kugelschreiber-Optik, begradigt aber zur Geraden. */
+  function styleFor(t: Exclude<InkTool, 'eraser'>): { tool: StrokeTool; color: string; width: number } {
+    const kind: StrokeTool = t === 'line' ? 'pen' : t;
+    const st = TOOL_STYLE[kind];
+    return { tool: kind, color: st.color, width: st.width };
+  }
   const ERASE_TOLERANCE = 6; // Basiskoordinaten
 
   let { docId, page, base, renderedWidth, tool }:
@@ -55,8 +62,8 @@
     c.clearRect(0, 0, canvas.width, canvas.height);
     for (const st of strokes) drawStroke(c, st.points, st.tool, st.color, st.width);
     if (drawing && tool && tool !== 'eraser') {
-      const style = TOOL_STYLE[tool];
-      drawStroke(c, drawing, tool, style.color, style.width);
+      const style = styleFor(tool);
+      drawStroke(c, drawing, style.tool, style.color, style.width);
     }
   }
 
@@ -101,7 +108,12 @@
     if (!drawing) return;
     for (const ev of events) {
       const p = localPoint(ev as PointerEvent);
-      if (p) drawing.push(p);
+      if (!p) continue;
+      if (tool === 'line') {
+        drawing = [drawing[0], p];
+      } else {
+        drawing.push(p);
+      }
     }
     redraw();
   }
@@ -113,12 +125,9 @@
     const points = drawing;
     drawing = null;
     if (points.length >= 2 && tool !== null) {
-      const style = TOOL_STYLE[tool];
+      const st = styleFor(tool);
       void desktop.command('addStroke', {
-        stroke: {
-          id: uid(), docId, page, tool,
-          color: style.color, width: style.width, points,
-        } satisfies Stroke,
+        stroke: { id: uid(), docId, page, tool: st.tool, color: st.color, width: st.width, points } satisfies Stroke,
       });
     } else {
       redraw(); // Ein-Punkt-Tipper verwerfen
