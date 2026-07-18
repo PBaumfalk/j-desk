@@ -2612,6 +2612,9 @@ Aufbau gespiegelt von `DocViewer.svelte` (Kopf-Drag → `moveStack`, Anfasser �
 
 (Der Style-Block wird beim Umsetzen konkret mit den kopierten DocViewer-Regeln gefüllt — bewusste Duplikation im Bestandsmuster, wie CSS-Duplikation zwischen Dialogen bereits akzeptiert ist.)
 
+**Nachtrag (verbindlich, Lehre aus Tasks 9/10 — überstimmt den Code-Block oben, wo abweichend):**
+Der Code-Block zeigt Tipp-Ex-/Schwärzungs-Knöpfe und den MarkLayer, aber KEINE Aufzieh-Fläche — ohne sie ließen sich im Konvolut Abdeckungen nur entfernen, nie anlegen. Ergänze den Rechteck-Mechanismus aus dem DocViewer, beschränkt auf `'tippex' | 'redact'` (kein Scissors im Konvolut): Zustände `schnitt`/`schnittPointer`, Handler `schnittDown/Move/Up` (bei Up: `addMark` mit `docId: aktuelle.docId, page: aktuelle.page`; Werkzeug bleibt aktiv), `schnittCss`, `.schnittflaeche`/`.schnittrahmen`-CSS wie im DocViewer. Verbindliche DOM-Reihenfolge im `pagewrap` (Stacking: ganzflächige Interaktionsflächen fangen Klicks ihrer DOM-Nachfolger NICHT ab, deshalb Layer mit eigenen Klick-Zielen ans Ende): `PageRenderer` → `InkOverlay` → `{#if rectTool && baseSize}`-Schnittflächen-Block → `MarkLayer` → `{#if stampChoice && baseSize}`-Stempelflächen-Block → `StampLayer`. svelte-ignore-Codes komma-separiert (Svelte-5-Runes).
+
 - [ ] **Step 4: `StackCard.svelte` — Konvolut-Zustand**
 
 1. `{#if stack.open}<KonvolutViewer {stack} {vp} />{:else} …bestehende Karte… {/if}` als äußerste Verzweigung (Muster `DocCard`).
