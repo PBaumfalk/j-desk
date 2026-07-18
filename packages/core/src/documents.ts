@@ -1,5 +1,6 @@
 import { uid } from './uid';
-import type { DesktopState, Vec2 } from './model';
+import type { DesktopState, Vec2, FileKind } from './model';
+import { FILE_KINDS } from './model';
 
 function maxZ(s: DesktopState): number {
   return Math.max(
@@ -24,9 +25,11 @@ export function addDoc(
   name: string,
   position: Vec2,
   id: string = uid(),
+  kind?: FileKind,
 ): DesktopState {
+  if (kind !== undefined && !FILE_KINDS.includes(kind)) throw new Error(`Unbekannte Datei-Art: ${String(kind)}`);
   if (s.docs.some((d) => d.fileId === fileId)) return s; // liegt schon auf dem Tisch
-  const doc = { id, fileId, name, position, rotation: rotationFor(id), zIndex: maxZ(s) + 1 };
+  const doc = { id, fileId, name, position, rotation: rotationFor(id), zIndex: maxZ(s) + 1, ...(kind !== undefined ? { kind } : {}) };
   return { ...s, docs: [...s.docs, doc] };
 }
 

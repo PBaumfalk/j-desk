@@ -1,4 +1,4 @@
-import type { DesktopState, Vec2, Size } from './model';
+import type { DesktopState, Vec2, Size, FileKind } from './model';
 import { addDoc, moveDoc, bringToFront } from './documents';
 import { addLink, setLinkNote, removeLink } from './links';
 import { stackDocs, removeFromStack, dissolveStack, renameStack, moveStack, stapleStack, unstapleStack } from './stacks';
@@ -68,7 +68,7 @@ function wrap(fn: () => DesktopState): DesktopState {
 }
 
 const handlers: Record<string, (s: DesktopState, p: Record<string, unknown>) => DesktopState> = {
-  addDoc: (s, p) => addDoc(s, id(p.fileId, 'fileId'), text(p.name, 'name'), vec(p.position, 'position'), optId(p.id)),
+  addDoc: (s, p) => addDoc(s, id(p.fileId, 'fileId'), text(p.name, 'name'), vec(p.position, 'position'), optId(p.id), p.kind as FileKind | undefined),
   moveDoc: (s, p) => moveDoc(s, id(p.id, 'id'), vec(p.position, 'position')),
   bringToFront: (s, p) => bringToFront(s, id(p.id, 'id')),
   removeDoc: (s, p) => removeDoc(s, id(p.id, 'id')),
