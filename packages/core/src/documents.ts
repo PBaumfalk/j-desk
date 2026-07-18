@@ -1,3 +1,4 @@
+import { uid } from './uid';
 import type { DesktopState, Vec2 } from './model';
 
 function maxZ(s: DesktopState): number {
@@ -16,7 +17,7 @@ export function addDoc(
   fileId: string,
   name: string,
   position: Vec2,
-  id: string = crypto.randomUUID(),
+  id: string = uid(),
 ): DesktopState {
   if (s.docs.some((d) => d.fileId === fileId)) return s; // liegt schon auf dem Tisch
   const doc = { id, fileId, name, position, rotation: rotationFor(id), zIndex: maxZ(s) + 1 };

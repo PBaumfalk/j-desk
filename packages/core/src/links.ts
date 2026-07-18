@@ -1,10 +1,11 @@
+import { uid } from './uid';
 import { findDoc, findStack, type DesktopState, type Doc } from './model';
 
 export function addLink(
   s: DesktopState,
   fromId: string,
   toId: string,
-  id: string = crypto.randomUUID(),
+  id: string = uid(),
 ): DesktopState {
   if (fromId === toId) return s;
   const exists = s.links.some(

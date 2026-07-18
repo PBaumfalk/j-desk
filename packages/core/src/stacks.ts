@@ -1,3 +1,4 @@
+import { uid } from './uid';
 import { findDoc, findStack, stackOf, type DesktopState, type Vec2 } from './model';
 import { removeLinksFor } from './links';
 
@@ -5,7 +6,7 @@ export function stackDocs(
   s: DesktopState,
   draggedId: string,
   targetId: string,
-  newStackId: string = crypto.randomUUID(),
+  newStackId: string = uid(),
 ): DesktopState {
   if (draggedId === targetId) return s;
   if (stackOf(s, draggedId)) return s; // erst aus dem alten Stapel ziehen

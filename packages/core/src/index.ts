@@ -7,3 +7,4 @@ export * from './commands';
 export * from './viewport';
 export * from './geometry';
 export * from './viewer';
+export * from './uid';
