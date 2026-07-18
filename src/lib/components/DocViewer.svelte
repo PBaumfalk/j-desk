@@ -1,10 +1,12 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { moveDoc, setDocPage, DEFAULT_OPEN_SIZE, type Doc, type Size, type Viewport } from '@digital-desktop/core';
+  import { moveDoc, setDocPage, uid, DEFAULT_OPEN_SIZE, type Doc, type Size, type Viewport } from '@digital-desktop/core';
   import { debounce } from '../debounce';
   import { desktop } from '../store.svelte';
+  import { showToast } from '../ui.svelte';
   import PageRenderer from './PageRenderer.svelte';
   import InkOverlay, { type InkTool } from './InkOverlay.svelte';
+  import MarkLayer from './MarkLayer.svelte';
 
   let { doc, vp }: { doc: Doc; vp: Viewport } = $props();
 
@@ -19,10 +21,15 @@
   let lichttisch = $state(false);
 
   // Zeichen-/Schneidwerkzeuge: aktives Werkzeug gilt pro Viewer
-  let inkTool = $state<InkTool | 'scissors' | null>(null);
+  let inkTool = $state<InkTool | 'scissors' | 'tippex' | 'redact' | null>(null);
   let baseSize = $state<Size | null>(null);
-  function toggleTool(t: InkTool | 'scissors') {
+  const rectTool = $derived(inkTool === 'scissors' || inkTool === 'tippex' || inkTool === 'redact' ? inkTool : null);
+  function toggleTool(t: InkTool | 'scissors' | 'tippex' | 'redact') {
     inkTool = inkTool === t ? null : t;
+    if (inkTool === 'redact' && !localStorage.getItem('dd-redact-hinweis')) {
+      localStorage.setItem('dd-redact-hinweis', '1');
+      showToast('Hinweis: Die Schwärzung deckt nur sichtbar ab — der Text bleibt im PDF erhalten.');
+    }
   }
 
   // Schere: Rechteck auf der Seite aufziehen -> Ausschnitt als eigenes Objekt daneben
@@ -60,11 +67,16 @@
       w: Math.abs(sn.x1 - sn.x0), h: Math.abs(sn.y1 - sn.y0),
     };
     if (rect.w < 12 || rect.h < 12) return; // Mini-Wischer verwerfen
-    inkTool = null;
-    void desktop.command('addCutout', {
-      docId: doc.id, page, rect,
-      position: { x: doc.position.x + size.w + 24, y: doc.position.y + 40 },
-    });
+    if (rectTool === 'scissors') {
+      inkTool = null;
+      void desktop.command('addCutout', {
+        docId: doc.id, page, rect,
+        position: { x: doc.position.x + size.w + 24, y: doc.position.y + 40 },
+      });
+    } else if (rectTool) {
+      // Tipp-Ex/Schwärzung: Werkzeug bleibt aktiv (mehrere Flächen nacheinander)
+      void desktop.command('addMark', { mark: { id: uid(), docId: doc.id, page, rect, kind: rectTool } });
+    }
   }
   const schnittCss = $derived.by(() => {
     if (!schnitt || !baseSize) return null;
@@ -180,6 +192,9 @@
       <button class:on={inkTool === 'line'} onclick={() => toggleTool('line')} aria-pressed={inkTool === 'line'} aria-label="Lineal" title="Lineal: gerade Linie ziehen">⟍</button>
       <button class:on={inkTool === 'eraser'} onclick={() => toggleTool('eraser')} aria-pressed={inkTool === 'eraser'} aria-label="Radierer" title="Radierer (nur Striche)">⌫</button>
       <span class="sep"></span>
+      <button class:on={inkTool === 'tippex'} onclick={() => toggleTool('tippex')} aria-pressed={inkTool === 'tippex'} aria-label="Tipp-Ex" title="Tipp-Ex: weiß abdecken"><span class="tippex-chip"></span></button>
+      <button class:on={inkTool === 'redact'} onclick={() => toggleTool('redact')} aria-pressed={inkTool === 'redact'} aria-label="Schwärzung" title="Schwärzung: schwarz abdecken (rein visuell)">■</button>
+      <span class="sep"></span>
       {#if !seitenfix}
         <button onclick={() => void desktop.command('extractPage', { docId: doc.id, page, position: { x: doc.position.x + size.w + 24, y: doc.position.y } })}
                 aria-label="Seite herauslösen" title="Seite herauslösen (Enthefterzange)">⧉</button>
@@ -203,13 +218,17 @@
       <div class="pagewrap">
         <PageRenderer api={desktop.api} fileId={doc.fileId} {page} targetWidth={pageWidth}
           onpagecount={(n) => (pageCount = n)} onbasesize={(s) => (baseSize = s)} />
-        <InkOverlay docId={doc.id} {page} base={baseSize} renderedWidth={pageWidth} tool={inkTool === 'scissors' ? null : inkTool} />
-        {#if inkTool === 'scissors' && baseSize}
+        <InkOverlay docId={doc.id} {page} base={baseSize} renderedWidth={pageWidth}
+          tool={inkTool === 'scissors' || inkTool === 'tippex' || inkTool === 'redact' ? null : inkTool} />
+        <MarkLayer docId={doc.id} {page} base={baseSize} renderedWidth={pageWidth}
+                   active={inkTool === 'tippex' || inkTool === 'redact' ? inkTool : null} />
+        {#if rectTool && baseSize}
           <div class="schnittflaeche" role="presentation"
                onpointerdown={schnittDown} onpointermove={schnittMove} onpointerup={schnittUp}
                onpointercancel={() => { schnittPointer = null; schnitt = null; }}>
             {#if schnittCss}
-              <div class="schnittrahmen" style:left="{schnittCss.left}px" style:top="{schnittCss.top}px"
+              <div class="schnittrahmen" class:tippex={rectTool === 'tippex'} class:redact={rectTool === 'redact'}
+                   style:left="{schnittCss.left}px" style:top="{schnittCss.top}px"
                    style:width="{schnittCss.w}px" style:height="{schnittCss.h}px"></div>
             {/if}
           </div>
@@ -239,6 +258,7 @@
   .sep { width: 1px; height: 16px; background: #d3d9e3; margin: 0 2px; flex: none; }
   .marker-chip { width: 12px; height: 12px; border-radius: 3px; background: #ffd166; display: inline-block; }
   .tools button.on .marker-chip { outline: 2px solid #fff; }
+  .tippex-chip { width: 12px; height: 12px; border-radius: 3px; background: #fff; border: 1px solid #b8c0cc; display: inline-block; }
   .pagewrap { position: relative; width: fit-content; }
   .pager button, .close { border: none; background: #e7ebf2; border-radius: 5px; cursor: pointer;
           width: 24px; height: 24px; font-size: 15px; line-height: 1; }
@@ -251,4 +271,6 @@
   .schnittflaeche { position: absolute; inset: 0; cursor: crosshair; touch-action: none; }
   .schnittrahmen { position: absolute; border: 2px dashed #c0392b; background: rgba(192, 57, 43, .08);
                    pointer-events: none; }
+  .schnittrahmen.tippex { border-color: #8a94a3; background: rgba(255, 255, 255, .35); }
+  .schnittrahmen.redact { border-color: #111; background: rgba(0, 0, 0, .18); }
 </style>
