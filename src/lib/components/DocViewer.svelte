@@ -110,10 +110,11 @@
 
 <svelte:window onkeydown={(e) => { if (document.activeElement === wrapEl) onKey(e); }} />
 
-<div class="viewer" bind:this={wrapEl} tabindex="0"
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -- der Viewer ist bewusst fokussierbar: Pfeiltasten blättern -->
+<div class="viewer" role="group" aria-label={doc.name} bind:this={wrapEl} tabindex="0"
      style:left="{doc.position.x}px" style:top="{doc.position.y}px" style:z-index={doc.zIndex}
      style:width="{size.w}px" style:height="{size.h}px">
-  <div class="head" onpointerdown={onHeaderPointerDown} onpointermove={onHeaderPointerMove} onpointerup={onHeaderPointerUp} onpointercancel={onHeaderPointerUp}>
+  <div class="head" role="toolbar" tabindex="-1" aria-label="Dokumentleiste" onpointerdown={onHeaderPointerDown} onpointermove={onHeaderPointerMove} onpointerup={onHeaderPointerUp} onpointercancel={onHeaderPointerUp}>
     <span class="title">{doc.name}</span>
     <span class="tools">
       <button class:on={inkTool === 'pen'} onclick={() => toggleTool('pen')} aria-pressed={inkTool === 'pen'} aria-label="Stift" title="Stift">✎</button>
@@ -127,7 +128,7 @@
     </span>
     <button class="close" onclick={() => void desktop.command('collapseDoc', { id: doc.id })} aria-label="Schließen">✕</button>
   </div>
-  <div class="body" onwheel={(e) => { if (!e.ctrlKey && !e.metaKey) e.stopPropagation(); }} onpointerdown={onBodyPointerDown} onpointerup={onBodyPointerUp}>
+  <div class="body" role="presentation" onwheel={(e) => { if (!e.ctrlKey && !e.metaKey) e.stopPropagation(); }} onpointerdown={onBodyPointerDown} onpointerup={onBodyPointerUp}>
     {#if desktop.api}
       <div class="pagewrap">
         <PageRenderer api={desktop.api} fileId={doc.fileId} {page} targetWidth={pageWidth}

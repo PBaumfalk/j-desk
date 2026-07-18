@@ -10,8 +10,8 @@
 </script>
 
 {#if ui.menu}
-  <div class="backdrop" onpointerdown={(e) => { e.stopPropagation(); ui.menu = null; }} oncontextmenu={(e) => { e.preventDefault(); ui.menu = null; }}></div>
-  <div class="menu" style:left="{ui.menu.x}px" style:top="{ui.menu.y}px">
+  <div class="backdrop" role="presentation" onpointerdown={(e) => { e.stopPropagation(); ui.menu = null; }} oncontextmenu={(e) => { e.preventDefault(); ui.menu = null; }}></div>
+  <div class="menu" role="menu" style:left="{ui.menu.x}px" style:top="{ui.menu.y}px">
     {#each ui.menu.items as item (item.label)}
       <button onpointerdown={(e) => e.stopPropagation()} onclick={() => { if (Date.now() - openedAt < 300) return; item.action(); ui.menu = null; }}>
         {item.label}

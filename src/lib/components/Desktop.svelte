@@ -143,7 +143,7 @@
 
 </script>
 
-<div class="desk" bind:this={el} class:grabbing={spaceDown || panning}
+<div class="desk" role="application" aria-label="Schreibtisch" bind:this={el} class:grabbing={spaceDown || panning}
      onwheel={onWheel} onpointerdown={onPointerDown} onpointermove={onPointerMove}
      onpointerup={endPointer} onpointercancel={endPointer}
      ondragover={onDragOver} ondrop={onDrop}>

@@ -84,7 +84,7 @@
 {#if doc.open}
   <DocViewer {doc} {vp} />
 {:else}
-  <div class="card"
+  <div class="card" role="button" tabindex="-1" aria-label={doc.name}
        style:left="{doc.position.x}px" style:top="{doc.position.y}px"
        style:z-index={doc.zIndex} style:transform="rotate({doc.rotation}deg)"
        style:width="{CARD_W}px" style:height="{CARD_H}px"

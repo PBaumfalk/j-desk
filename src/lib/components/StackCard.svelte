@@ -115,7 +115,8 @@
   }
 </script>
 
-<div class="stack" style:left="{stack.position.x}px" style:top="{stack.position.y}px" style:z-index={stack.zIndex}
+<div class="stack" role="button" tabindex="-1" aria-label={stack.name || 'Stapel'}
+     style:left="{stack.position.x}px" style:top="{stack.position.y}px" style:z-index={stack.zIndex}
      style:width="{CARD_W + 24}px" style:height="{CARD_H + 24}px"
      onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp} onpointercancel={onPointerUp}
      oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showStackMenu(e, stack); }}>
@@ -142,7 +143,8 @@
       {#each stack.docIds as docId (docId)}
         {@const d = findDoc(desktop.state, docId)}
         {#if d}
-          <div class="fan-card" onpointerdown={(e) => fanPointerDown(e, docId)}
+          <div class="fan-card" role="button" tabindex="-1" aria-label={d.name}
+               onpointerdown={(e) => fanPointerDown(e, docId)}
                oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showDocMenu(e, d); }}>
             {d.name}
           </div>

@@ -39,7 +39,8 @@
     {@const a = endpoint(link.fromId)}
     {@const b = endpoint(link.toId)}
     {#if a && b}
-      <path d={curve(a, b)} class="hit" onpointerdown={(e) => { e.stopPropagation(); openLinkId = link.id; }} />
+      <path d={curve(a, b)} class="hit" role="button" tabindex="-1" aria-label="Verknüpfung öffnen"
+            onpointerdown={(e) => { e.stopPropagation(); openLinkId = link.id; }} />
       <path d={curve(a, b)} class="line" />
       {#if link.note}
         <text x={(a.x + b.x) / 2} y={(a.y + b.y) / 2 + 28} text-anchor="middle" class="note">{link.note}</text>
@@ -52,7 +53,7 @@
   {@const a = endpoint(openLink.fromId)}
   {@const b = endpoint(openLink.toId)}
   {#if a && b}
-    <div class="popover" style:left="{(a.x + b.x) / 2}px" style:top="{(a.y + b.y) / 2}px"
+    <div class="popover" role="dialog" tabindex="-1" aria-label="Verknüpfungsnotiz" style:left="{(a.x + b.x) / 2}px" style:top="{(a.y + b.y) / 2}px"
          onpointerdown={(e) => e.stopPropagation()}>
       <textarea placeholder="Notiz zur Verknüpfung…" value={openLink.note}
         oninput={(e) => {

@@ -51,8 +51,8 @@
 <div class="switcher">
   <button class="current" onclick={toggle}>{aktiv?.name ?? '…'} ▾</button>
   {#if open}
-    <div class="backdrop" onpointerdown={(e) => { e.stopPropagation(); open = false; }}></div>
-    <div class="menu" onpointerdown={(e) => e.stopPropagation()}>
+    <div class="backdrop" role="presentation" onpointerdown={(e) => { e.stopPropagation(); open = false; }}></div>
+    <div class="menu" role="menu" tabindex="-1" onpointerdown={(e) => e.stopPropagation()}>
       {#if mode === 'liste'}
         {#each desktop.desks as desk (desk.id)}
           <button class="item" onclick={() => { void desktop.switchDesk(desk.id); open = false; }}>
