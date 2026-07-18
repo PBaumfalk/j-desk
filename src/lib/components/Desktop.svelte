@@ -100,6 +100,17 @@
         ui.linkingFromId = null;
         ui.menu = null;
       }
+      if (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+        // Ein fokussierter Viewer blättert mit den Pfeilen selbst; Eingabefelder behalten ihre Cursor-Tasten.
+        const a = document.activeElement;
+        if (a instanceof HTMLElement && (a.closest('.viewer') || a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) return;
+        e.preventDefault();
+        const step = 120; // wie das Pfeilpad im Bedienfeld
+        if (e.code === 'ArrowUp') vp = panBy(vp, 0, step);
+        if (e.code === 'ArrowDown') vp = panBy(vp, 0, -step);
+        if (e.code === 'ArrowLeft') vp = panBy(vp, step, 0);
+        if (e.code === 'ArrowRight') vp = panBy(vp, -step, 0);
+      }
     };
     const up = (e: KeyboardEvent) => {
       if (e.code === 'Space') spaceDown = false;
