@@ -2,6 +2,7 @@
   import {
     CARD_W, CARD_H, findDoc, moveStack, screenToWorld, type Stack, type Viewport,
   } from '@digital-desktop/core';
+  import { uid } from '../uid';
   import { desktop } from '../store.svelte';
   import { ui } from '../ui.svelte';
   import { showDocMenu, showStackMenu, openDoc } from '../menus';
@@ -25,7 +26,7 @@
     if (ui.linkingFromId && ui.linkingFromId !== stack.id) {
       const from = ui.linkingFromId;
       ui.linkingFromId = null;
-      void desktop.command('addLink', { fromId: from, toId: stack.id, id: crypto.randomUUID() });
+      void desktop.command('addLink', { fromId: from, toId: stack.id, id: uid() });
       return;
     }
     if (ui.linkingFromId === stack.id) {

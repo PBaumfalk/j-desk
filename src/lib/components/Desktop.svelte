@@ -4,6 +4,7 @@
     freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes,
     type Vec2, type Viewport,
   } from '@digital-desktop/core';
+  import { uid } from '../uid';
   import { desktop } from '../store.svelte';
   import { ui, showToast } from '../ui.svelte';
   import DocCard from './DocCard.svelte';
@@ -46,7 +47,7 @@
     if (!desktop.api) return;
     try {
       const fileId = await desktop.api.uploadFile(new Uint8Array(await file.arrayBuffer()), file.name);
-      await desktop.command('addDoc', { fileId, name: file.name, position, id: crypto.randomUUID() });
+      await desktop.command('addDoc', { fileId, name: file.name, position, id: uid() });
     } catch (e) {
       showToast(e instanceof Error ? e.message : `Upload fehlgeschlagen: ${file.name}`);
     }
