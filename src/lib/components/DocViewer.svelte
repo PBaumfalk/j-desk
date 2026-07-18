@@ -12,6 +12,7 @@
 
   let dragging = false, moved = false;
   function onHeaderPointerDown(e: PointerEvent) {
+    if ((e.target as HTMLElement).closest('button')) return; // Klicks auf ‹ › ✕ nicht als Drag verschlucken
     if (e.button !== 0) return;
     e.stopPropagation();
     dragging = true; moved = false;
@@ -82,9 +83,9 @@
     </span>
     <button class="close" onclick={() => void desktop.command('collapseDoc', { id: doc.id })} aria-label="Schließen">✕</button>
   </div>
-  <div class="body" onpointerdown={onBodyPointerDown} onpointerup={onBodyPointerUp}>
+  <div class="body" onwheel={(e) => e.stopPropagation()} onpointerdown={onBodyPointerDown} onpointerup={onBodyPointerUp}>
     {#if desktop.api}
-      <PageRenderer api={desktop.api} fileId={doc.fileId} {page} targetWidth={Math.round(size.w)} onpagecount={(n) => (pageCount = n)} />
+      <PageRenderer api={desktop.api} fileId={doc.fileId} {page} targetWidth={Math.round(size.w - 20)} onpagecount={(n) => (pageCount = n)} />
     {/if}
   </div>
   <div class="grip" onpointerdown={onResizeDown} onpointermove={onResizeMove} onpointerup={onResizeUp} aria-hidden="true"></div>

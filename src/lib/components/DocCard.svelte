@@ -4,7 +4,7 @@
   } from '@digital-desktop/core';
   import { desktop } from '../store.svelte';
   import { ui } from '../ui.svelte';
-  import { showDocMenu, openDoc } from '../menus';
+  import { showDocMenu } from '../menus';
   import { getThumbnail } from '../thumbnails';
   import DocViewer from './DocViewer.svelte';
 
