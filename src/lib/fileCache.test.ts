@@ -45,6 +45,16 @@ describe('getFileUrl', () => {
     expect(fetchFile).not.toHaveBeenCalled();
   });
 
+  it('cacht dieselbe fileId getrennt je MIME-Typ (kein Vergiften durch den ersten Aufrufer)', async () => {
+    const fetchFile = vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3]));
+    const api = { fetchFile } as unknown as ApiClient;
+    const pdfUrl = await getFileUrl(api, 'file-cache-test-mime', 'application/pdf');
+    const imgUrl = await getFileUrl(api, 'file-cache-test-mime', 'image/png');
+    expect(pdfUrl).not.toBe(imgUrl);
+    const pdfUrlAgain = await getFileUrl(api, 'file-cache-test-mime', 'application/pdf');
+    expect(pdfUrlAgain).toBe(pdfUrl);
+  });
+
   it('wiederholt nach einem Fehlschlag statt den Fehler zu cachen', async () => {
     const fetchFile = vi
       .fn()

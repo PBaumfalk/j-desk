@@ -2,6 +2,7 @@ import { clipOf, collectLinkedDocs, isTaped, type Cutout, type Doc, type Note, t
 import { desktop } from './store.svelte';
 import { ui, showToast, type MenuItem } from './ui.svelte';
 import { getFileUrl } from './fileCache';
+import { imageMime } from './thumbnails';
 
 export const NOTE_KIND_LABELS: Record<NoteKind, string> = {
   notiz: 'Notiz',
@@ -33,7 +34,7 @@ export async function openDoc(doc: Doc): Promise<void> {
   // Fenster synchron zur Nutzergeste öffnen, sonst greift der Popup-Blocker.
   const win = window.open('', '_blank');
   try {
-    const url = await getFileUrl(desktop.api, doc.fileId);
+    const url = await getFileUrl(desktop.api, doc.fileId, doc.kind === 'image' ? imageMime(doc.name) : undefined);
     if (win) win.location.href = url;
     else window.open(url, '_blank');
   } catch (e) {
@@ -50,7 +51,7 @@ export async function downloadDoc(doc: Doc): Promise<void> {
   if (!desktop.api) return;
   try {
     const a = document.createElement('a');
-    a.href = await getFileUrl(desktop.api, doc.fileId);
+    a.href = await getFileUrl(desktop.api, doc.fileId, doc.kind === 'image' ? imageMime(doc.name) : undefined);
     a.download = doc.name;
     a.click();
     showToast(`Heruntergeladen: ${doc.name}`);

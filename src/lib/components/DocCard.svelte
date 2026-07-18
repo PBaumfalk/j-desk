@@ -15,10 +15,13 @@
   let { doc, vp }: { doc: Doc; vp: Viewport } = $props();
 
   const kind = $derived(doc.kind ?? 'pdf');
-  const dateiEndung = $derived((doc.name.split('.').pop() || '?').toUpperCase().slice(0, 5));
+  const dateiEndung = $derived(
+    doc.name.includes('.') ? (doc.name.split('.').pop() || '?').toUpperCase().slice(0, 5) : '?',
+  );
 
   let thumb = $state<string | null>(null);
   let imgUrl = $state<string | null>(null);
+  let bildFehler = $state<string | null>(null);
   let vorschauStatus = $state<'wartet' | 'bereit' | 'fehler'>('wartet');
   let vorschauMeldung = $state<string | null>(null);
 
@@ -27,7 +30,11 @@
     const k = kind;
     if (!desktop.api) return;
     if (k === 'image') {
-      void getFileUrl(desktop.api, doc.fileId, imageMime(doc.name)).then((u) => (imgUrl = u));
+      imgUrl = null;
+      bildFehler = null;
+      void getFileUrl(desktop.api, doc.fileId, imageMime(doc.name))
+        .then((u) => (imgUrl = u))
+        .catch((e) => { bildFehler = e instanceof Error ? e.message : 'Laden fehlgeschlagen'; });
     } else if (k === 'convertible') {
       vorschauStatus = 'wartet';
       vorschauMeldung = null;
@@ -156,8 +163,10 @@
       {#if kind === 'image'}
         {#if imgUrl}
           <img class="photo" src={imgUrl} alt="" draggable="false" />
+        {:else if bildFehler}
+          <div class="fallback fehler" title={bildFehler}>⚠️</div>
         {:else}
-          <div class="fallback">🖼️</div>
+          <div class="fallback wartend">⏳</div>
         {/if}
       {:else if kind === 'other'}
         <div class="other-icon" aria-hidden="true">📄</div>

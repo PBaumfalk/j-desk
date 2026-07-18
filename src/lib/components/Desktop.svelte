@@ -158,7 +158,7 @@
       x, y,
       items: [
         { label: 'Datei…', action: () => fileInput.click() },
-        { label: 'Zettel…', action: () => setTimeout(() => zettelTypAuswahl(x, y), 0) },
+        { label: 'Zettel…', action: () => queueMicrotask(() => zettelTypAuswahl(x, y)) },
       ],
     };
   }
