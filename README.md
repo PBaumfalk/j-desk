@@ -34,6 +34,21 @@ Oder mit Docker (baut die Web-App mit ein):
 **Zugriff übers Internet:** nur hinter einem HTTPS-Reverse-Proxy (z. B. Caddy:
 `reverse_proxy localhost:4810` mit automatischem TLS).
 
+### Vorschau-Dienst (Euro-Office)
+
+Für die Konvertier-Vorschau von Dokumenten bindet der Server optional einen
+Euro-Office-DocumentServer an (ONLYOFFICE-kompatibler Fork). Beispiel-Compose:
+`docs/deployment/eurooffice-compose.yaml`.
+
+| Variable                 | Zweck                                                                                   |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| `EUROOFFICE_URL`         | Basis-URL des DocumentServers (im Docker-Netz: Service-Name, nicht `localhost`)          |
+| `EUROOFFICE_JWT_SECRET`  | Gemeinsames JWT-Secret zwischen Digital-Desktop-Server und DocumentServer                |
+| `PUBLIC_URL`             | Basis-URL, unter der dieser Server selbst für den DocumentServer erreichbar ist          |
+
+**Ohne Konfiguration** (eine der beiden `EUROOFFICE_*`-Variablen fehlt) ist die
+Konvertier-Vorschau deaktiviert — alles andere läuft normal weiter.
+
 ## Bekannte Einschränkungen
 
 - Offline-Editing gibt es nicht: ohne Serververbindung sind Aktionen gesperrt.

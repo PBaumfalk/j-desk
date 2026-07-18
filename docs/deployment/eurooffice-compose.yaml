@@ -1,0 +1,50 @@
+# Euro-Office-DocumentServer für die Konvertier-Vorschau (PDF/Office-Dokumente).
+#
+# Image-Verifikation (2026-07-18): Das offizielle Repo https://github.com/Euro-Office/DocumentServer
+# veröffentlicht laut README aktuell EIN Test-/Integrations-Image über GitHub Container Registry:
+#   docker pull ghcr.io/euro-office/documentserver:latest
+# Deb/RPM-Pakete sind laut README "in Kürze" geplant, aber (Stand 2026-07-18) noch nicht verfügbar.
+# Das Image wird unten verwendet. Es ist ein Fork von ONLYOFFICE DocumentServer und daher zur
+# ONLYOFFICE-API kompatibel (Konvertier-Schnittstelle, JWT-Absicherung).
+#
+# Das offizielle Beispiel im README nennt nur JWT_SECRET (kein dokumentiertes JWT_ENABLED=true wie
+# beim ONLYOFFICE-Original) — falls die Konvertierung ohne JWT-Prüfung durchgeht, zusätzlich
+# JWT_ENABLED=true setzen (ONLYOFFICE-Vererbung) und gegen die tatsächlich laufende Instanz prüfen.
+
+services:
+  eurooffice-documentserver:
+    image: ghcr.io/euro-office/documentserver:latest
+    # Fallback, falls das Euro-Office-Image (noch) nicht erreichbar/gepullt werden kann:
+    # onlyoffice/documentserver — API-kompatibel (ONLYOFFICE ist die Basis von Euro-Office);
+    # Euro-Office-Image eintragen, sobald offiziell publiziert — Stand 2026-07-18 ist
+    # ghcr.io/euro-office/documentserver:latest das einzige öffentlich dokumentierte Image.
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: "changeme-shared-secret" # muss mit EUROOFFICE_JWT_SECRET des Digital-Desktop-Servers übereinstimmen
+    ports:
+      - "8082:80"
+    networks:
+      - digital-desktop
+    # Größen-Hinweis: DocumentServer ist ein voller Java/Node-Konvertier-Stack —
+    # laut ONLYOFFICE-Vorbild min. ~2 CPU-Kerne, 4 GB RAM für den Konvertier-Betrieb einplanen.
+
+  # Der Digital-Desktop-Server läuft hier als Referenz mit im selben Netz, damit der
+  # DocumentServer ihn unter seinem Service-Namen erreichen kann (Docker-DNS statt localhost).
+  digital-desktop-server:
+    image: digital-desktop-server
+    environment:
+      EUROOFFICE_URL: "http://eurooffice-documentserver" # Service-Name statt localhost
+      EUROOFFICE_JWT_SECRET: "changeme-shared-secret" # identisch zu JWT_SECRET oben
+      PUBLIC_URL: "http://digital-desktop-server:4810" # DS muss DIESEN Server erreichen können
+    ports:
+      - "4810:4810"
+    networks:
+      - digital-desktop
+    volumes:
+      - dd_data:/data
+
+networks:
+  digital-desktop:
+
+volumes:
+  dd_data:
