@@ -30,6 +30,10 @@ export interface Stack {
   position: Vec2;
   zIndex: number;
   taped?: boolean;     // Klebeband: am Tisch festgeklebt, Drag gesperrt
+  stapled?: boolean;   // Hefter: festes Konvolut — feste Reihenfolge, als Ganzes durchblätterbar
+  open?: boolean;      // Konvolut aufgeschlagen (großer Viewer)
+  openSize?: Size;     // Größe des Konvolut-Viewers (Weltkoordinaten)
+  page?: number;       // globale Konvolut-Seite über alle Mitglieder, 1-basiert
 }
 
 export interface DesktopState {

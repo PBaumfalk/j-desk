@@ -1,9 +1,10 @@
 import type { DesktopState, Vec2, Size } from './model';
 import { addDoc, moveDoc, bringToFront } from './documents';
 import { addLink, setLinkNote, removeLink } from './links';
-import { stackDocs, removeFromStack, dissolveStack, renameStack, moveStack } from './stacks';
+import { stackDocs, removeFromStack, dissolveStack, renameStack, moveStack, stapleStack, unstapleStack } from './stacks';
 import { removeDoc, removeStack } from './removal';
 import { expandDoc, collapseDoc, setDocPage, resizeDoc, extractPage } from './viewer';
+import { expandStack, collapseStack, setStackPage, resizeStack } from './konvolut';
 import { addStroke, removeStroke, type Stroke, type StrokeTool } from './ink';
 import { addNote, editNote, moveNote, removeNote, type NoteKind } from './notes';
 import { addCutout, moveCutout, removeCutout } from './cutouts';
@@ -102,6 +103,12 @@ const handlers: Record<string, (s: DesktopState, p: Record<string, unknown>) => 
   removeClip: (s, p) => wrap(() => removeClip(s, id(p.clipId, 'clipId'))),
   tapeObject: (s, p) => wrap(() => setTaped(s, id(p.id, 'id'), true)),
   untapeObject: (s, p) => wrap(() => setTaped(s, id(p.id, 'id'), false)),
+  stapleStack: (s, p) => wrap(() => stapleStack(s, id(p.stackId, 'stackId'))),
+  unstapleStack: (s, p) => wrap(() => unstapleStack(s, id(p.stackId, 'stackId'))),
+  expandStack: (s, p) => wrap(() => expandStack(s, id(p.id, 'id'))),
+  collapseStack: (s, p) => wrap(() => collapseStack(s, id(p.id, 'id'))),
+  setStackPage: (s, p) => wrap(() => setStackPage(s, id(p.id, 'id'), num(p.page, 'page'))),
+  resizeStack: (s, p) => wrap(() => resizeStack(s, id(p.id, 'id'), size(p.size, 'size'))),
 };
 
 function rect(v: unknown): { x: number; y: number; w: number; h: number } {

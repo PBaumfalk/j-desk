@@ -7,6 +7,7 @@ export * from './commands';
 export * from './viewport';
 export * from './geometry';
 export * from './viewer';
+export * from './konvolut';
 export * from './ink';
 export * from './notes';
 export * from './cutouts';
