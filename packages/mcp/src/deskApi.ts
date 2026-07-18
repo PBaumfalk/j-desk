@@ -4,6 +4,11 @@ export class DeskApiError extends Error {
   }
 }
 
+/** Datei-Art einer Karte (Task 5): bestimmt, wie get_document_text an Text kommt.
+    Lokale Definition statt Abhängigkeit auf @digital-desktop/core — die MCP spricht
+    den Desk-Server ausschließlich über HTTP, ohne Paket-Kopplung. */
+export type FileKind = 'pdf' | 'image' | 'convertible' | 'other';
+
 async function request<T>(baseUrl: string, token: string, method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(`${baseUrl}/api/v1${path}`, {
     method,
@@ -27,7 +32,7 @@ async function request<T>(baseUrl: string, token: string, method: string, path: 
 
 // Rework-Semantik: Desks sind kanzlei-weit geteilt — Eigentümer-Felder entfallen.
 export interface DeskInfo { id: string; name: string; ownerId: string }
-export interface Doc { id: string; fileId: string; name: string; position: { x: number; y: number }; rotation: number; zIndex: number }
+export interface Doc { id: string; fileId: string; name: string; position: { x: number; y: number }; rotation: number; zIndex: number; kind?: FileKind }
 export interface Link { id: string; fromId: string; toId: string; note: string }
 export interface Stack { id: string; name: string; docIds: string[]; position: { x: number; y: number }; zIndex: number }
 export interface Note { id: string; kind: string; text: string; position: { x: number; y: number }; zIndex: number }
@@ -54,4 +59,50 @@ export async function getFile(baseUrl: string, token: string, fileId: string): P
     throw new DeskApiError(message, res.status);
   }
   return new Uint8Array(await res.arrayBuffer());
+}
+
+export type PreviewResult = { status: 'ready'; bytes: Uint8Array } | { status: 'converting' };
+
+/** Ein einzelner Abruf von /files/:id/preview (Task 5): 200 -> fertige PDF-Bytes,
+    202 -> Konvertierung läuft noch, alles andere -> DeskApiError mit der Server-Meldung. */
+export async function getPreview(baseUrl: string, token: string, fileId: string): Promise<PreviewResult> {
+  const res = await fetch(`${baseUrl}/api/v1/files/${fileId}/preview`, { headers: { authorization: `Bearer ${token}` } });
+  if (res.status === 202) return { status: 'converting' };
+  if (!res.ok) {
+    let message = `Vorschau nicht ladbar (HTTP ${res.status})`;
+    try {
+      message = ((await res.json()) as { error?: string }).error ?? message;
+    } catch {
+      // kein JSON-Body
+    }
+    throw new DeskApiError(message, res.status);
+  }
+  return { status: 'ready', bytes: new Uint8Array(await res.arrayBuffer()) };
+}
+
+export interface PollPreviewOptions {
+  /** Wartezeit zwischen Polls in ms (Default 2000; über MCP_PREVIEW_POLL_INTERVAL_MS für Tests verkürzbar). */
+  intervalMs?: number;
+  /** Maximale Gesamtwartezeit in ms (Default 30000). */
+  timeoutMs?: number;
+}
+
+/** Pollt die Vorschau eines konvertierbaren Dokuments (kind 'convertible'), bis sie fertig ist. */
+export async function pollPreview(
+  baseUrl: string,
+  token: string,
+  fileId: string,
+  opts: PollPreviewOptions = {},
+): Promise<Uint8Array> {
+  const intervalMs = opts.intervalMs ?? Number(process.env.MCP_PREVIEW_POLL_INTERVAL_MS ?? 2000);
+  const timeoutMs = opts.timeoutMs ?? 30_000;
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const r = await getPreview(baseUrl, token, fileId);
+    if (r.status === 'ready') return r.bytes;
+    if (Date.now() >= deadline) {
+      throw new DeskApiError('Vorschau ist noch nicht fertig — später erneut versuchen', 408);
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
 }

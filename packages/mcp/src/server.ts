@@ -62,7 +62,7 @@ export function buildMcpServer(deps: McpDeps): McpServer {
     const anon = await anonymizer.anonNames(texte);
     let i = 0;
     const name = anon[i++];
-    const docs = s.state.docs.map((d) => ({ id: d.id, name: anon[i++], position: d.position }));
+    const docs = s.state.docs.map((d) => ({ id: d.id, name: anon[i++], position: d.position, kind: d.kind ?? 'pdf' }));
     const stacks = s.state.stacks.map((st) => ({ id: st.id, name: anon[i++], docIds: st.docIds, position: st.position }));
     const links = s.state.links.map((l) => ({ id: l.id, fromId: l.fromId, toId: l.toId, note: anon[i++] }));
     const notes = notesRoh.map((n) => ({ id: n.id, kind: n.kind, text: anon[i++], position: n.position }));
@@ -70,11 +70,20 @@ export function buildMcpServer(deps: McpDeps): McpServer {
     return { name, docs, stacks, links, notes, cutouts };
   });
 
-  tool(server, 'get_document_text', 'Liefert den anonymisierten Volltext eines Dokuments (PDF via OCR).', { deskId: z.string(), docId: z.string() }, async (a) => {
+  tool(server, 'get_document_text',
+    'Liefert den anonymisierten Volltext eines Dokuments (PDF via OCR; bei konvertierbaren Dateien über die Vorschau-Konvertierung).',
+    { deskId: z.string(), docId: z.string() }, async (a) => {
     const s = await desk.getState(base, token, String(a.deskId));
     const doc = s.state.docs.find((d) => d.id === a.docId);
     if (!doc) throw new Error('Dokument nicht gefunden');
-    return anonymizer.anonFileText(doc.fileId, () => desk.getFile(base, token, doc.fileId), doc.name);
+    const kind = doc.kind ?? 'pdf';
+    if (kind === 'image' || kind === 'other') {
+      throw new Error('Für diese Datei-Art ist kein Text-Inhalt verfügbar');
+    }
+    const laden = kind === 'pdf'
+      ? () => desk.getFile(base, token, doc.fileId)
+      : () => desk.pollPreview(base, token, doc.fileId);
+    return anonymizer.anonFileText(doc.fileId, laden, doc.name);
   });
 
   /** De-anonymisiert ein Text-Argument; unbekannte Platzhalter → Fehler. */
