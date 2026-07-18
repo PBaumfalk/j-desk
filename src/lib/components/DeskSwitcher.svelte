@@ -4,8 +4,15 @@
   let open = $state(false);
   let mode = $state<'liste' | 'neu' | 'umbenennen'>('liste');
   let nameEntwurf = $state('');
+  let suche = $state('');
 
   const aktiv = $derived(desktop.desks.find((d) => d.id === desktop.deskId));
+  const akten = $derived(desktop.mode === 'jlawyer');
+  const gefiltert = $derived(
+    suche.trim() === ''
+      ? desktop.desks
+      : desktop.desks.filter((d) => d.name.toLowerCase().includes(suche.trim().toLowerCase())),
+  );
 
   function toggle() {
     open = !open;
@@ -54,15 +61,26 @@
     <div class="backdrop" role="presentation" onpointerdown={(e) => { e.stopPropagation(); open = false; }}></div>
     <div class="menu" role="menu" tabindex="-1" onpointerdown={(e) => e.stopPropagation()}>
       {#if mode === 'liste'}
-        {#each desktop.desks as desk (desk.id)}
-          <button class="item" onclick={() => { void desktop.switchDesk(desk.id); open = false; }}>
-            {desk.id === desktop.deskId ? '✓ ' : ''}{desk.name}
-          </button>
-        {/each}
-        <hr />
-        <button class="item" onclick={startNeu}>Neuer Schreibtisch…</button>
-        <button class="item" onclick={startUmbenennen}>Umbenennen…</button>
-        <button class="item gefahr" onclick={() => void loeschen()}>Löschen…</button>
+        {#if akten}
+          <input class="suche" placeholder="Akte suchen…" bind:value={suche}
+                 onkeydown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); suche = ''; } }} />
+        {/if}
+        <div class="items">
+          {#each gefiltert as desk (desk.id)}
+            <button class="item" onclick={() => { void desktop.switchDesk(desk.id); open = false; suche = ''; }}>
+              {desk.id === desktop.deskId ? '✓ ' : ''}{desk.name}
+            </button>
+          {/each}
+          {#if gefiltert.length === 0}
+            <div class="leer">Keine Treffer</div>
+          {/if}
+        </div>
+        {#if !akten}
+          <hr />
+          <button class="item" onclick={startNeu}>Neuer Schreibtisch…</button>
+          <button class="item" onclick={startUmbenennen}>Umbenennen…</button>
+          <button class="item gefahr" onclick={() => void loeschen()}>Löschen…</button>
+        {/if}
       {:else}
         <!-- svelte-ignore a11y_autofocus -->
         <input
@@ -91,6 +109,9 @@
   .current { font-size: 13px; padding: 6px 12px; border-radius: 8px; border: none;
              background: rgba(255, 255, 255, .92); cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
   .backdrop { position: fixed; inset: 0; z-index: 9001; }
+  .suche { margin: 2px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 7px; font: inherit; font-size: 13px; }
+  .items { max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; }
+  .leer { padding: 8px 10px; font-size: 12px; color: #888; }
   .menu { position: absolute; top: 36px; left: 0; z-index: 9002; min-width: 230px; padding: 4px;
           border-radius: 10px; background: rgba(255, 255, 255, .97); box-shadow: 0 8px 30px rgba(0, 0, 0, .35);
           display: flex; flex-direction: column; gap: 2px; }

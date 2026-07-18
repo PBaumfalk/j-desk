@@ -1,18 +1,22 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import websocket from '@fastify/websocket';
 import fastifyStatic from '@fastify/static';
-import { CommandError, type Command } from '@digital-desktop/core';
+import { CommandError, addDoc, removeDoc, type Command, type DesktopState } from '@digital-desktop/core';
 import type { Db } from './db';
 import {
   needsSetup, createUser, login, logout, validateToken, createWsTickets,
   createSession, ensureExternalUser, AuthError,
 } from './auth';
-import { validateLogin, listCases, JLawyerError } from './jlawyer';
 import {
-  createDesk, listDesks, renameDesk, deleteDesk, getDeskState,
+  validateLogin, listCases, listDocuments, getDocumentMeta, getDocumentContent,
+  createDocument, JLawyerError,
+} from './jlawyer';
+import {
+  createDesk, listDesks, renameDesk, deleteDesk, getDeskState, ensureDesk,
   applyDeskCommand, putDeskState, DeskNotFoundError, InvalidStateError,
 } from './deskStore';
 import { storeFile, getFilePath, fileExists, FileError } from './files';
@@ -78,7 +82,10 @@ export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions):
   });
 
   // ---- Auth ----
-  app.get('/api/v1/auth/status', async () => ({ needsSetup: jlawyerUrl ? false : needsSetup(db) }));
+  app.get('/api/v1/auth/status', async () => ({
+    needsSetup: jlawyerUrl ? false : needsSetup(db),
+    mode: jlawyerUrl ? 'jlawyer' : 'standalone',
+  }));
 
   app.post('/api/v1/auth/setup', async (req, reply) => {
     if (jlawyerUrl) return reply.code(403).send({ error: 'Anmeldung erfolgt mit dem j-lawyer-Konto' });
@@ -126,25 +133,133 @@ export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions):
 
   // ---- j-lawyer (nur im j-lawyer-Modus) ----
   if (jlawyerUrl) {
-    app.get('/api/v1/cases', async (req, reply) => {
+    const jlBase = jlawyerUrl;
+    const cacheDir = join(dataDir, 'jlcache');
+    mkdirSync(cacheDir, { recursive: true });
+
+    /** Sitzungs-Credentials oder 401 (Session vor Server-Neustart / in j-lawyer abgelaufen). */
+    const credsOder401 = (req: FastifyRequest, reply: Parameters<Parameters<typeof app.get>[1]>[1]) => {
       const token = bearerToken(req)!;
       const creds = jlCreds.get(token);
       if (!creds) {
-        // Session stammt aus der Zeit vor einem Server-Neustart — Credentials sind weg, neu anmelden.
         logout(db, token);
-        return reply.code(401).send({ error: 'Bitte neu anmelden' });
+        void reply.code(401).send({ error: 'Bitte neu anmelden' });
+        return null;
       }
-      try {
-        return await listCases(jlawyerUrl, creds.username, creds.password);
-      } catch (e) {
-        if (e instanceof JLawyerError) {
-          if (e.status === 401) {
-            logout(db, token);
-            jlCreds.delete(token);
-          }
-          return reply.code(e.status).send({ error: e.message });
+      return { token, creds };
+    };
+    const jlFehler = (e: unknown, token: string, reply: Parameters<Parameters<typeof app.get>[1]>[1]) => {
+      if (e instanceof JLawyerError) {
+        if (e.status === 401) {
+          logout(db, token);
+          jlCreds.delete(token);
         }
-        throw e;
+        return reply.code(e.status).send({ error: e.message });
+      }
+      throw e;
+    };
+
+    /** Position neuer Karten im „Eingang" (links oben, leicht gestaffelt). */
+    const eingang = (n: number) => ({ x: 24 + (n % 3) * 36, y: 24 + n * 30 });
+
+    /** Abgleich: j-lawyer ist führend — neue Dokumente bekommen Karten, gelöschte verlieren sie. */
+    async function syncCaseDesk(creds: { username: string; password: string }, userId: string, caseId: string) {
+      const jlDocs = await listDocuments(jlBase, creds.username, creds.password, caseId);
+      ensureDesk(db, caseId, userId, caseId);
+      let { state } = getDeskState(db, caseId)!;
+      let changed = false;
+      const jlIds = new Set(jlDocs.map((d) => d.id));
+      for (const doc of [...state.docs]) {
+        if (!jlIds.has(doc.fileId)) {
+          state = removeDoc(state, doc.id);
+          changed = true;
+        }
+      }
+      const vorhanden = new Set(state.docs.map((d) => d.fileId));
+      let n = state.docs.length;
+      for (const d of jlDocs) {
+        if (!vorhanden.has(d.id)) {
+          state = addDoc(state, d.id, d.name, eingang(n));
+          changed = true;
+          n++;
+        }
+      }
+      if (!changed) return getDeskState(db, caseId)!;
+      const result = putDeskState(db, caseId, state);
+      broadcast(caseId, result);
+      return result;
+    }
+
+    app.get('/api/v1/cases', async (req, reply) => {
+      const ctx = credsOder401(req, reply);
+      if (!ctx) return;
+      try {
+        return await listCases(jlBase, ctx.creds.username, ctx.creds.password);
+      } catch (e) {
+        return jlFehler(e, ctx.token, reply);
+      }
+    });
+
+    app.get('/api/v1/cases/:id/desk', async (req, reply) => {
+      const ctx = credsOder401(req, reply);
+      if (!ctx) return;
+      const { id } = req.params as { id: string };
+      const userId = (req as FastifyRequest & { userId: string }).userId;
+      try {
+        return await syncCaseDesk(ctx.creds, userId, id);
+      } catch (e) {
+        return jlFehler(e, ctx.token, reply);
+      }
+    });
+
+    app.post('/api/v1/cases/:id/documents', async (req, reply) => {
+      const ctx = credsOder401(req, reply);
+      if (!ctx) return;
+      const { id: caseId } = req.params as { id: string };
+      const part = await req.file();
+      if (!part) return reply.code(400).send({ error: 'Keine Datei im Request' });
+      const bytes = await part.toBuffer();
+      try {
+        // Erst j-lawyer bestätigen lassen, dann die Karte anlegen (Spec: kein Optimismus).
+        const { id: docId } = await createDocument(jlBase, ctx.creds.username, ctx.creds.password, caseId, part.filename, bytes);
+        const userId = (req as FastifyRequest & { userId: string }).userId;
+        ensureDesk(db, caseId, userId, caseId);
+        const anzahl = getDeskState(db, caseId)!.state.docs.length;
+        const result = applyDeskCommand(db, caseId, {
+          type: 'addDoc',
+          payload: { fileId: docId, name: part.filename, position: eingang(anzahl) },
+        });
+        broadcast(caseId, result);
+        reply.code(201);
+        return result;
+      } catch (e) {
+        return jlFehler(e, ctx.token, reply);
+      }
+    });
+
+    /** Dokumentinhalt unter dem files-Pfad — fileCache/PageRenderer im Client bleiben
+        unverändert; fileId ist im j-lawyer-Modus die j-lawyer-Dokument-ID.
+        Platten-Cache mit Schlüssel Dokument-ID + Änderungsdatum. */
+    app.get('/api/v1/files/:id', async (req, reply) => {
+      const ctx = credsOder401(req, reply);
+      if (!ctx) return;
+      const { id } = req.params as { id: string };
+      try {
+        // Metadatenabruf mit den Sitzungs-Credentials = Berechtigungsprüfung
+        const meta = await getDocumentMeta(jlBase, ctx.creds.username, ctx.creds.password, id);
+        const safe = id.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const cacheFile = join(cacheDir, `${safe}-${meta.changeDate}.pdf`);
+        if (!existsSync(cacheFile)) {
+          const bytes = await getDocumentContent(jlBase, ctx.creds.username, ctx.creds.password, id);
+          for (const alt of readdirSync(cacheDir).filter((f) => f.startsWith(`${safe}-`))) {
+            rmSync(join(cacheDir, alt), { force: true }); // veraltete Fassungen desselben Dokuments
+          }
+          writeFileSync(cacheFile, bytes);
+        }
+        reply.header('content-type', 'application/pdf');
+        return readFileSync(cacheFile);
+      } catch (e) {
+        return jlFehler(e, ctx.token, reply);
       }
     });
   }
@@ -225,28 +340,34 @@ export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions):
     }
   });
 
-  // ---- Dateien ----
-  app.post('/api/v1/files', async (req, reply) => {
-    const part = await req.file();
-    if (!part) return reply.code(400).send({ error: 'Keine Datei im Request' });
-    const bytes = await part.toBuffer();
-    try {
-      const meta = storeFile(db, dataDir, bytes, part.filename);
-      reply.code(201);
-      return { fileId: meta.id, name: meta.originalName };
-    } catch (e) {
-      if (e instanceof FileError) return reply.code(400).send({ error: e.message });
-      throw e;
-    }
-  });
+  // ---- Dateien (eigene Ablage nur im Standalone-Modus; im j-lawyer-Modus liefert
+  //      /files/:id den Akteninhalt — Route oben — und Uploads gehen in die Akte) ----
+  if (!jlawyerUrl) {
+    app.post('/api/v1/files', async (req, reply) => {
+      const part = await req.file();
+      if (!part) return reply.code(400).send({ error: 'Keine Datei im Request' });
+      const bytes = await part.toBuffer();
+      try {
+        const meta = storeFile(db, dataDir, bytes, part.filename);
+        reply.code(201);
+        return { fileId: meta.id, name: meta.originalName };
+      } catch (e) {
+        if (e instanceof FileError) return reply.code(400).send({ error: e.message });
+        throw e;
+      }
+    });
 
-  app.get('/api/v1/files/:id', async (req, reply) => {
-    const { id } = req.params as { id: string };
-    const path = getFilePath(db, dataDir, id);
-    if (!path) return reply.code(404).send({ error: 'Datei nicht gefunden' });
-    reply.header('content-type', 'application/pdf');
-    return readFileSync(path);
-  });
+    app.get('/api/v1/files/:id', async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const path = getFilePath(db, dataDir, id);
+      if (!path) return reply.code(404).send({ error: 'Datei nicht gefunden' });
+      reply.header('content-type', 'application/pdf');
+      return readFileSync(path);
+    });
+  } else {
+    app.post('/api/v1/files', async (_req, reply) =>
+      reply.code(400).send({ error: 'Uploads erfolgen in die Akte (POST /api/v1/cases/:id/documents)' }));
+  }
 
   // ---- WebSocket ----
   app.post('/api/v1/ws-ticket', async (req) => ({

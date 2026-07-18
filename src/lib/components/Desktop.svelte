@@ -92,8 +92,14 @@
   }
 
   async function addPdfFile(file: File, position: Vec2): Promise<void> {
-    if (!desktop.api) return;
+    if (!desktop.api || !desktop.deskId) return;
     try {
+      if (desktop.mode === 'jlawyer') {
+        // Upload in die Akte; die Karte legt der Server erst nach j-lawyer-Bestätigung an.
+        const result = await desktop.api.uploadToCase(desktop.deskId, new Uint8Array(await file.arrayBuffer()), file.name);
+        desktop.acceptServerState(result);
+        return;
+      }
       const fileId = await desktop.api.uploadFile(new Uint8Array(await file.arrayBuffer()), file.name);
       await desktop.command('addDoc', { fileId, name: file.name, position, id: uid() });
     } catch (e) {

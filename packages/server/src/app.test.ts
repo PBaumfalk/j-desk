@@ -15,7 +15,7 @@ describe('Auth-Routen', () => {
     })();
 
     let res = await freshApp.inject({ method: 'GET', url: '/api/v1/auth/status' });
-    expect(res.json()).toEqual({ needsSetup: true });
+    expect(res.json()).toEqual({ needsSetup: true, mode: 'standalone' });
 
     res = await freshApp.inject({
       method: 'POST', url: '/api/v1/auth/setup',

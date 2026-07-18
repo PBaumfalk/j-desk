@@ -6,6 +6,7 @@ import { showToast } from './ui.svelte';
 let state = $state<DesktopState>(emptyState());
 let status = $state<'connecting' | 'online' | 'offline' | 'loggedOut'>('loggedOut');
 let desks = $state<DeskInfo[]>([]);
+let mode = $state<'standalone' | 'jlawyer'>('standalone');
 let wsGeneration = 0;
 let rev = 0;
 let api: ApiClient | null = null;
@@ -38,16 +39,31 @@ export const desktop = {
   get desks(): DeskInfo[] {
     return desks;
   },
+  /** 'jlawyer': Akten statt eigener Schreibtische; Verwaltung liegt in j-lawyer. */
+  get mode() {
+    return mode;
+  },
 
-  /** Nach erfolgreichem Login: Schreibtische laden, letzten (oder ersten) öffnen. */
+  /** Nach erfolgreichem Login: Schreibtische (bzw. Akten) laden, letzten (oder ersten) öffnen. */
   async start(client: ApiClient, lastDeskId?: string): Promise<void> {
     clearTimeout(reconnectTimer);
     reconnectTimer = undefined;
     api = client;
     stopped = false;
     status = 'connecting';
-    desks = await client.listDesks();
-    if (desks.length === 0) desks = [await client.createDesk('Schreibtisch 1')];
+    mode = (await client.status()).mode === 'jlawyer' ? 'jlawyer' : 'standalone';
+    if (mode === 'jlawyer') {
+      const cases = await client.getCases();
+      desks = cases.map((c) => ({
+        id: c.id,
+        name: [c.fileNumber, c.name, c.reason && `(${c.reason})`].filter(Boolean).join(' '),
+        ownerId: '',
+      }));
+      if (desks.length === 0) throw new Error('Keine Akten in j-lawyer sichtbar');
+    } else {
+      desks = await client.listDesks();
+      if (desks.length === 0) desks = [await client.createDesk('Schreibtisch 1')];
+    }
     const target = desks.find((d) => d.id === lastDeskId) ?? desks[0];
     await loadDesk(target.id);
   },
@@ -55,6 +71,14 @@ export const desktop = {
   /** Nur lokal anwenden (Drag-Zwischenschritte) — der Server erfährt nichts. */
   applyLocal(fn: (s: DesktopState) => DesktopState): void {
     state = fn(state);
+  },
+
+  /** Server-Antwort mit rev+state übernehmen (z. B. nach Akten-Upload). */
+  acceptServerState(result: { rev: number; state: DesktopState }): void {
+    if (result.rev >= rev) {
+      rev = result.rev;
+      state = result.state;
+    }
   },
 
   /** Optimistisch lokal anwenden, dann ans Backend; die Server-Antwort ist maßgeblich. */
@@ -82,11 +106,12 @@ export const desktop = {
     }
   },
 
-  /** Kompletten Zustand vom Server holen (nach Reconnect oder Fehler). */
+  /** Kompletten Zustand vom Server holen (nach Reconnect oder Fehler); im
+      j-lawyer-Modus läuft dabei zugleich der Akten-Abgleich. */
   async refresh(): Promise<void> {
     if (stopped) return;
     if (!api || !deskId) return;
-    const result = await api.getState(deskId);
+    const result = mode === 'jlawyer' ? await api.getCaseDesk(deskId) : await api.getState(deskId);
     if (result.rev >= rev) {
       rev = result.rev;
       state = result.state;
@@ -173,11 +198,11 @@ export const desktop = {
   },
 };
 
-/** Lädt Zustand + rev des Schreibtischs und verbindet den WebSocket. */
+/** Lädt Zustand + rev des Schreibtischs (bzw. der Akte) und verbindet den WebSocket. */
 async function loadDesk(id: string): Promise<void> {
   if (!api) return;
   deskId = id;
-  const result = await api.getState(id);
+  const result = mode === 'jlawyer' ? await api.getCaseDesk(id) : await api.getState(id);
   rev = result.rev; // Zähler gehört zum neuen Schreibtisch — nicht vergleichen
   state = result.state;
   saveLastDeskId(id);

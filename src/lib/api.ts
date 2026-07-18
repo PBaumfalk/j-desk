@@ -47,7 +47,7 @@ export class ApiClient {
     return (await res.json()) as T;
   }
 
-  status(): Promise<{ needsSetup: boolean }> {
+  status(): Promise<{ needsSetup: boolean; mode?: 'standalone' | 'jlawyer' }> {
     return this.request('GET', '/auth/status');
   }
 
@@ -103,6 +103,29 @@ export class ApiClient {
     });
     if (!res.ok) throw await this.parseError(res);
     return ((await res.json()) as { fileId: string }).fileId;
+  }
+
+  // ---- j-lawyer-Modus ----
+  getCases(): Promise<{ id: string; fileNumber: string; name: string; reason: string }[]> {
+    return this.request('GET', '/cases');
+  }
+
+  /** Akten-Schreibtisch öffnen — der Server gleicht mit j-lawyer ab. */
+  getCaseDesk(caseId: string): Promise<DeskState> {
+    return this.request('GET', `/cases/${caseId}/desk`);
+  }
+
+  /** Upload in die Akte; die Karte legt der Server erst nach j-lawyer-Bestätigung an. */
+  async uploadToCase(caseId: string, bytes: Uint8Array, name: string): Promise<DeskState> {
+    const form = new FormData();
+    form.append('file', new Blob([bytes], { type: 'application/pdf' }), name);
+    const res = await fetch(`${this.baseUrl}/api/v1/cases/${caseId}/documents`, {
+      method: 'POST',
+      headers: this.authHeaders(),
+      body: form,
+    });
+    if (!res.ok) throw await this.parseError(res);
+    return (await res.json()) as DeskState;
   }
 
   async fetchFile(fileId: string): Promise<Uint8Array> {
