@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    CARD_W, CARD_H, moveDoc, hitTest, type Doc, type Viewport,
+    CARD_W, CARD_H, moveDoc, hitTest, stampsFor, type Doc, type Viewport,
   } from '@digital-desktop/core';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
@@ -16,6 +16,7 @@
     doc.fileId;
     if (desktop.api) void getThumbnail(desktop.api, doc).then((t) => (thumb = t));
   });
+  const kartenStempel = $derived(stampsFor(desktop.state, doc.id, doc.pageOnly ?? 1));
 
   let dragging = false;
   let moved = false;
@@ -97,6 +98,13 @@
       {:else}
         <div class="fallback">PDF</div>
       {/if}
+      {#each kartenStempel as st (st.id)}
+        <div class="mini-stamp" class:blau={st.color === 'blue'}
+             style:left="{(st.x / st.baseW) * 100}%" style:top="{(st.y / st.baseH) * 100}%"
+             style:transform="translate(-50%, -50%) rotate({st.angle}deg) scale({CARD_W / st.baseW})">
+          {st.text}
+        </div>
+      {/each}
     </div>
     <div class="name">{doc.name}</div>
   </div>
@@ -105,10 +113,14 @@
 <style>
   .card { position: absolute; display: flex; flex-direction: column; background: #fff; border-radius: 4px;
           box-shadow: 0 6px 18px rgba(0, 0, 0, .35); cursor: grab; user-select: none; touch-action: none; }
-  .body { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  .body { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden;
           border-radius: 4px 4px 0 0; }
   img { width: 100%; height: 100%; object-fit: cover; object-position: top; pointer-events: none; }
   .fallback { font-weight: 700; color: #b33; font-size: 22px; }
+  .mini-stamp { position: absolute; pointer-events: none; border: 3px solid #b3261e; color: #b3261e;
+                border-radius: 6px; padding: 2px 10px; opacity: .82; font-weight: 800; letter-spacing: .12em;
+                font-size: 20px; white-space: nowrap; transform-origin: center; }
+  .mini-stamp.blau { border-color: #1d4ed8; color: #1d4ed8; }
   .name { padding: 4px 6px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
           background: rgba(255, 255, 255, .9); border-top: 1px solid #eee; border-radius: 0 0 4px 4px; }
 </style>

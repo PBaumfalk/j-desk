@@ -7,6 +7,8 @@
   import PageRenderer from './PageRenderer.svelte';
   import InkOverlay, { type InkTool } from './InkOverlay.svelte';
   import MarkLayer from './MarkLayer.svelte';
+  import StampPopover from './StampPopover.svelte';
+  import StampLayer from './StampLayer.svelte';
 
   let { doc, vp }: { doc: Doc; vp: Viewport } = $props();
 
@@ -30,6 +32,33 @@
       localStorage.setItem('dd-redact-hinweis', '1');
       showToast('Hinweis: Die Schwärzung deckt nur sichtbar ab — der Text bleibt im PDF erhalten.');
     }
+  }
+
+  // Stempel: Auswahl "klebt" am Werkzeug — jeder Seitenklick setzt einen Abdruck
+  let stampMenu = $state(false);
+  let stampChoice = $state<{ text: string; color: 'red' | 'blue'; withDate?: boolean } | null>(null);
+
+  function pickStamp(wahl: { text: string; color: 'red' | 'blue'; withDate?: boolean }) {
+    stampMenu = false;
+    stampChoice = wahl;
+    inkTool = null; // Stempeln ist ein eigener Modus, Zeichnen aus
+  }
+
+  function stampAt(e: PointerEvent) {
+    if (!stampChoice) return;
+    e.stopPropagation();
+    const p = pagePoint(e);
+    if (!p || !baseSize) return;
+    const heute = new Date().toISOString().slice(0, 10);
+    void desktop.command('addStamp', {
+      stamp: {
+        id: uid(), docId: doc.id, page, x: p.x, y: p.y,
+        angle: Math.random() * 12 - 6,
+        text: stampChoice.text, color: stampChoice.color,
+        ...(stampChoice.withDate ? { date: heute } : {}),
+        baseW: baseSize.w, baseH: baseSize.h,
+      },
+    });
   }
 
   // Schere: Rechteck auf der Seite aufziehen -> Ausschnitt als eigenes Objekt daneben
@@ -195,6 +224,9 @@
       <button class:on={inkTool === 'tippex'} onclick={() => toggleTool('tippex')} aria-pressed={inkTool === 'tippex'} aria-label="Tipp-Ex" title="Tipp-Ex: weiß abdecken"><span class="tippex-chip"></span></button>
       <button class:on={inkTool === 'redact'} onclick={() => toggleTool('redact')} aria-pressed={inkTool === 'redact'} aria-label="Schwärzung" title="Schwärzung: schwarz abdecken (rein visuell)">■</button>
       <span class="sep"></span>
+      <button class:on={stampChoice !== null || stampMenu} onclick={() => { if (stampChoice) { stampChoice = null; } else { stampMenu = !stampMenu; } }}
+              aria-label="Stempel" title={stampChoice ? `Stempel „${stampChoice.text}" abschalten` : 'Stempel wählen'}>✪</button>
+      <span class="sep"></span>
       {#if !seitenfix}
         <button onclick={() => void desktop.command('extractPage', { docId: doc.id, page, position: { x: doc.position.x + size.w + 24, y: doc.position.y } })}
                 aria-label="Seite herauslösen" title="Seite herauslösen (Enthefterzange)">⧉</button>
@@ -213,6 +245,7 @@
     {/if}
     <button class="close" onclick={() => void desktop.command('collapseDoc', { id: doc.id })} aria-label="Schließen">✕</button>
   </div>
+  {#if stampMenu}<StampPopover onpick={pickStamp} onclose={() => (stampMenu = false)} />{/if}
   <div class="body" role="presentation" onwheel={(e) => { if (!e.ctrlKey && !e.metaKey) e.stopPropagation(); }} onpointerdown={onBodyPointerDown} onpointerup={onBodyPointerUp}>
     {#if desktop.api}
       <div class="pagewrap">
@@ -233,6 +266,10 @@
         {/if}
         <MarkLayer docId={doc.id} {page} base={baseSize} renderedWidth={pageWidth}
                    active={inkTool === 'tippex' || inkTool === 'redact' ? inkTool : null} />
+        {#if stampChoice && baseSize}
+          <div class="stempelflaeche" role="presentation" onpointerdown={stampAt}></div>
+        {/if}
+        <StampLayer docId={doc.id} {page} base={baseSize} renderedWidth={pageWidth} active={stampChoice !== null} />
       </div>
     {/if}
   </div>
@@ -269,6 +306,7 @@
   .grip { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize;
           background: linear-gradient(135deg, transparent 50%, #b8c0cc 50%); }
   .schnittflaeche { position: absolute; inset: 0; cursor: crosshair; touch-action: none; }
+  .stempelflaeche { position: absolute; inset: 0; cursor: crosshair; touch-action: none; }
   .schnittrahmen { position: absolute; border: 2px dashed #c0392b; background: rgba(192, 57, 43, .08);
                    pointer-events: none; }
   .schnittrahmen.tippex { border-color: #8a94a3; background: rgba(255, 255, 255, .35); }
