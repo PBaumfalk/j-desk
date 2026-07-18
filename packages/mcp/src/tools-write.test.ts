@@ -122,3 +122,53 @@ describe('MCP_ALLOW_DEANONYMIZE=false', () => {
     await strikt.stop();
   });
 });
+
+describe('Vision-Objekte (Zettel, Schnüre, Enthefter)', () => {
+  it('add_note mit Platzhalter → Klartext im State; get_desk liefert die Note anonymisiert', async () => {
+    const deskId = await ts.createDesk('Zettel-Desk');
+    await ts.addDoc(deskId, 'Rechnung Max Mustermann.pdf');
+    await ts.mcpClient.callTool({ name: 'get_desk', arguments: { deskId } }); // füllt Mapping
+
+    const r = await ts.mcpClient.callTool({
+      name: 'add_note',
+      arguments: { deskId, kind: 'frage', text: 'Hat [[Person-TEST1]] bezahlt?', x: 10, y: 20 },
+    });
+    expect(r.isError).toBeFalsy();
+    const s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s.state.notes).toHaveLength(1);
+    expect(s.state.notes![0].text).toBe('Hat Max Mustermann bezahlt?'); // Klartext auf dem Tisch
+    expect(s.state.notes![0].kind).toBe('frage');
+
+    const gd = await ts.mcpClient.callTool({ name: 'get_desk', arguments: { deskId } });
+    expect(textOf(gd)).toContain('[[Person-TEST1]]');
+    expect(textOf(gd)).not.toContain('Max Mustermann');
+  });
+
+  it('link_documents verbindet Zettel mit Karte; remove_note räumt die Schnur ab', async () => {
+    const deskId = await ts.createDesk('Schnur-Desk');
+    const docId = await ts.addDoc(deskId, 'Brief.pdf');
+    const note = JSON.parse(textOf(await ts.mcpClient.callTool({
+      name: 'add_note', arguments: { deskId, kind: 'notiz', text: 'Frist prüfen', x: 0, y: 0 },
+    })));
+    const ln = await ts.mcpClient.callTool({ name: 'link_documents', arguments: { deskId, fromId: note.id, toId: docId } });
+    expect(ln.isError).toBeFalsy();
+    let s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s.state.links).toHaveLength(1);
+    await ts.mcpClient.callTool({ name: 'remove_note', arguments: { deskId, noteId: note.id } });
+    s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s.state.notes).toHaveLength(0);
+    expect(s.state.links).toHaveLength(0);
+  });
+
+  it('extract_page legt eine seitenfixierte Karte an', async () => {
+    const deskId = await ts.createDesk('Enthefter-Desk');
+    const docId = await ts.addDoc(deskId, 'Vertrag.pdf');
+    const r = await ts.mcpClient.callTool({ name: 'extract_page', arguments: { deskId, docId, page: 2, x: 300, y: 40 } });
+    expect(r.isError).toBeFalsy();
+    const s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s.state.docs).toHaveLength(2);
+    const seite = s.state.docs.find((d) => d.id !== docId)! as { pageOnly?: number; name: string };
+    expect(seite.pageOnly).toBe(2);
+    expect(seite.name).toContain('S. 2');
+  });
+});

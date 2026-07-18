@@ -30,7 +30,9 @@ export interface DeskInfo { id: string; name: string; ownerId: string }
 export interface Doc { id: string; fileId: string; name: string; position: { x: number; y: number }; rotation: number; zIndex: number }
 export interface Link { id: string; fromId: string; toId: string; note: string }
 export interface Stack { id: string; name: string; docIds: string[]; position: { x: number; y: number }; zIndex: number }
-export interface DeskState { rev: number; state: { docs: Doc[]; links: Link[]; stacks: Stack[] } }
+export interface Note { id: string; kind: string; text: string; position: { x: number; y: number }; zIndex: number }
+export interface Cutout { id: string; fileId: string; page: number; rect: { x: number; y: number; w: number; h: number }; position: { x: number; y: number }; zIndex: number }
+export interface DeskState { rev: number; state: { docs: Doc[]; links: Link[]; stacks: Stack[]; notes?: Note[]; cutouts?: Cutout[] } }
 
 export const listDesks = (b: string, t: string) => request<DeskInfo[]>(b, t, 'GET', '/desks');
 export const getState = (b: string, t: string, deskId: string) => request<DeskState>(b, t, 'GET', `/desks/${deskId}/state`);

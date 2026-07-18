@@ -51,11 +51,13 @@ export function buildMcpServer(deps: McpDeps): McpServer {
     const [desks, s] = await Promise.all([desk.listDesks(base, token), desk.getState(base, token, deskId)]);
     const info = desks.find((d) => d.id === deskId);
     if (!info) throw new Error('Schreibtisch nicht gefunden');
+    const notesRoh = s.state.notes ?? [];
     const texte = [
       info.name,
       ...s.state.docs.map((d) => d.name),
       ...s.state.stacks.map((st) => st.name),
       ...s.state.links.map((l) => l.note),
+      ...notesRoh.map((n) => n.text),
     ];
     const anon = await anonymizer.anonNames(texte);
     let i = 0;
@@ -63,7 +65,9 @@ export function buildMcpServer(deps: McpDeps): McpServer {
     const docs = s.state.docs.map((d) => ({ id: d.id, name: anon[i++], position: d.position }));
     const stacks = s.state.stacks.map((st) => ({ id: st.id, name: anon[i++], docIds: st.docIds, position: st.position }));
     const links = s.state.links.map((l) => ({ id: l.id, fromId: l.fromId, toId: l.toId, note: anon[i++] }));
-    return { name, docs, stacks, links };
+    const notes = notesRoh.map((n) => ({ id: n.id, kind: n.kind, text: anon[i++], position: n.position }));
+    const cutouts = (s.state.cutouts ?? []).map((c) => ({ id: c.id, page: c.page, position: c.position }));
+    return { name, docs, stacks, links, notes, cutouts };
   });
 
   tool(server, 'get_document_text', 'Liefert den anonymisierten Volltext eines Dokuments (PDF via OCR).', { deskId: z.string(), docId: z.string() }, async (a) => {
@@ -105,8 +109,34 @@ export function buildMcpServer(deps: McpDeps): McpServer {
   tool(server, 'move_stack', 'Verschiebt einen Stapel.', { deskId: z.string(), stackId: z.string(), x: z.number(), y: z.number() },
     (a) => cmd(a.deskId, 'moveStack', { stackId: a.stackId, position: { x: a.x, y: a.y } }));
 
-  tool(server, 'link_documents', 'Verbindet zwei Karten mit einer Verknüpfungslinie.', { deskId: z.string(), fromId: z.string(), toId: z.string() },
+  tool(server, 'link_documents', 'Verbindet zwei Objekte (Karten, Stapel, Notizzettel oder Ausschnitte) mit einer Schnur.', { deskId: z.string(), fromId: z.string(), toId: z.string() },
     (a) => cmd(a.deskId, 'addLink', { fromId: a.fromId, toId: a.toId, id: randomUUID() }));
+
+  tool(server, 'add_note',
+    'Legt einen Notizzettel bzw. ein Gedankenobjekt auf den Schreibtisch (Platzhalter im Text werden in Klartext übersetzt).',
+    { deskId: z.string(), kind: z.enum(['notiz', 'frage', 'these', 'angriffspunkt', 'risiko']), text: z.string(), x: z.number(), y: z.number() },
+    async (a) => {
+      const id = randomUUID();
+      await cmd(a.deskId, 'addNote', { kind: a.kind, text: deanon(String(a.text)), position: { x: a.x, y: a.y }, id });
+      return { ok: true, id };
+    });
+
+  tool(server, 'edit_note', 'Ersetzt den Text eines Notizzettels (Platzhalter werden übersetzt).',
+    { deskId: z.string(), noteId: z.string(), text: z.string() },
+    (a) => cmd(a.deskId, 'editNote', { id: a.noteId, text: deanon(String(a.text)) }));
+
+  tool(server, 'remove_note', 'Entfernt einen Notizzettel samt seiner Schnüre.',
+    { deskId: z.string(), noteId: z.string() },
+    (a) => cmd(a.deskId, 'removeNote', { id: a.noteId }));
+
+  tool(server, 'extract_page',
+    'Enthefterzange: löst eine Seite eines Dokuments als eigene Karte heraus (nicht destruktiv).',
+    { deskId: z.string(), docId: z.string(), page: z.number(), x: z.number(), y: z.number() },
+    async (a) => {
+      const id = randomUUID();
+      await cmd(a.deskId, 'extractPage', { docId: a.docId, page: a.page, position: { x: a.x, y: a.y }, id });
+      return { ok: true, id };
+    });
 
   tool(server, 'set_link_note', 'Setzt die Notiz einer Verknüpfung (Platzhalter werden übersetzt).', { deskId: z.string(), linkId: z.string(), note: z.string() },
     (a) => cmd(a.deskId, 'setLinkNote', { linkId: a.linkId, note: deanon(String(a.note)) }));
