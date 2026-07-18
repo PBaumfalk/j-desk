@@ -33,13 +33,15 @@ export interface DesktopState {
   docs: Doc[];
   links: Link[];
   stacks: Stack[];
+  /** Freihand-Striche (Stift/Marker) auf PDF-Seiten; fehlt in Staaten vor Teilprojekt E. */
+  strokes?: import('./ink').Stroke[];
 }
 
 export const CARD_W = 180;
 export const CARD_H = 240;
 
 export function emptyState(): DesktopState {
-  return { docs: [], links: [], stacks: [] };
+  return { docs: [], links: [], stacks: [], strokes: [] };
 }
 
 export function findDoc(s: DesktopState, id: string): Doc | undefined {

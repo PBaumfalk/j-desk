@@ -4,6 +4,7 @@ import { addLink, setLinkNote, removeLink } from './links';
 import { stackDocs, removeFromStack, dissolveStack, renameStack, moveStack } from './stacks';
 import { removeDoc, removeStack } from './removal';
 import { expandDoc, collapseDoc, setDocPage, resizeDoc } from './viewer';
+import { addStroke, removeStroke, type Stroke, type StrokeTool } from './ink';
 
 export class CommandError extends Error {}
 
@@ -74,7 +75,24 @@ const handlers: Record<string, (s: DesktopState, p: Record<string, unknown>) => 
   collapseDoc: (s, p) => wrap(() => collapseDoc(s, id(p.id, 'id'))),
   setDocPage: (s, p) => wrap(() => setDocPage(s, id(p.id, 'id'), num(p.page, 'page'))),
   resizeDoc: (s, p) => wrap(() => resizeDoc(s, id(p.id, 'id'), size(p.size, 'size'))),
+  addStroke: (s, p) => wrap(() => addStroke(s, strokePayload(p.stroke))),
+  removeStroke: (s, p) => wrap(() => removeStroke(s, id(p.strokeId, 'strokeId'))),
 };
+
+function strokePayload(v: unknown): Omit<Stroke, 'id'> & { id?: string } {
+  const st = v as Partial<Stroke> | undefined;
+  if (!st || typeof st !== 'object') throw new CommandError('Feld "stroke" fehlt');
+  if (!Array.isArray(st.points)) throw new CommandError('Feld "stroke.points" fehlt');
+  return {
+    ...(typeof st.id === 'string' && st.id !== '' ? { id: st.id } : {}),
+    docId: id(st.docId, 'stroke.docId'),
+    page: num(st.page, 'stroke.page'),
+    tool: st.tool as StrokeTool,
+    color: text(st.color, 'stroke.color'),
+    width: num(st.width, 'stroke.width'),
+    points: st.points.map((p, i) => vec(p, `stroke.points[${i}]`)),
+  };
+}
 
 export function applyCommand(state: DesktopState, cmd: Command): DesktopState {
   const handler = handlers[cmd.type];

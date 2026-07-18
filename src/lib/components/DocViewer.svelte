@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { moveDoc, setDocPage, DEFAULT_OPEN_SIZE, type Doc, type Viewport } from '@digital-desktop/core';
+  import { moveDoc, setDocPage, DEFAULT_OPEN_SIZE, type Doc, type Size, type Viewport } from '@digital-desktop/core';
   import { debounce } from '../debounce';
   import { desktop } from '../store.svelte';
   import PageRenderer from './PageRenderer.svelte';
+  import InkOverlay, { type InkTool } from './InkOverlay.svelte';
 
   let { doc, vp }: { doc: Doc; vp: Viewport } = $props();
 
@@ -11,6 +12,14 @@
   let wrapEl = $state<HTMLDivElement | null>(null);
   const page = $derived(doc.page ?? 1);
   const size = $derived(doc.openSize ?? DEFAULT_OPEN_SIZE);
+  const pageWidth = $derived(Math.round(size.w - 20));
+
+  // Zeichenwerkzeuge (Teilprojekt E): aktives Werkzeug gilt pro Viewer
+  let inkTool = $state<InkTool | null>(null);
+  let baseSize = $state<Size | null>(null);
+  function toggleTool(t: InkTool) {
+    inkTool = inkTool === t ? null : t;
+  }
 
   // Aufgeschlagene Karte direkt fokussieren, damit die Pfeiltasten sofort blättern.
   onMount(() => wrapEl?.focus({ preventScroll: true }));
@@ -65,9 +74,9 @@
     if (e.key === 'ArrowRight') { e.preventDefault(); turn(1); }
   }
 
-  // Wischen zum Blättern (horizontal)
+  // Wischen zum Blättern (horizontal) — bei aktivem Zeichenwerkzeug deaktiviert
   let swipeX = 0, swiping = false;
-  function onBodyPointerDown(e: PointerEvent) { if (e.pointerType === 'touch') { swiping = true; swipeX = e.clientX; } }
+  function onBodyPointerDown(e: PointerEvent) { if (inkTool) return; if (e.pointerType === 'touch') { swiping = true; swipeX = e.clientX; } }
   function onBodyPointerUp(e: PointerEvent) {
     if (!swiping) return; swiping = false;
     const dx = e.clientX - swipeX;
@@ -106,6 +115,11 @@
      style:width="{size.w}px" style:height="{size.h}px">
   <div class="head" onpointerdown={onHeaderPointerDown} onpointermove={onHeaderPointerMove} onpointerup={onHeaderPointerUp} onpointercancel={onHeaderPointerUp}>
     <span class="title">{doc.name}</span>
+    <span class="tools">
+      <button class:on={inkTool === 'pen'} onclick={() => toggleTool('pen')} aria-pressed={inkTool === 'pen'} aria-label="Stift" title="Stift">✎</button>
+      <button class:on={inkTool === 'marker'} onclick={() => toggleTool('marker')} aria-pressed={inkTool === 'marker'} aria-label="Textmarker" title="Textmarker"><span class="marker-chip"></span></button>
+      <button class:on={inkTool === 'eraser'} onclick={() => toggleTool('eraser')} aria-pressed={inkTool === 'eraser'} aria-label="Radierer" title="Radierer">⌫</button>
+    </span>
     <span class="pager">
       <button onclick={() => turn(-1)} disabled={page <= 1} aria-label="Zurück">‹</button>
       <span class="pos">{page}{#if pageCount} / {pageCount}{/if}</span>
@@ -115,7 +129,11 @@
   </div>
   <div class="body" onwheel={(e) => { if (!e.ctrlKey && !e.metaKey) e.stopPropagation(); }} onpointerdown={onBodyPointerDown} onpointerup={onBodyPointerUp}>
     {#if desktop.api}
-      <PageRenderer api={desktop.api} fileId={doc.fileId} {page} targetWidth={Math.round(size.w - 20)} onpagecount={(n) => (pageCount = n)} />
+      <div class="pagewrap">
+        <PageRenderer api={desktop.api} fileId={doc.fileId} {page} targetWidth={pageWidth}
+          onpagecount={(n) => (pageCount = n)} onbasesize={(s) => (baseSize = s)} />
+        <InkOverlay docId={doc.id} {page} base={baseSize} renderedWidth={pageWidth} tool={inkTool} />
+      </div>
     {/if}
   </div>
   <div class="grip" onpointerdown={onResizeDown} onpointermove={onResizeMove} onpointerup={onResizeUp} onpointercancel={onResizeUp} aria-hidden="true"></div>
@@ -129,6 +147,14 @@
           border-bottom: 1px solid #e4e8ef; cursor: grab; user-select: none; }
   .title { flex: 1; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pager { display: flex; align-items: center; gap: 6px; }
+  .tools { display: flex; align-items: center; gap: 4px; }
+  .tools button { border: none; background: #e7ebf2; border-radius: 5px; cursor: pointer;
+          width: 24px; height: 24px; font-size: 13px; line-height: 1;
+          display: inline-flex; align-items: center; justify-content: center; }
+  .tools button.on { background: #2c5aa0; color: #fff; }
+  .marker-chip { width: 12px; height: 12px; border-radius: 3px; background: #ffd166; display: inline-block; }
+  .tools button.on .marker-chip { outline: 2px solid #fff; }
+  .pagewrap { position: relative; width: fit-content; }
   .pager button, .close { border: none; background: #e7ebf2; border-radius: 5px; cursor: pointer;
           width: 24px; height: 24px; font-size: 15px; line-height: 1; }
   .pager button:disabled { opacity: .4; cursor: default; }

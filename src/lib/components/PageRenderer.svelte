@@ -8,12 +8,16 @@
 
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
-  let { api, fileId, page, targetWidth, onpagecount }:
-    { api: ApiClient; fileId: string; page: number; targetWidth: number; onpagecount?: (n: number) => void } = $props();
+  let { api, fileId, page, targetWidth, onpagecount, onbasesize }:
+    { api: ApiClient; fileId: string; page: number; targetWidth: number;
+      onpagecount?: (n: number) => void;
+      /** Seitengröße im Basisraum (PDF-Viewport bei scale = 1) — für die Zeichenebene. */
+      onbasesize?: (s: { w: number; h: number }) => void } = $props();
 
   let canvas = $state<HTMLCanvasElement | null>(null);
   let failed = $state(false);
   const cache = new PageBitmapCache();
+  const baseSizes = new Map<string, { w: number; h: number }>(); // Seiten können unterschiedlich groß sein
   let renderToken = 0;
 
   async function bytesFor(id: string): Promise<Uint8Array> {
@@ -40,7 +44,9 @@
           onpagecount?.(pdf.numPages);
           const p = Math.min(Math.max(1, page), pdf.numPages); // clampen auf 1..Seitenzahl
           const pg = await pdf.getPage(p);
-          const scale = (targetWidth * (window.devicePixelRatio || 1)) / pg.getViewport({ scale: 1 }).width;
+          const baseVp = pg.getViewport({ scale: 1 });
+          baseSizes.set(`${fileId}:${page}`, { w: baseVp.width, h: baseVp.height });
+          const scale = (targetWidth * (window.devicePixelRatio || 1)) / baseVp.width;
           const viewport = pg.getViewport({ scale });
           const off = document.createElement('canvas');
           off.width = Math.ceil(viewport.width);
@@ -58,6 +64,8 @@
       canvas.width = bmp.width;
       canvas.height = bmp.height;
       canvas.getContext('2d')!.drawImage(bmp, 0, 0);
+      const bs = baseSizes.get(`${fileId}:${page}`);
+      if (bs) onbasesize?.(bs);
     } catch {
       if (token === renderToken) failed = true;
     }
