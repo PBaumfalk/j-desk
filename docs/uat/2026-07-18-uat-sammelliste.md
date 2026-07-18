@@ -1,7 +1,8 @@
 # UAT-Sammelliste — alle offenen manuellen Tests (Stand 2026-07-18)
 
-Konsolidiert alle „pending user verification"-Punkte. **106 Punkte in vier Blöcken** — jeder
-Block hat ein eigenes Setup, innerhalb eines Blocks kann in einer Sitzung durchgetestet werden.
+Konsolidiert alle „pending user verification"-Punkte. **88 Punkte in drei aktiven Blöcken**
+(A mit 65, C′ mit 9, D mit 14) — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
+kann in einer Sitzung durchgetestet werden.
 
 **Empfohlene Reihenfolge:** Block A (aktueller Branch, enthält jetzt auch Zettel A7 und
 MCP-Portierung C′) → Block D (j-lawyer-Modus, braucht deine Instanz).
@@ -14,7 +15,7 @@ MCP-Portierung C′) → Block D (j-lawyer-Modus, braucht deine Instanz).
 
 ---
 
-## Block A — Browser-App (Branch `feature/inline-viewer`, 53 Punkte)
+## Block A — Browser-App (Branch `feature/inline-viewer`, 65 Punkte)
 
 **Setup:**
 
@@ -121,7 +122,7 @@ iPad:
 - [ ] A8.5 **Lupe (🔍 im Bedienfeld):** runder 2,5-fach-Ausschnitt folgt Maus bzw. Finger; offene Viewer erscheinen darin bewusst nicht. Auf dem iPad brauchbar?
 - [ ] A8.6 **Produktfrage:** Werkzeug-Inventar-Rest der Vision (Lineal, Notizfahne, Stempel, Schwärzung, Tipp-Ex, Klebeband, Büroklammer, Locher, Kopierer/Scanner/Schredder) — Priorisierung fürs nächste Teilprojekt?
 
-### C′ — MCP auf dem Rework-Strang (ersetzt Block C; gleiche 6 Prüfungen, neues Setup)
+### C′ — MCP auf dem Rework-Strang (ersetzt Block C; 9 Prüfungen, neues Setup)
 
 **Setup:** anymize-Key in `.env.local`; ZDR im anymize-Account AUS — **alles auf `feature/inline-viewer`:**
 
@@ -138,6 +139,9 @@ npm run mcp                                 # Terminal 2
 - [ ] C′.4 „Staple die Rechnungen, benenne nach Absender" → Stapel in Klartext, in der UI sichtbar.
 - [ ] C′.5 anymize-Key absichtlich falsch → Lese-Tools verweigern, `move_document` geht weiter.
 - [ ] C′.6 Reales anymize-Platzhalterformat matcht `PLACEHOLDER_RE` (nie live geprüft).
+- [ ] C′.7 **Zettel via KI (NEU):** „Lege einen Notizzettel ‚Frist prüfen' an" → `add_note`-Zettel erscheint in der UI in Klartext; „Welche Zettel liegen auf dem Tisch?" → `get_desk` nennt sie (anonymisiert in der KI-Antwort, `deanonymize` liefert Klartext).
+- [ ] C′.8 **Zettel ändern/entfernen (NEU):** Text per KI ändern → UI folgt live; Zettel per KI entfernen → seine Schnüre verschwinden mit.
+- [ ] C′.9 **Enthefter & Schnüre via KI (NEU):** „Löse Seite 2 von Dokument X heraus" → `extract_page` legt die Seitenkarte neben das Original (nicht destruktiv); „Verbinde den Zettel mit der Karte" → `link_documents` zieht die Schnur, in der UI sichtbar.
 
 ---
 
