@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
-    freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes,
+    freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes, panBy,
     type Vec2, type Viewport,
   } from '@digital-desktop/core';
   import { uid } from '../uid';
@@ -12,6 +12,7 @@
   import LinkLayer from './LinkLayer.svelte';
   import ContextMenu from './ContextMenu.svelte';
   import DeskSwitcher from './DeskSwitcher.svelte';
+  import DeskControls from './DeskControls.svelte';
 
   let vp = $state<Viewport>({ x: 0, y: 0, scale: 1 });
   let el: HTMLDivElement;
@@ -19,24 +20,43 @@
   let spaceDown = $state(false);
   let fileInput: HTMLInputElement;
 
+  // Mausrad zoomt zum Cursor (statt zu schwenken).
   function onWheel(e: WheelEvent) {
     e.preventDefault();
-    if (e.ctrlKey || e.metaKey) {
-      vp = zoomAt(vp, { x: e.clientX, y: e.clientY }, Math.exp(-e.deltaY * 0.01));
-    } else {
-      vp = { ...vp, x: vp.x - e.deltaX, y: vp.y - e.deltaY };
-    }
+    vp = zoomAt(vp, { x: e.clientX, y: e.clientY }, Math.exp(-e.deltaY * 0.0015));
   }
+
+  // Pointer-Verfolgung: Ein Finger/Maus schwenkt, zwei Finger pinchen+schwenken.
+  const pointers = new Map<number, { x: number; y: number }>();
+  let panLast: { x: number; y: number } | null = null;
+  let pinchLast = 0;
+
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0 || e.target !== el) return;
-    panning = true;
     el.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 1) { panning = true; panLast = { x: e.clientX, y: e.clientY }; }
   }
   function onPointerMove(e: PointerEvent) {
-    if (panning) vp = { ...vp, x: vp.x + e.movementX, y: vp.y + e.movementY };
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 1 && panLast) {
+      vp = panBy(vp, e.clientX - panLast.x, e.clientY - panLast.y);
+      panLast = { x: e.clientX, y: e.clientY };
+    } else if (pointers.size === 2) {
+      const p = Array.from(pointers.values());
+      const dist = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+      const mid = { x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 };
+      if (pinchLast) vp = zoomAt(vp, mid, dist / pinchLast);
+      pinchLast = dist;
+      panLast = null;
+    }
   }
-  function onPointerUp() {
-    panning = false;
+  function endPointer(e: PointerEvent) {
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinchLast = 0;
+    if (pointers.size === 0) { panning = false; panLast = null; }
+    else if (pointers.size === 1) { const p = Array.from(pointers.values())[0]; panLast = { x: p.x, y: p.y }; }
   }
 
   function fitAll() {
@@ -95,7 +115,8 @@
 </script>
 
 <div class="desk" bind:this={el} class:grabbing={spaceDown || panning}
-     onwheel={onWheel} onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp}
+     onwheel={onWheel} onpointerdown={onPointerDown} onpointermove={onPointerMove}
+     onpointerup={endPointer} onpointercancel={endPointer}
      ondragover={onDragOver} ondrop={onDrop}>
   <div class="world" style:transform="translate({vp.x}px, {vp.y}px) scale({vp.scale})">
     <LinkLayer />
@@ -107,6 +128,11 @@
     {/each}
   </div>
   <DeskSwitcher />
+  <DeskControls
+    onzoom={(f) => (vp = zoomAt(vp, { x: el.clientWidth / 2, y: el.clientHeight / 2 }, f))}
+    onpan={(dx, dy) => (vp = panBy(vp, dx, dy))}
+    onfit={fitAll}
+  />
   <div class="toolbar">
     <input
       bind:this={fileInput}
@@ -117,7 +143,6 @@
       onchange={onFilesPicked}
     />
     <button onclick={() => fileInput.click()} title="PDF hinzufügen">＋ PDF</button>
-    <button onclick={fitAll}>Übersicht</button>
   </div>
   {#if ui.linkingFromId}
     <div class="hint">Verknüpfen: Ziel anklicken (Esc bricht ab)</div>
@@ -135,7 +160,7 @@
 </div>
 
 <style>
-  .desk { position: fixed; inset: 0; overflow: hidden;
+  .desk { position: fixed; inset: 0; overflow: hidden; touch-action: none;
           background: radial-gradient(1200px 800px at 40% 30%, #3a5c4e, #27423a 70%, #1d332d); }
   .desk.grabbing { cursor: grabbing; }
   .world { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
