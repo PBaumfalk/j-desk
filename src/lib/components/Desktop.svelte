@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
-    freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes, panBy,
-    type Vec2, type Viewport,
+    freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes, panBy, docBox, stackBox,
+    type Box, type Vec2, type Viewport,
   } from '@digital-desktop/core';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
@@ -23,6 +23,23 @@
   let panning = $state(false);
   let spaceDown = $state(false);
   let fileInput: HTMLInputElement;
+  let viewW = $state(0);
+  let viewH = $state(0);
+
+  // Sichtbarkeits-Culling: Karten weit außerhalb des Fensters verlassen das DOM.
+  // Der Puffer sorgt dafür, dass beim Schwenken nichts sichtbar „aufpoppt".
+  const CULL_MARGIN = 300;
+  const sichtfenster = $derived.by(() => ({
+    x0: -vp.x / vp.scale - CULL_MARGIN,
+    y0: -vp.y / vp.scale - CULL_MARGIN,
+    x1: (viewW - vp.x) / vp.scale + CULL_MARGIN,
+    y1: (viewH - vp.y) / vp.scale + CULL_MARGIN,
+  }));
+  function imSichtfenster(b: Box): boolean {
+    if (viewW === 0) return true; // vor der ersten Messung nichts verstecken
+    return b.x + b.w >= sichtfenster.x0 && b.x <= sichtfenster.x1
+      && b.y + b.h >= sichtfenster.y0 && b.y <= sichtfenster.y1;
+  }
 
   // Mausrad zoomt zum Cursor (statt zu schwenken).
   function onWheel(e: WheelEvent) {
@@ -143,16 +160,17 @@
 
 </script>
 
-<div class="desk" role="application" aria-label="Schreibtisch" bind:this={el} class:grabbing={spaceDown || panning}
+<div class="desk" role="application" aria-label="Schreibtisch" bind:this={el}
+     bind:clientWidth={viewW} bind:clientHeight={viewH} class:grabbing={spaceDown || panning}
      onwheel={onWheel} onpointerdown={onPointerDown} onpointermove={onPointerMove}
      onpointerup={endPointer} onpointercancel={endPointer}
      ondragover={onDragOver} ondrop={onDrop}>
   <div class="world" style:transform="translate({vp.x}px, {vp.y}px) scale({vp.scale})">
     <LinkLayer />
-    {#each freeDocs(desktop.state) as doc (doc.id)}
+    {#each freeDocs(desktop.state).filter((d) => imSichtfenster(docBox(d))) as doc (doc.id)}
       <DocCard {doc} {vp} />
     {/each}
-    {#each desktop.state.stacks as stack (stack.id)}
+    {#each desktop.state.stacks.filter((st) => imSichtfenster(stackBox(st))) as stack (stack.id)}
       <StackCard {stack} {vp} />
     {/each}
   </div>
