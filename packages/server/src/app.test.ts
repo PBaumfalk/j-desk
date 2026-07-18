@@ -1,7 +1,32 @@
 import { describe, it, expect } from 'vitest';
-import { createTestApp } from './testUtils';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createTestApp, reservePort } from './testUtils';
+import { openDb } from './db';
+import { createUser, login } from './auth';
+import { buildApp } from './app';
+import { storeFile } from './files';
+import { startFakeConvertServer, type FakeConvertServer } from './testConvertServer';
 
 const pdf = Buffer.from('%PDF-1.4\ninhalt');
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Baut eine Standalone-App mit echtem HTTP-Listener + konfiguriertem Konverter (für Konverter-Rundläufe). */
+async function convertingApp(fake: FakeConvertServer) {
+  const port = await reservePort();
+  const publicUrl = `http://127.0.0.1:${port}`;
+  const db = openDb(':memory:');
+  const dataDir = mkdtempSync(join(tmpdir(), 'dd-prev-'));
+  await createUser(db, 'test', 'test-passwort');
+  const token = (await login(db, 'test', 'test-passwort'))!;
+  const app = await buildApp({ db, dataDir, publicUrl, convert: { url: fake.url, jwtSecret: fake.secret } });
+  await app.listen({ port });
+  return { app, db, dataDir, authHeaders: { authorization: `Bearer ${token}` } };
+}
 
 describe('Auth-Routen', () => {
   it('status/setup/login-Ablauf', async () => {
@@ -140,6 +165,114 @@ describe('Konverter-Ticket-Quelle', () => {
 
     const res3 = await app.inject({ method: 'GET', url: '/api/v1/convert-source/quatsch' });
     expect(res3.statusCode).toBe(404);
+  });
+});
+
+describe('Vorschau-Route (Standalone, ohne Konverter)', () => {
+  it('kind pdf: liefert die Originalbytes wie /files/:id', async () => {
+    const { app, db, dataDir, authHeaders } = await createTestApp();
+    const meta = storeFile(db, dataDir, pdf, 'a.pdf');
+    const res = await app.inject({ method: 'GET', url: `/api/v1/files/${meta.id}/preview`, headers: authHeaders });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('application/pdf');
+    expect(res.rawPayload.equals(pdf)).toBe(true);
+  });
+
+  it('kind image/other: 404 mit Meldung', async () => {
+    const { app, db, dataDir, authHeaders } = await createTestApp();
+    const img = storeFile(db, dataDir, Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2]), 'foto.jpg');
+    const other = storeFile(db, dataDir, Buffer.from('zufaelliger inhalt'), 'irgendwas.exe');
+    for (const id of [img.id, other.id]) {
+      const res = await app.inject({ method: 'GET', url: `/api/v1/files/${id}/preview`, headers: authHeaders });
+      expect(res.statusCode).toBe(404);
+      expect(res.json()).toEqual({ error: 'Keine Vorschau für diese Datei-Art' });
+    }
+  });
+
+  it('unbekannte fileId: 404', async () => {
+    const { app, authHeaders } = await createTestApp();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/files/gibtsnicht/preview', headers: authHeaders });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('kind convertible ohne konfigurierten Konverter: 409 disabled', async () => {
+    const { app, db, dataDir, authHeaders } = await createTestApp();
+    const meta = storeFile(db, dataDir, Buffer.from('bericht-inhalt'), 'Bericht.odt');
+    const res = await app.inject({ method: 'GET', url: `/api/v1/files/${meta.id}/preview`, headers: authHeaders });
+    expect(res.statusCode).toBe(409);
+    expect(res.json()).toEqual({ error: 'Vorschau-Dienst nicht konfiguriert', reason: 'disabled' });
+  });
+
+  it('ohne Login: 401', async () => {
+    const { app } = await createTestApp();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/files/irgendwas/preview' });
+    expect(res.statusCode).toBe(401);
+  });
+});
+
+describe('Vorschau-Route (Standalone, mit Konverter)', () => {
+  it('kind convertible: 202 -> Poll -> 200 mit PDF-Bytes, danach aus dem Cache', async () => {
+    const fake = await startFakeConvertServer();
+    try {
+      const { app, db, dataDir, authHeaders } = await convertingApp(fake);
+      const meta = storeFile(db, dataDir, Buffer.from('bericht-inhalt'), 'Bericht.odt');
+      fake.configure(meta.id, { pollsUntilDone: 1 });
+      const url = `/api/v1/files/${meta.id}/preview`;
+
+      let res = await app.inject({ method: 'GET', url, headers: authHeaders });
+      expect(res.statusCode).toBe(202);
+      expect(res.json()).toEqual({ status: 'converting' });
+
+      let tries = 0;
+      while (tries++ < 100 && res.statusCode !== 200) {
+        await sleep(20);
+        res = await app.inject({ method: 'GET', url, headers: authHeaders });
+        expect([202, 200]).toContain(res.statusCode);
+      }
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toContain('application/pdf');
+      expect(res.rawPayload.subarray(0, 5).toString()).toBe('%PDF-');
+
+      // aus dem Plattencache: kein weiterer DS-Kontakt
+      const callsVorher = fake.convertCalls.filter((k) => k === meta.id).length;
+      res = await app.inject({ method: 'GET', url, headers: authHeaders });
+      expect(res.statusCode).toBe(200);
+      expect(fake.convertCalls.filter((k) => k === meta.id).length).toBe(callsVorher);
+
+      await app.close();
+    } finally {
+      await fake.stop();
+    }
+  });
+
+  it('DS-Fehler: 409 mit Meldung + reason; nächster Aufruf versucht erneut', async () => {
+    const fake = await startFakeConvertServer();
+    try {
+      const { app, db, dataDir, authHeaders } = await convertingApp(fake);
+      const meta = storeFile(db, dataDir, Buffer.from('fehler-inhalt'), 'Fehler.docx');
+      fake.configure(meta.id, { errorCode: '-3', errorWithoutEndConvert: true });
+      const url = `/api/v1/files/${meta.id}/preview`;
+
+      let res = await app.inject({ method: 'GET', url, headers: authHeaders });
+      expect(res.statusCode).toBe(202); // Anstoß
+
+      let tries = 0;
+      while (tries++ < 100 && res.statusCode !== 409) {
+        await sleep(20);
+        res = await app.inject({ method: 'GET', url, headers: authHeaders });
+      }
+      expect(res.statusCode).toBe(409);
+      expect(res.json()).toMatchObject({ reason: 'failed' });
+      expect(res.json().error).toContain('-3');
+
+      // Fehler-Merker wurde zurückgesetzt -> nächster Aufruf stößt erneut an
+      res = await app.inject({ method: 'GET', url, headers: authHeaders });
+      expect(res.statusCode).toBe(202);
+
+      await app.close();
+    } finally {
+      await fake.stop();
+    }
   });
 });
 

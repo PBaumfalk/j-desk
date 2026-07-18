@@ -3,11 +3,17 @@ import {
   validateLogin, listCases, listDocuments, getDocumentMeta, getDocumentContent, createDocument, JLawyerError,
 } from './jlawyer';
 import { startFakeJLawyer, type FakeJLawyer } from './testJLawyer';
+import { startFakeConvertServer, type FakeConvertServer } from './testConvertServer';
 import { buildApp } from './app';
 import { openDb } from './db';
+import { reservePort } from './testUtils';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
 let fake: FakeJLawyer;
 beforeAll(async () => { fake = await startFakeJLawyer(); });
@@ -276,5 +282,107 @@ describe('App im j-lawyer-Modus', () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/cases' });
     expect([401, 404]).toContain(res.statusCode); // 401 vom Auth-Hook oder 404 — jedenfalls keine Aktenliste
     await app.close();
+  });
+
+  it('Abgleich setzt kind aus dem Dateinamen (odt->convertible, jpg->image)', async () => {
+    const { app } = await jlApp();
+    fake.documents.set('akte-kind', [
+      { id: 'jdoc-kind-odt', caseId: 'akte-kind', name: 'Bericht.odt', changeDate: 1750000500000, size: 5, bytes: Buffer.from('odt-inhalt') },
+      { id: 'jdoc-kind-jpg', caseId: 'akte-kind', name: 'Foto.jpg', changeDate: 1750000600000, size: 5, bytes: Buffer.from([0xff, 0xd8, 0xff]) },
+    ]);
+    const { token } = (
+      await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { username: 'anwalt', password: 'kanzlei123' } })
+    ).json();
+    const h = { authorization: `Bearer ${token}` };
+    const r = await app.inject({ method: 'GET', url: '/api/v1/cases/akte-kind/desk', headers: h });
+    const docs = r.json().state.docs as { fileId: string; kind: string }[];
+    expect(docs.find((d) => d.fileId === 'jdoc-kind-odt')?.kind).toBe('convertible');
+    expect(docs.find((d) => d.fileId === 'jdoc-kind-jpg')?.kind).toBe('image');
+    await app.close();
+  });
+
+  it('Vorschau: kind pdf liefert Inhalt wie /files/:id, kind image 404', async () => {
+    const { app } = await jlApp();
+    const { token } = (
+      await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { username: 'anwalt', password: 'kanzlei123' } })
+    ).json();
+    const h = { authorization: `Bearer ${token}` };
+
+    let res = await app.inject({ method: 'GET', url: '/api/v1/files/jdoc-1/preview', headers: h });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('application/pdf');
+    expect(res.body.startsWith('%PDF-')).toBe(true);
+
+    fake.documents.set('akte-img', [
+      { id: 'jdoc-img-1', caseId: 'akte-img', name: 'Foto.jpg', changeDate: 1750000700000, size: 5, bytes: Buffer.from([0xff, 0xd8, 0xff]) },
+    ]);
+    res = await app.inject({ method: 'GET', url: '/api/v1/files/jdoc-img-1/preview', headers: h });
+    expect(res.statusCode).toBe(404);
+    expect(res.json()).toEqual({ error: 'Keine Vorschau für diese Datei-Art' });
+    await app.close();
+  });
+
+  it('Vorschau: kind convertible ohne Konverter -> 409 disabled', async () => {
+    const { app } = await jlApp();
+    fake.documents.set('akte-conv-disabled', [
+      { id: 'jdoc-cd-1', caseId: 'akte-conv-disabled', name: 'Bericht.odt', changeDate: 1750000750000, size: 5, bytes: Buffer.from('odt-inhalt') },
+    ]);
+    const { token } = (
+      await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { username: 'anwalt', password: 'kanzlei123' } })
+    ).json();
+    const h = { authorization: `Bearer ${token}` };
+    const res = await app.inject({ method: 'GET', url: '/api/v1/files/jdoc-cd-1/preview', headers: h });
+    expect(res.statusCode).toBe(409);
+    expect(res.json()).toEqual({ error: 'Vorschau-Dienst nicht konfiguriert', reason: 'disabled' });
+    await app.close();
+  });
+
+  it('Vorschau: kind convertible -> 202 -> Poll -> 200, konvertiert über Fake-DS mit jl-Ticket', async () => {
+    let convertServer: FakeConvertServer | undefined;
+    try {
+      convertServer = await startFakeConvertServer();
+      const port = await reservePort();
+      const publicUrl = `http://127.0.0.1:${port}`;
+      const db = openDb(':memory:');
+      const dataDir = mkdtempSync(join(tmpdir(), 'dd-jl-conv-'));
+      const app = await buildApp({
+        db, dataDir, jlawyerUrl: fake.url,
+        convert: { url: convertServer.url, jwtSecret: convertServer.secret },
+        publicUrl,
+      });
+      await app.listen({ port });
+
+      fake.documents.set('akte-conv', [
+        { id: 'jdoc-conv-1', caseId: 'akte-conv', name: 'Bericht.odt', changeDate: 1750000800000, size: 9, bytes: Buffer.from('odt-inhalt') },
+      ]);
+      const cacheKey = 'jdoc-conv-1-1750000800000';
+      convertServer.configure(cacheKey, { pollsUntilDone: 1 });
+
+      const { token } = (
+        await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { username: 'anwalt', password: 'kanzlei123' } })
+      ).json();
+      const h = { authorization: `Bearer ${token}` };
+      const url = '/api/v1/files/jdoc-conv-1/preview';
+
+      let res = await app.inject({ method: 'GET', url, headers: h });
+      expect(res.statusCode).toBe(202);
+      expect(res.json()).toEqual({ status: 'converting' });
+
+      let tries = 0;
+      while (tries++ < 100 && res.statusCode !== 200) {
+        await sleep(20);
+        res = await app.inject({ method: 'GET', url, headers: h });
+        expect([202, 200]).toContain(res.statusCode);
+      }
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toContain('application/pdf');
+      expect(res.rawPayload.subarray(0, 5).toString()).toBe('%PDF-');
+      // die Quelle wurde über ein Konverter-Ticket abgerufen (Fake-DS -> convert-source -> Fake-j-lawyer)
+      expect(convertServer.fetchedSourceUrls.some((u) => u.includes('/convert-source/'))).toBe(true);
+
+      await app.close();
+    } finally {
+      await convertServer?.stop();
+    }
   });
 });

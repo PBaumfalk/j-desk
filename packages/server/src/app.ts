@@ -1,6 +1,6 @@
 import { readFileSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
+import Fastify, { type FastifyInstance, type FastifyRequest, type FastifyReply } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import websocket from '@fastify/websocket';
@@ -19,7 +19,8 @@ import {
   createDesk, listDesks, renameDesk, deleteDesk, getDeskState, ensureDesk,
   applyDeskCommand, putDeskState, DeskNotFoundError, InvalidStateError,
 } from './deskStore';
-import { storeFile, getFilePath, fileExists, classify, FileError } from './files';
+import { storeFile, getFilePath, fileExists, classify, classifyName, getFileMeta, FileError } from './files';
+import { createConverter, ConvertError, previewCachePath, type ConvertConfig } from './convert';
 import { register, unregister, broadcast } from './broadcast';
 
 export interface AppOptions {
@@ -28,6 +29,10 @@ export interface AppOptions {
   webDir?: string;
   /** Basis-URL der j-lawyer-REST-API (inkl. /j-lawyer-io). Gesetzt = j-lawyer-Login-Modus. */
   jlawyerUrl?: string;
+  /** Euro-Office-DocumentServer für die Vorschau-Konvertierung; null/fehlend = deaktiviert. */
+  convert?: ConvertConfig | null;
+  /** Eigene, vom DocumentServer erreichbare Basis-URL (für /convert-source-Tickets). */
+  publicUrl?: string;
 }
 
 const PUBLIC_PATHS = new Set(['/api/v1/auth/status', '/api/v1/auth/login', '/api/v1/auth/setup']);
@@ -47,7 +52,7 @@ function bearerToken(req: FastifyRequest): string | null {
 
 const WS_PATH = /^\/api\/v1\/desks\/[^/]+\/ws$/;
 
-export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions): Promise<FastifyInstance> {
+export async function buildApp({ db, dataDir, webDir, jlawyerUrl, convert, publicUrl }: AppOptions): Promise<FastifyInstance> {
   const app = Fastify();
   const wsTickets = createWsTickets();
   const fileTickets = createFileTickets();
@@ -55,6 +60,50 @@ export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions):
   // j-lawyer-Modus: Basic-Credentials der Sitzungen leben ausschließlich im RAM
   // (nie persistiert; nach Server-Neustart melden sich alle neu an — Spec-Entscheidung).
   const jlCreds = new Map<string, { username: string; password: string }>();
+  const basisUrl = (publicUrl ?? 'http://localhost:4810').replace(/\/+$/, '');
+  // j-lawyer-Modus: Zugangsdaten des zuletzt anfordernden Nutzers je Dokument-ID, ausschließlich
+  // damit die sourceUrl-Funktion unten (die selbst nur die fileId/docId bekommt) ein
+  // Konverter-Ticket mit jl-Payload bauen kann. RAM-only, gleicher Kompromiss wie jlCreds.
+  const previewJlCreds = new Map<string, { username: string; password: string }>();
+  // Letzter Konvertierungsfehler je cacheKey — wird beim NÄCHSTEN preview-Aufruf als 409
+  // ausgeliefert und dabei zurückgesetzt (Retry-Semantik statt dauerhaftem Fehlerzustand).
+  const previewErrors = new Map<string, ConvertError>();
+  const converter = createConverter({
+    config: convert ?? null,
+    dataDir,
+    sourceUrl: (fileId) => {
+      const jl = previewJlCreds.get(fileId);
+      const payload = jl ? { fileId, jl: { docId: fileId, ...jl } } : { fileId };
+      return `${basisUrl}/api/v1/convert-source/${fileTickets.issue(payload)}`;
+    },
+  });
+
+  /** Vorschau-Antwort für kind 'convertible': Cache -> Hintergrund-Anstoß (202) -> Fehler-Merker (409) -> disabled (409). */
+  async function respondConvertiblePreview(
+    reply: FastifyReply,
+    cacheKey: string,
+    fileIdForConvert: string,
+    sourceName: string,
+  ) {
+    if (!converter.enabled()) {
+      return reply.code(409).send({ error: 'Vorschau-Dienst nicht konfiguriert', reason: 'disabled' });
+    }
+    const priorError = previewErrors.get(cacheKey);
+    if (priorError) {
+      previewErrors.delete(cacheKey); // nächster Versuch bekommt eine echte Chance
+      return reply.code(409).send({ error: priorError.message, reason: priorError.reason });
+    }
+    const cachePath = previewCachePath(dataDir, cacheKey);
+    if (existsSync(cachePath)) {
+      reply.header('content-type', 'application/pdf');
+      return readFileSync(cachePath);
+    }
+    void converter.ensurePreview(fileIdForConvert, cacheKey, sourceName).catch((e) => {
+      previewErrors.set(cacheKey, e instanceof ConvertError ? e : new ConvertError(String(e), 'failed'));
+    });
+    reply.code(202);
+    return { status: 'converting' };
+  }
   await app.register(cors, { origin: true });
   await app.register(multipart, { limits: { fileSize: 100 * 1024 * 1024 } });
   await app.register(websocket);
@@ -191,7 +240,9 @@ export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions):
       let n = state.docs.length;
       for (const d of jlDocs) {
         if (!vorhanden.has(d.id)) {
-          state = addDoc(state, d.id, d.name, eingang(n));
+          // Magic-Bytes gibt's beim Abgleich nicht (Inhalt wird erst bei Bedarf abgerufen) —
+          // die Endung reicht hier gut genug (classifyName statt classify).
+          state = addDoc(state, d.id, d.name, eingang(n), undefined, classifyName(d.name));
           changed = true;
           n++;
         }
@@ -250,9 +301,23 @@ export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions):
       }
     });
 
+    /** Lädt (und cacht auf Platte, Schlüssel Dokument-ID + Änderungsdatum) den Dokumentinhalt.
+        Wird sowohl von GET /files/:id als auch von der pdf-Fassung der Vorschau-Route genutzt. */
+    async function cachedDocBytes(creds: { username: string; password: string }, meta: { id: string; changeDate: number }): Promise<Buffer> {
+      const safe = meta.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const cacheFile = join(cacheDir, `${safe}-${meta.changeDate}.pdf`);
+      if (!existsSync(cacheFile)) {
+        const bytes = await getDocumentContent(jlBase, creds.username, creds.password, meta.id);
+        for (const alt of readdirSync(cacheDir).filter((f) => f.startsWith(`${safe}-`))) {
+          rmSync(join(cacheDir, alt), { force: true }); // veraltete Fassungen desselben Dokuments
+        }
+        writeFileSync(cacheFile, bytes);
+      }
+      return readFileSync(cacheFile);
+    }
+
     /** Dokumentinhalt unter dem files-Pfad — fileCache/PageRenderer im Client bleiben
-        unverändert; fileId ist im j-lawyer-Modus die j-lawyer-Dokument-ID.
-        Platten-Cache mit Schlüssel Dokument-ID + Änderungsdatum. */
+        unverändert; fileId ist im j-lawyer-Modus die j-lawyer-Dokument-ID. */
     app.get('/api/v1/files/:id', async (req, reply) => {
       const ctx = credsOder401(req, reply);
       if (!ctx) return;
@@ -260,17 +325,34 @@ export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions):
       try {
         // Metadatenabruf mit den Sitzungs-Credentials = Berechtigungsprüfung
         const meta = await getDocumentMeta(jlBase, ctx.creds.username, ctx.creds.password, id);
-        const safe = id.replace(/[^a-zA-Z0-9_-]/g, '_');
-        const cacheFile = join(cacheDir, `${safe}-${meta.changeDate}.pdf`);
-        if (!existsSync(cacheFile)) {
-          const bytes = await getDocumentContent(jlBase, ctx.creds.username, ctx.creds.password, id);
-          for (const alt of readdirSync(cacheDir).filter((f) => f.startsWith(`${safe}-`))) {
-            rmSync(join(cacheDir, alt), { force: true }); // veraltete Fassungen desselben Dokuments
-          }
-          writeFileSync(cacheFile, bytes);
-        }
         reply.header('content-type', 'application/pdf');
-        return readFileSync(cacheFile);
+        return await cachedDocBytes(ctx.creds, meta);
+      } catch (e) {
+        return jlFehler(e, ctx.token, reply);
+      }
+    });
+
+    /** Vorschau: gleiche Berechtigungsprüfung wie /files/:id (Metadatenabruf mit Sitzungs-Credentials).
+        kind aus dem Dateinamen (classifyName) — Magic-Bytes gibt's ohne Herunterladen nicht. */
+    app.get('/api/v1/files/:id/preview', async (req, reply) => {
+      const ctx = credsOder401(req, reply);
+      if (!ctx) return;
+      const { id: docId } = req.params as { id: string };
+      try {
+        const meta = await getDocumentMeta(jlBase, ctx.creds.username, ctx.creds.password, docId);
+        const kind = classifyName(meta.name);
+        if (kind === 'image' || kind === 'other') {
+          return reply.code(404).send({ error: 'Keine Vorschau für diese Datei-Art' });
+        }
+        if (kind === 'pdf') {
+          reply.header('content-type', 'application/pdf');
+          return await cachedDocBytes(ctx.creds, meta);
+        }
+        // convertible: Ticket-Konverter braucht die Sitzungs-Credentials, um die Quelle
+        // (den Akteninhalt) selbst abzurufen — siehe previewJlCreds/sourceUrl oben.
+        previewJlCreds.set(docId, ctx.creds);
+        const cacheKey = `${docId}-${meta.changeDate}`;
+        return await respondConvertiblePreview(reply, cacheKey, docId, meta.name);
       } catch (e) {
         return jlFehler(e, ctx.token, reply);
       }
@@ -377,6 +459,23 @@ export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions):
       reply.header('content-type', 'application/pdf');
       return readFileSync(path);
     });
+
+    /** Vorschau: gleiche (fehlende) Berechtigungsprüfung wie /files/:id — nur der globale Auth-Hook.
+        cacheKey = fileId: eigene Ablage ist inhaltsadressiert/unveränderlich, keine Versionierung nötig. */
+    app.get('/api/v1/files/:id/preview', async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const meta = getFileMeta(db, id);
+      if (!meta) return reply.code(404).send({ error: 'Datei nicht gefunden' });
+      if (meta.kind === 'image' || meta.kind === 'other') {
+        return reply.code(404).send({ error: 'Keine Vorschau für diese Datei-Art' });
+      }
+      if (meta.kind === 'pdf') {
+        const path = getFilePath(db, dataDir, id)!;
+        reply.header('content-type', 'application/pdf');
+        return readFileSync(path);
+      }
+      return respondConvertiblePreview(reply, id, id, meta.originalName);
+    });
   } else {
     app.post('/api/v1/files', async (_req, reply) =>
       reply.code(400).send({ error: 'Uploads erfolgen in die Akte (POST /api/v1/cases/:id/documents)' }));
@@ -387,10 +486,20 @@ export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions):
     const { ticket } = req.params as { ticket: string };
     const payload = fileTickets.consume(ticket);
     if (!payload) return reply.code(404).send({ error: 'Ticket ungültig oder abgelaufen' });
-    const path = getFilePath(db, dataDir, payload.fileId);
-    if (!path) return reply.code(404).send({ error: 'Datei nicht gefunden' });
     // Kein content-type-Rätselraten hier — der DocumentServer sniffed selbst.
     reply.header('content-type', 'application/octet-stream');
+    if (payload.jl) {
+      // j-lawyer-Modus: die Quelle ist der Akteninhalt, nicht eine lokal abgelegte Datei.
+      const { docId, username, password } = payload.jl;
+      try {
+        return await getDocumentContent(jlawyerUrl!, username, password, docId);
+      } catch (e) {
+        if (e instanceof JLawyerError) return reply.code(e.status).send({ error: e.message });
+        throw e;
+      }
+    }
+    const path = getFilePath(db, dataDir, payload.fileId);
+    if (!path) return reply.code(404).send({ error: 'Datei nicht gefunden' });
     return readFileSync(path);
   });
 

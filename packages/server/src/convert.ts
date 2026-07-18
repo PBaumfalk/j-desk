@@ -47,6 +47,17 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function cachePathFor(dataDir: string, cacheKey: string): string {
+  const safeKey = cacheKey.replace(/[^A-Za-z0-9._-]/g, '_');
+  return join(dataDir, 'convcache', `${safeKey}.pdf`);
+}
+
+/** Plattenpfad einer (ggf. noch nicht vorhandenen) Vorschau-PDF — für die Route, die ohne
+    zusätzlichen ensurePreview-Aufruf prüfen muss, ob der Cache schon gefüllt ist. */
+export function previewCachePath(dataDir: string, cacheKey: string): string {
+  return cachePathFor(dataDir, cacheKey);
+}
+
 interface ConvertResponse {
   endConvert: boolean;
   percent?: number;
@@ -186,9 +197,8 @@ export function createConverter(deps: ConvertDeps): {
     if (!config) {
       return Promise.reject(new ConvertError('Vorschau-Dienst nicht konfiguriert', 'disabled'));
     }
-    const safeKey = cacheKey.replace(/[^A-Za-z0-9._-]/g, '_');
     const cacheDir = join(dataDir, 'convcache');
-    const cachePath = join(cacheDir, `${safeKey}.pdf`);
+    const cachePath = cachePathFor(dataDir, cacheKey);
     if (existsSync(cachePath)) return Promise.resolve(cachePath);
 
     const existing = inFlight.get(cacheKey);

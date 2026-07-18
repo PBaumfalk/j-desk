@@ -111,9 +111,17 @@ export function createWsTickets(ttlMs = 30_000): WsTickets {
   };
 }
 
-/** Payload eines Konverter-Tickets — Task 5 ergänzt hier bei Bedarf j-lawyer-Felder (z. B. caseId). */
+/** Payload eines Konverter-Tickets. */
 export interface FileTicketPayload {
   fileId: string;
+  /**
+   * j-lawyer-Modus: der Konverter ruft die Quelle über /convert-source ab — dort muss der
+   * Akteninhalt per getDocumentContent geholt werden, was Zugangsdaten braucht. Wie jlCreds
+   * leben diese ausschließlich im RAM (nie persistiert); das Ticket ist ohnehin einmalig und
+   * läuft nach 60s ab, also kein zusätzliches Leck — akzeptierter Kompromiss statt eines
+   * eigenen serverseitigen Sitzungs-Lookups nur für diesen einen Abruf.
+   */
+  jl?: { docId: string; username: string; password: string };
 }
 
 export interface FileTickets {
