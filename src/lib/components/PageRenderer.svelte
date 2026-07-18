@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import * as pdfjs from 'pdfjs-dist';
   import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
   import { FILE_STORE, idbGet, idbPut } from '../idb';
@@ -67,6 +68,8 @@
     fileId; page; targetWidth;
     if (canvas) void render();
   });
+
+  onDestroy(() => cache.clear());
 </script>
 
 <div class="page" style:width="{targetWidth}px">

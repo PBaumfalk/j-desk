@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { moveDoc, type Doc, type Viewport } from '@digital-desktop/core';
+  import { onMount, onDestroy } from 'svelte';
+  import { moveDoc, setDocPage, type Doc, type Viewport } from '@digital-desktop/core';
+  import { debounce } from '../debounce';
   import { desktop } from '../store.svelte';
   import PageRenderer from './PageRenderer.svelte';
 
@@ -9,6 +11,9 @@
   let wrapEl = $state<HTMLDivElement | null>(null);
   const page = $derived(doc.page ?? 1);
   const size = $derived(doc.openSize ?? { w: 560, h: 720 });
+
+  // Aufgeschlagene Karte direkt fokussieren, damit die Pfeiltasten sofort blättern.
+  onMount(() => wrapEl?.focus({ preventScroll: true }));
 
   let dragging = false, moved = false;
   let headLast = { x: 0, y: 0 };
@@ -35,10 +40,25 @@
     if (moved) void desktop.command('moveDoc', { id: doc.id, position: { x: doc.position.x, y: doc.position.y } });
   }
 
+  // Blättern wirkt sofort lokal; der Server bekommt gebündelt nur die letzte Seite.
+  let pendingPage: number | null = null;
+  const sendPage = debounce(350, (p: number) => {
+    pendingPage = null;
+    void desktop.command('setDocPage', { id: doc.id, page: p });
+  });
+  onDestroy(() => {
+    sendPage.cancel();
+    if (pendingPage !== null && desktop.status === 'online') {
+      void desktop.command('setDocPage', { id: doc.id, page: pendingPage });
+    }
+  });
+
   function turn(delta: number) {
     const next = page + delta;
     if (next < 1 || (pageCount !== null && next > pageCount)) return;
-    void desktop.command('setDocPage', { id: doc.id, page: next });
+    desktop.applyLocal((s) => setDocPage(s, doc.id, next));
+    pendingPage = next;
+    sendPage(next);
   }
   function onKey(e: KeyboardEvent) {
     if (e.key === 'ArrowLeft') { e.preventDefault(); turn(-1); }

@@ -21,4 +21,10 @@ export class PageBitmapCache {
       victim?.close?.(); // Bitmap freigeben; defensiv, falls .close fehlt (z. B. in Tests)
     }
   }
+
+  /** Gibt alle Bitmaps frei (beim Unmount des Renderers). */
+  clear(): void {
+    for (const bmp of this.map.values()) bmp.close?.();
+    this.map.clear();
+  }
 }
