@@ -30,6 +30,10 @@
   const rectTool = $derived(inkTool === 'scissors' || inkTool === 'tippex' || inkTool === 'redact' ? inkTool : null);
   function toggleTool(t: InkTool | 'scissors' | 'tippex' | 'redact') {
     inkTool = inkTool === t ? null : t;
+    // Zeichnen/Schneiden/Abdecken beendet Stempel- und Fahnenmodus — sonst fängt deren
+    // ganzseitige Setzfläche die Klicks ab und das gewählte Werkzeug wirkt "kaputt".
+    stampChoice = null;
+    flagColor = null;
     if (inkTool === 'redact' && !localStorage.getItem('dd-redact-hinweis')) {
       localStorage.setItem('dd-redact-hinweis', '1');
       showToast('Hinweis: Die Schwärzung deckt nur sichtbar ab — der Text bleibt im PDF erhalten.');
@@ -242,10 +246,10 @@
       <button class:on={inkTool === 'tippex'} onclick={() => toggleTool('tippex')} aria-pressed={inkTool === 'tippex'} aria-label="Tipp-Ex" title="Tipp-Ex: weiß abdecken"><span class="tippex-chip"></span></button>
       <button class:on={inkTool === 'redact'} onclick={() => toggleTool('redact')} aria-pressed={inkTool === 'redact'} aria-label="Schwärzung" title="Schwärzung: schwarz abdecken (rein visuell)">■</button>
       <span class="sep"></span>
-      <button class:on={stampChoice !== null || stampMenu} onclick={() => { if (stampChoice) { stampChoice = null; } else { stampMenu = !stampMenu; } }}
+      <button class:on={stampChoice !== null || stampMenu} onclick={() => { if (stampChoice) { stampChoice = null; } else { stampMenu = !stampMenu; if (stampMenu) flagMenu = false; } }}
               aria-label="Stempel" title={stampChoice ? `Stempel „${stampChoice.text}" abschalten` : 'Stempel wählen'}>✪</button>
       <span class="sep"></span>
-      <button class:on={flagColor !== null || flagMenu} onclick={() => { if (flagColor) { flagColor = null; } else { flagMenu = !flagMenu; } }}
+      <button class:on={flagColor !== null || flagMenu} onclick={() => { if (flagColor) { flagColor = null; } else { flagMenu = !flagMenu; if (flagMenu) stampMenu = false; } }}
               aria-label="Notizfahne" title="Notizfahne setzen">⚑</button>
       <span class="sep"></span>
       {#if !seitenfix}

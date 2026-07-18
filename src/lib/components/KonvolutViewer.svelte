@@ -36,7 +36,9 @@
   let lichttisch = $state(false);
   let inkTool = $state<InkTool | 'tippex' | 'redact' | null>(null);
   const rectTool = $derived(inkTool === 'tippex' || inkTool === 'redact' ? inkTool : null);
-  function toggleTool(t: InkTool | 'tippex' | 'redact') { inkTool = inkTool === t ? null : t; }
+  // Zeichnen/Abdecken beendet den Stempelmodus — sonst fängt die ganzseitige Setzfläche
+  // die Klicks ab und das gewählte Werkzeug wirkt "kaputt".
+  function toggleTool(t: InkTool | 'tippex' | 'redact') { inkTool = inkTool === t ? null : t; stampChoice = null; }
 
   onMount(() => wrapEl?.focus({ preventScroll: true }));
 
