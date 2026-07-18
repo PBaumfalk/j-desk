@@ -1,4 +1,4 @@
-import { findDoc, type DesktopState, type Vec2 } from './model';
+import { findDoc, type DesktopState, type FileKind, type Vec2 } from './model';
 import { removeLinksFor } from './links';
 import { removeFromClips } from './clips';
 import type { Box } from './viewport';
@@ -13,6 +13,8 @@ export interface Cutout {
   position: Vec2;                            // Weltkoordinaten, linke obere Ecke
   zIndex: number;
   taped?: boolean;                           // Klebeband: am Tisch festgeklebt, Drag gesperrt
+  kind?: FileKind;                           // Datei-Art der Quelle: bestimmt Darstellungs-Weg (fehlt = PDF-Alt-Semantik)
+  sourceName?: string;                       // Dateiname der Quelle (für Bild-MIME-Erkennung)
 }
 
 function maxZ(s: DesktopState): number {
@@ -39,7 +41,15 @@ export function addCutout(
   if (!(rect.w > 0) || !(rect.h > 0) || !Number.isFinite(rect.x) || !Number.isFinite(rect.y)) {
     throw new Error('Ungültiger Ausschnitt');
   }
-  const cutout: Cutout = { id, fileId: quelle.fileId, page, rect, position, zIndex: maxZ(s) + 1 };
+  const cutout: Cutout = {
+    id,
+    fileId: quelle.fileId,
+    page,
+    rect,
+    position,
+    zIndex: maxZ(s) + 1,
+    ...(quelle.kind !== undefined ? { kind: quelle.kind, sourceName: quelle.name } : {}),
+  };
   return { ...s, cutouts: [...(s.cutouts ?? []), cutout] };
 }
 

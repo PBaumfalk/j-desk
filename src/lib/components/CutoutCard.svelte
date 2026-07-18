@@ -5,9 +5,25 @@
   import { ui, showToast, pointerUeberKorb } from '../ui.svelte';
   import { showCutoutMenuAt } from '../menus';
   import { moveGroupLocal, commitGroupMove, groupOf } from '../groupDrag';
+  import { imageMime } from '../thumbnails';
+  import { getFileUrl } from '../fileCache';
   import PageRenderer from './PageRenderer.svelte';
 
   let { cutout, vp }: { cutout: Cutout; vp: Viewport } = $props();
+
+  const istBild = $derived(cutout.kind === 'image');
+  let bildUrl = $state<string | null>(null);
+  let bildFehler = $state<string | null>(null);
+
+  $effect(() => {
+    cutout.fileId;
+    if (!istBild || !desktop.api) return;
+    bildUrl = null;
+    bildFehler = null;
+    void getFileUrl(desktop.api, cutout.fileId, imageMime(cutout.sourceName ?? ''))
+      .then((u) => (bildUrl = u))
+      .catch((e) => { bildFehler = e instanceof Error ? e.message : 'Laden fehlgeschlagen'; });
+  });
 
   let dragging = false;
   let moved = false;
@@ -102,7 +118,14 @@
   {#if taped}<div class="tape" aria-hidden="true"></div>{/if}
   {#if geklammert}<div class="klammer" aria-hidden="true">🖇</div>{/if}
   <div class="clip">
-    {#if desktop.api}
+    {#if istBild}
+      {#if bildUrl}
+        <img class="bildschnitt" src={bildUrl} alt="" draggable="false"
+             style:left="{-cutout.rect.x}px" style:top="{-cutout.rect.y}px" />
+      {:else if bildFehler}
+        <div class="fallback fehler" title={bildFehler}>⚠️ Seite kann nicht angezeigt werden</div>
+      {/if}
+    {:else if desktop.api}
       <PageRenderer api={desktop.api} fileId={cutout.fileId} page={cutout.page}
         targetWidth={Math.round(cutout.rect.w)} sourceRect={cutout.rect} />
     {/if}
@@ -115,6 +138,10 @@
             background: #fff; box-shadow: 0 5px 14px rgba(0, 0, 0, .35); outline: 1px solid rgba(0, 0, 0, .08); }
   .clip { position: absolute; inset: 0; overflow: hidden; }
   .cutout :global(.page) { pointer-events: none; box-shadow: none; }
+  .bildschnitt { position: absolute; max-width: none; pointer-events: none; }
+  .fallback.fehler { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+                      flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; color: #b33;
+                      text-align: center; padding: 6px; }
   .tape { position: absolute; top: -8px; left: 24px; width: 64px; height: 20px; transform: rotate(-8deg);
           background: rgba(240, 235, 210, .65); border: 1px solid rgba(180, 170, 140, .5); border-radius: 2px;
           box-shadow: 0 1px 3px rgba(0, 0, 0, .15); pointer-events: none; }
