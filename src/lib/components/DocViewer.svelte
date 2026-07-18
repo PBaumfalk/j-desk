@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { moveDoc, setDocPage, uid, DEFAULT_OPEN_SIZE, type Doc, type Size, type Viewport } from '@digital-desktop/core';
+  import { moveDoc, setDocPage, uid, DEFAULT_OPEN_SIZE, FLAG_COLORS, type Doc, type Size, type Viewport } from '@digital-desktop/core';
   import { debounce } from '../debounce';
   import { desktop } from '../store.svelte';
   import { showToast } from '../ui.svelte';
@@ -9,11 +9,13 @@
   import MarkLayer from './MarkLayer.svelte';
   import StampPopover from './StampPopover.svelte';
   import StampLayer from './StampLayer.svelte';
+  import FlagRail from './FlagRail.svelte';
 
   let { doc, vp }: { doc: Doc; vp: Viewport } = $props();
 
   let pageCount = $state<number | null>(null);
   let wrapEl = $state<HTMLDivElement | null>(null);
+  let bodyH = $state(0);
   const seitenfix = $derived(doc.pageOnly !== undefined); // herausgelöste Einzelseite: kein Blättern
   const page = $derived(doc.pageOnly ?? doc.page ?? 1);
   const size = $derived(doc.openSize ?? DEFAULT_OPEN_SIZE);
@@ -42,6 +44,21 @@
     stampMenu = false;
     stampChoice = wahl;
     inkTool = null; // Stempeln ist ein eigener Modus, Zeichnen aus
+    flagColor = null; // Fahnen-Werkzeug schließt sich mit Stempeln gegenseitig aus
+  }
+
+  // Notizfahnen: Farbwahl "klebt" bis zum nächsten Seitenklick — danach ist das Werkzeug wieder aus.
+  let flagMenu = $state(false);
+  let flagColor = $state<string | null>(null); // gewählte Farbe = Werkzeug aktiv
+
+  function setFlagAt(e: PointerEvent) {
+    if (!flagColor || !baseSize) return;
+    e.stopPropagation();
+    const p = pagePoint(e);
+    if (!p) return;
+    const offset = Math.min(1, Math.max(0, p.y / baseSize.h));
+    void desktop.command('addFlag', { flag: { id: uid(), docId: doc.id, page, offset, color: flagColor } });
+    flagColor = null; // eine Fahne pro Aktivierung — bewusst, kein Dauer-Modus
   }
 
   function stampAt(e: PointerEvent) {
@@ -227,6 +244,9 @@
       <button class:on={stampChoice !== null || stampMenu} onclick={() => { if (stampChoice) { stampChoice = null; } else { stampMenu = !stampMenu; } }}
               aria-label="Stempel" title={stampChoice ? `Stempel „${stampChoice.text}" abschalten` : 'Stempel wählen'}>✪</button>
       <span class="sep"></span>
+      <button class:on={flagColor !== null || flagMenu} onclick={() => { if (flagColor) { flagColor = null; } else { flagMenu = !flagMenu; } }}
+              aria-label="Notizfahne" title="Notizfahne setzen">⚑</button>
+      <span class="sep"></span>
       {#if !seitenfix}
         <button onclick={() => void desktop.command('extractPage', { docId: doc.id, page, position: { x: doc.position.x + size.w + 24, y: doc.position.y } })}
                 aria-label="Seite herauslösen" title="Seite herauslösen (Enthefterzange)">⧉</button>
@@ -246,6 +266,16 @@
     <button class="close" onclick={() => void desktop.command('collapseDoc', { id: doc.id })} aria-label="Schließen">✕</button>
   </div>
   {#if stampMenu}<StampPopover onpick={pickStamp} onclose={() => (stampMenu = false)} />{/if}
+  {#if flagMenu}
+    <!-- svelte-ignore a11y_no_static_element_interactions -- Backdrop schließt nur -->
+    <div class="flag-backdrop" onpointerdown={() => (flagMenu = false)}></div>
+    <div class="flag-pop" role="menu" aria-label="Fahnenfarbe">
+      {#each FLAG_COLORS as farbe (farbe)}
+        <button style:background={farbe} aria-label="Farbe wählen"
+                onclick={() => { flagColor = farbe; flagMenu = false; stampChoice = null; inkTool = null; }}></button>
+      {/each}
+    </div>
+  {/if}
   <div class="body" role="presentation" onwheel={(e) => { if (!e.ctrlKey && !e.metaKey) e.stopPropagation(); }} onpointerdown={onBodyPointerDown} onpointerup={onBodyPointerUp}>
     {#if desktop.api}
       <div class="pagewrap">
@@ -269,9 +299,16 @@
         {#if stampChoice && baseSize}
           <div class="stempelflaeche" role="presentation" onpointerdown={stampAt}></div>
         {/if}
+        {#if flagColor && baseSize}
+          <div class="stempelflaeche" role="presentation" onpointerdown={setFlagAt}></div>
+        {/if}
         <StampLayer docId={doc.id} {page} base={baseSize} renderedWidth={pageWidth} active={stampChoice !== null} />
       </div>
     {/if}
+  </div>
+  <div class="rail" bind:clientHeight={bodyH} aria-hidden={false}>
+    <FlagRail {doc} height={bodyH} active={flagColor !== null}
+              onjump={(p) => { if (!seitenfix) { desktop.applyLocal((s) => setDocPage(s, doc.id, p)); pendingPage = p; sendPage(p); } }} />
   </div>
   <div class="grip" onpointerdown={onResizeDown} onpointermove={onResizeMove} onpointerup={onResizeUp} onpointercancel={onResizeUp} aria-hidden="true"></div>
 </div>
@@ -311,4 +348,12 @@
                    pointer-events: none; }
   .schnittrahmen.tippex { border-color: #8a94a3; background: rgba(255, 255, 255, .35); }
   .schnittrahmen.redact { border-color: #111; background: rgba(0, 0, 0, .18); }
+  /* Notizfahnen-Rail: Geschwister nach .body, damit die Laschen an der Viewer-Kante stehenbleiben,
+     auch wenn der Seiteninhalt im .body scrollt. 36px ≈ Kopfzeilenhöhe; width: 0 hält die Rail aus
+     dem Layoutfluss, die Laschen positionieren sich innerhalb absolut. */
+  .rail { position: absolute; top: 36px; right: 0; bottom: 0; width: 0; overflow: visible; }
+  .flag-backdrop { position: fixed; inset: 0; z-index: 9600; }
+  .flag-pop { position: absolute; top: 34px; right: 8px; z-index: 9700; display: flex; gap: 6px;
+              background: #fff; border-radius: 8px; box-shadow: 0 10px 30px rgba(0, 0, 0, .35); padding: 8px; }
+  .flag-pop button { width: 22px; height: 22px; border: none; border-radius: 4px; cursor: pointer; }
 </style>

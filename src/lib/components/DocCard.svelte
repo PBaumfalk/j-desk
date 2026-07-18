@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    CARD_W, CARD_H, moveDoc, hitTest, stampsFor, type Doc, type Viewport,
+    CARD_W, CARD_H, moveDoc, hitTest, stampsFor, flagsFor, type Doc, type Viewport,
   } from '@digital-desktop/core';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
@@ -17,6 +17,7 @@
     if (desktop.api) void getThumbnail(desktop.api, doc).then((t) => (thumb = t));
   });
   const kartenStempel = $derived(stampsFor(desktop.state, doc.id, doc.pageOnly ?? 1));
+  const kartenFahnen = $derived(flagsFor(desktop.state, doc.id));
 
   let dragging = false;
   let moved = false;
@@ -107,6 +108,9 @@
       {/each}
     </div>
     <div class="name">{doc.name}</div>
+    {#each kartenFahnen as fl (fl.id)}
+      <div class="mini-fahne" style:top="{fl.offset * CARD_H}px" style:background={fl.color}></div>
+    {/each}
   </div>
 {/if}
 
@@ -123,4 +127,6 @@
   .mini-stamp.blau { border-color: #1d4ed8; color: #1d4ed8; }
   .name { padding: 4px 6px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
           background: rgba(255, 255, 255, .9); border-top: 1px solid #eee; border-radius: 0 0 4px 4px; }
+  .mini-fahne { position: absolute; right: -8px; width: 16px; height: 10px; border-radius: 0 3px 3px 0;
+                box-shadow: 1px 1px 2px rgba(0, 0, 0, .3); pointer-events: none; }
 </style>
