@@ -1,4 +1,4 @@
-import { clipMembersOf, findDoc, findStack, findNote, findCutout, moveDoc, moveStack, moveNote, moveCutout, type DesktopState } from '@digital-desktop/core';
+import { clipMembersOf, findDoc, findStack, findNote, findCutout, isTaped, moveDoc, moveStack, moveNote, moveCutout, type DesktopState } from '@digital-desktop/core';
 import { desktop } from './store.svelte';
 
 function moveAny(s: DesktopState, id: string, dx: number, dy: number): DesktopState {
@@ -14,14 +14,17 @@ function moveAny(s: DesktopState, id: string, dx: number, dy: number): DesktopSt
 }
 
 /** Büroklammer-Gruppenzug: alle Mitglieder folgen demselben Delta (nur lokal, ohne Server-Roundtrip). */
+// Festgeklebte Mitglieder bleiben kleben — die Klebeband-Zusicherung "Ziehen gesperrt" gilt pro
+// Objekt, auch innerhalb einer Klammer-Gruppe. Der Rest der Gruppe bewegt sich trotzdem.
 export function moveGroupLocal(memberIds: string[], dx: number, dy: number): void {
-  desktop.applyLocal((s) => memberIds.reduce((acc, id) => moveAny(acc, id, dx, dy), s));
+  desktop.applyLocal((s) => memberIds.reduce((acc, id) => (isTaped(s, id) ? acc : moveAny(acc, id, dx, dy)), s));
 }
 
 /** Persistiert die aktuellen Positionen aller Gruppen-Mitglieder nach dem Loslassen. */
 export function commitGroupMove(memberIds: string[]): void {
   const s = desktop.state;
   for (const id of memberIds) {
+    if (isTaped(s, id)) continue; // festgeklebt: nicht bewegt, nichts zu persistieren
     const doc = findDoc(s, id);
     if (doc) { void desktop.command('moveDoc', { id, position: { ...doc.position } }); continue; }
     const st = findStack(s, id);
