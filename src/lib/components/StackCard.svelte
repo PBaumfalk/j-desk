@@ -8,6 +8,7 @@
   import { showDocMenu, showStackMenu, showStackMenuAt } from '../menus';
   import { getThumbnail } from '../thumbnails';
   import { moveGroupLocal, commitGroupMove, groupOf } from '../groupDrag';
+  import KonvolutViewer from './KonvolutViewer.svelte';
 
   let { stack, vp }: { stack: Stack; vp: Viewport } = $props();
   const fanned = $derived(ui.fannedStackId === stack.id);
@@ -98,7 +99,8 @@
     if (moved) {
       if (geklammert) commitGroupMove(groupOf(stack.id));
       else void desktop.command('moveStack', { stackId: stack.id, position: { x: stack.position.x, y: stack.position.y } });
-    } else {
+    } else if (!stack.stapled) {
+      // Geheftete Konvolute fächern sich nicht auf — Aufschlagen nur per Doppelklick/Menü.
       ui.fannedStackId = fanned ? null : stack.id;
     }
     activePointer = null;
@@ -143,46 +145,52 @@
   }
 </script>
 
-<div class="stack" role="button" tabindex="-1" aria-label={stack.name || 'Stapel'}
-     style:left="{stack.position.x}px" style:top="{stack.position.y}px" style:z-index={stack.zIndex}
-     style:width="{CARD_W + 24}px" style:height="{CARD_H + 24}px"
-     onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp} onpointercancel={onPointerUp}
-     oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showStackMenu(e, stack); }}>
-  {#if taped}<div class="tape" aria-hidden="true"></div>{/if}
-  {#if geklammert}<div class="klammer" aria-hidden="true">🖇</div>{/if}
-  <div class="sheet s2"></div>
-  <div class="sheet s1"></div>
-  <div class="sheet top">
-    {#if thumb}
-      <img src={thumb} alt="" draggable="false" />
-    {:else}
-      <div class="fallback">PDF</div>
+{#if stack.open}
+  <KonvolutViewer {stack} {vp} />
+{:else}
+  <div class="stack" role="button" tabindex="-1" aria-label={stack.name || 'Stapel'}
+       style:left="{stack.position.x}px" style:top="{stack.position.y}px" style:z-index={stack.zIndex}
+       style:width="{CARD_W + 24}px" style:height="{CARD_H + 24}px"
+       onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp} onpointercancel={onPointerUp}
+       ondblclick={() => { if (stack.stapled) void desktop.command('expandStack', { id: stack.id }); }}
+       oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showStackMenu(e, stack); }}>
+    {#if taped}<div class="tape" aria-hidden="true"></div>{/if}
+    {#if geklammert}<div class="klammer" aria-hidden="true">🖇</div>{/if}
+    {#if stack.stapled}<div class="heftklammer" aria-hidden="true">📎</div>{/if}
+    <div class="sheet s2"></div>
+    <div class="sheet s1"></div>
+    <div class="sheet top">
+      {#if thumb}
+        <img src={thumb} alt="" draggable="false" />
+      {:else}
+        <div class="fallback">PDF</div>
+      {/if}
+    </div>
+    <div class="badge">{stack.docIds.length}</div>
+    {#if ui.editingStackId === stack.id}
+      <input class="name" value={stack.name} placeholder="Stapelname"
+             onpointerdown={(e) => e.stopPropagation()}
+             onchange={(e) => { const name = (e.currentTarget as HTMLInputElement).value; void desktop.command('renameStack', { stackId: stack.id, name }); ui.editingStackId = null; }} />
+    {:else if stack.name}
+      <div class="name label">{stack.name}</div>
+    {/if}
+
+    {#if fanned}
+      <div class="fan">
+        {#each stack.docIds as docId (docId)}
+          {@const d = findDoc(desktop.state, docId)}
+          {#if d}
+            <div class="fan-card" role="button" tabindex="-1" aria-label={d.name}
+                 onpointerdown={(e) => fanPointerDown(e, docId)}
+                 oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showDocMenu(e, d); }}>
+              {d.name}
+            </div>
+          {/if}
+        {/each}
+      </div>
     {/if}
   </div>
-  <div class="badge">{stack.docIds.length}</div>
-  {#if ui.editingStackId === stack.id}
-    <input class="name" value={stack.name} placeholder="Stapelname"
-           onpointerdown={(e) => e.stopPropagation()}
-           onchange={(e) => { const name = (e.currentTarget as HTMLInputElement).value; void desktop.command('renameStack', { stackId: stack.id, name }); ui.editingStackId = null; }} />
-  {:else if stack.name}
-    <div class="name label">{stack.name}</div>
-  {/if}
-
-  {#if fanned}
-    <div class="fan">
-      {#each stack.docIds as docId (docId)}
-        {@const d = findDoc(desktop.state, docId)}
-        {#if d}
-          <div class="fan-card" role="button" tabindex="-1" aria-label={d.name}
-               onpointerdown={(e) => fanPointerDown(e, docId)}
-               oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showDocMenu(e, d); }}>
-            {d.name}
-          </div>
-        {/if}
-      {/each}
-    </div>
-  {/if}
-</div>
+{/if}
 
 <style>
   .stack { position: absolute; cursor: grab; user-select: none; touch-action: none; }
@@ -204,6 +212,8 @@
           box-shadow: 0 1px 3px rgba(0, 0, 0, .15); pointer-events: none; }
   .klammer { position: absolute; top: -10px; right: 10px; font-size: 18px; pointer-events: none;
              filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .3)); z-index: 1; }
+  .heftklammer { position: absolute; top: -8px; left: 12px; font-size: 18px; pointer-events: none;
+                 filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .3)); }
   .fan { position: absolute; left: 0; top: 100%; margin-top: 34px; display: flex; flex-direction: column;
          gap: 4px; width: 220px; background: rgba(255, 255, 255, .95); border-radius: 10px; padding: 6px;
          box-shadow: 0 8px 30px rgba(0, 0, 0, .35); }
