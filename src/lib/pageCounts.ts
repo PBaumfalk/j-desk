@@ -2,6 +2,7 @@ import * as pdfjs from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { FILE_STORE, idbGet, idbPut } from './idb';
 import type { ApiClient } from './api';
+import { fetchPreviewBytes } from './previewPoll';
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -9,7 +10,8 @@ pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 const counts = new Map<string, number>();
 const inFlight = new Map<string, Promise<number>>();
 
-async function bytesFor(api: ApiClient, fileId: string): Promise<Uint8Array> {
+async function bytesFor(api: ApiClient, fileId: string, source: 'original' | 'preview'): Promise<Uint8Array> {
+  if (source === 'preview') return fetchPreviewBytes(api, fileId);
   const cached = await idbGet(FILE_STORE, fileId).catch(() => null);
   if (cached) return cached;
   const bytes = await api.fetchFile(fileId);
@@ -17,24 +19,25 @@ async function bytesFor(api: ApiClient, fileId: string): Promise<Uint8Array> {
   return bytes;
 }
 
-export function getPageCount(api: ApiClient, fileId: string): Promise<number> {
-  const bekannt = counts.get(fileId);
+export function getPageCount(api: ApiClient, fileId: string, source: 'original' | 'preview' = 'original'): Promise<number> {
+  const cacheKey = `${source}:${fileId}`;
+  const bekannt = counts.get(cacheKey);
   if (bekannt !== undefined) return Promise.resolve(bekannt);
-  const laufend = inFlight.get(fileId);
+  const laufend = inFlight.get(cacheKey);
   if (laufend) return laufend;
   const p = (async () => {
-    const data = await bytesFor(api, fileId);
+    const data = await bytesFor(api, fileId, source);
     let pdf: pdfjs.PDFDocumentProxy | undefined;
     try {
       pdf = await pdfjs.getDocument({ data }).promise;
-      counts.set(fileId, pdf.numPages);
+      counts.set(cacheKey, pdf.numPages);
       return pdf.numPages;
     } finally {
       await pdf?.destroy?.();
-      inFlight.delete(fileId);
+      inFlight.delete(cacheKey);
     }
   })();
-  inFlight.set(fileId, p);
+  inFlight.set(cacheKey, p);
   return p;
 }
 

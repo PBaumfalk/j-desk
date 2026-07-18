@@ -1,4 +1,4 @@
-import type { Command, DesktopState } from '@digital-desktop/core';
+import type { Command, DesktopState, FileKind } from '@digital-desktop/core';
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {
@@ -93,16 +93,16 @@ export class ApiClient {
     return this.request('PUT', `/desks/${deskId}/state`, state);
   }
 
-  async uploadFile(bytes: Uint8Array, name: string): Promise<string> {
+  async uploadFile(bytes: Uint8Array, name: string, mime = 'application/pdf'): Promise<{ fileId: string; kind: FileKind }> {
     const form = new FormData();
-    form.append('file', new Blob([bytes], { type: 'application/pdf' }), name);
+    form.append('file', new Blob([bytes], { type: mime }), name);
     const res = await fetch(`${this.baseUrl}/api/v1/files`, {
       method: 'POST',
       headers: this.authHeaders(),
       body: form,
     });
     if (!res.ok) throw await this.parseError(res);
-    return ((await res.json()) as { fileId: string }).fileId;
+    return (await res.json()) as { fileId: string; kind: FileKind };
   }
 
   // ---- j-lawyer-Modus ----
@@ -132,6 +132,29 @@ export class ApiClient {
     const res = await fetch(`${this.baseUrl}/api/v1/files/${fileId}`, { headers: this.authHeaders() });
     if (!res.ok) throw await this.parseError(res);
     return new Uint8Array(await res.arrayBuffer());
+  }
+
+  /**
+   * Vorschau einer Datei: 200 = fertige PDF-Bytes, 202 = Konvertierung läuft noch,
+   * 409 = Konvertierung (endgültig oder vorerst) fehlgeschlagen. Andere Fehler (u. a. 404)
+   * werfen wie gehabt einen ApiError.
+   */
+  async fetchPreview(
+    fileId: string,
+  ): Promise<{ status: 'ready'; bytes: Uint8Array } | { status: 'converting' } | { status: 'error'; message: string }> {
+    const res = await fetch(`${this.baseUrl}/api/v1/files/${fileId}/preview`, { headers: this.authHeaders() });
+    if (res.status === 202) return { status: 'converting' };
+    if (res.status === 409) {
+      let message = `HTTP ${res.status}`;
+      try {
+        message = ((await res.json()) as { error?: string }).error ?? message;
+      } catch {
+        // kein JSON-Body — Statuscode reicht
+      }
+      return { status: 'error', message };
+    }
+    if (!res.ok) throw await this.parseError(res);
+    return { status: 'ready', bytes: new Uint8Array(await res.arrayBuffer()) };
   }
 
   /** Kurzlebiges Einmal-Ticket für den WebSocket-Verbindungsaufbau. */

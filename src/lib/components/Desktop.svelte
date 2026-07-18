@@ -113,8 +113,8 @@
         desktop.acceptServerState(result);
         return;
       }
-      const fileId = await desktop.api.uploadFile(new Uint8Array(await file.arrayBuffer()), file.name);
-      await desktop.command('addDoc', { fileId, name: file.name, position, id: uid() });
+      const r = await desktop.api.uploadFile(new Uint8Array(await file.arrayBuffer()), file.name, file.type);
+      await desktop.command('addDoc', { fileId: r.fileId, name: file.name, position, id: uid(), kind: r.kind });
     } catch (e) {
       showToast(e instanceof Error ? e.message : `Upload fehlgeschlagen: ${file.name}`);
     }

@@ -23,3 +23,55 @@ describe('ApiClient.wsUrl', () => {
     );
   });
 });
+
+describe('ApiClient.fetchPreview', () => {
+  it('liefert bei 200 die PDF-Bytes als ready', async () => {
+    const bytes = new Uint8Array([1, 2, 3]);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        arrayBuffer: async () => bytes.buffer,
+      }),
+    );
+    await expect(new ApiClient('http://x', 'tok').fetchPreview('f1')).resolves.toEqual({
+      status: 'ready',
+      bytes,
+    });
+  });
+
+  it('meldet bei 202 converting', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 202 }));
+    await expect(new ApiClient('http://x', 'tok').fetchPreview('f1')).resolves.toEqual({
+      status: 'converting',
+    });
+  });
+
+  it('meldet bei 409 error mit der Server-Meldung', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 409,
+        json: async () => ({ error: 'Konvertierung fehlgeschlagen', reason: 'failed' }),
+      }),
+    );
+    await expect(new ApiClient('http://x', 'tok').fetchPreview('f1')).resolves.toEqual({
+      status: 'error',
+      message: 'Konvertierung fehlgeschlagen',
+    });
+  });
+
+  it('wirft bei 404 wie gehabt einen ApiError', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({ error: 'Datei nicht gefunden' }),
+      }),
+    );
+    await expect(new ApiClient('http://x', 'tok').fetchPreview('f1')).rejects.toThrow('Datei nicht gefunden');
+  });
+});

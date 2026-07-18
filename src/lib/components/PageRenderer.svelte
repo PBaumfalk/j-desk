@@ -5,24 +5,29 @@
   import { FILE_STORE, idbGet, idbPut } from '../idb';
   import type { ApiClient } from '../api';
   import { pageCacheKey, PageBitmapCache } from '../pageCache';
+  import { fetchPreviewBytes, PreviewError } from '../previewPoll';
 
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
-  let { api, fileId, page, targetWidth, sourceRect, onpagecount, onbasesize }:
+  let { api, fileId, page, targetWidth, sourceRect, source = 'original', onpagecount, onbasesize }:
     { api: ApiClient; fileId: string; page: number; targetWidth: number;
       /** Nur diesen Seitenausschnitt rendern (Basiskoordinaten) — für Scheren-Ausschnitte. */
       sourceRect?: { x: number; y: number; w: number; h: number };
+      /** 'preview' lädt die konvertierte Vorschau-PDF (mit Poll) statt der Originaldatei. */
+      source?: 'original' | 'preview';
       onpagecount?: (n: number) => void;
       /** Seitengröße im Basisraum (PDF-Viewport bei scale = 1) — für die Zeichenebene. */
       onbasesize?: (s: { w: number; h: number }) => void } = $props();
 
   let canvas = $state<HTMLCanvasElement | null>(null);
   let failed = $state(false);
+  let failMessage = $state<string | null>(null);
   const cache = new PageBitmapCache();
   const baseSizes = new Map<string, { w: number; h: number }>(); // Seiten können unterschiedlich groß sein
   let renderToken = 0;
 
   async function bytesFor(id: string): Promise<Uint8Array> {
+    if (source === 'preview') return fetchPreviewBytes(api, id);
     const cached = await idbGet(FILE_STORE, id).catch(() => null);
     if (cached) return cached;
     const bytes = await api.fetchFile(id);
@@ -33,8 +38,11 @@
   async function render(): Promise<void> {
     const token = ++renderToken;
     failed = false;
+    failMessage = null;
     try {
-      const key = pageCacheKey(fileId, page, targetWidth) + (sourceRect ? `:${sourceRect.x},${sourceRect.y},${sourceRect.w},${sourceRect.h}` : '');
+      const key = pageCacheKey(fileId, page, targetWidth)
+        + (sourceRect ? `:${sourceRect.x},${sourceRect.y},${sourceRect.w},${sourceRect.h}` : '')
+        + (source === 'preview' ? ':preview' : '');
       let bmp = cache.get(key);
       if (!bmp) {
         const data = await bytesFor(fileId);
@@ -71,14 +79,17 @@
       canvas.getContext('2d')!.drawImage(bmp, 0, 0);
       const bs = baseSizes.get(`${fileId}:${page}`);
       if (bs) onbasesize?.(bs);
-    } catch {
-      if (token === renderToken) failed = true;
+    } catch (e) {
+      if (token === renderToken) {
+        failed = true;
+        failMessage = e instanceof PreviewError ? e.message : null;
+      }
     }
   }
 
   $effect(() => {
-    // Abhängig von fileId/page/targetWidth neu rendern
-    fileId; page; targetWidth; sourceRect;
+    // Abhängig von fileId/page/targetWidth/source neu rendern
+    fileId; page; targetWidth; sourceRect; source;
     if (canvas) void render();
   });
 
@@ -88,7 +99,7 @@
 <div class="page" style:width="{targetWidth}px">
   <canvas bind:this={canvas}></canvas>
   {#if failed}
-    <div class="ph">Seite kann nicht angezeigt werden</div>
+    <div class="ph">{failMessage ?? 'Seite kann nicht angezeigt werden'}</div>
   {/if}
 </div>
 
