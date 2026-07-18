@@ -33,12 +33,36 @@ export async function login(db: Db, username: string, password: string): Promise
     await argon2.verify(await DUMMY_HASH, password).catch(() => false);
     return null;
   }
-  if (!(await argon2.verify(user.password_hash, password))) return null;
+  // verify wirft bei Nicht-argon2-Hashes (z. B. dem extern:jlawyer-Platzhalter) — zählt als falsch
+  const passt = await argon2.verify(user.password_hash, password).catch(() => false);
+  if (!passt) return null;
+  return createSession(db, user.id);
+}
+
+/** Stellt ein Session-Token für einen bereits verifizierten Benutzer aus. */
+export function createSession(db: Db, userId: string): string {
   const token = randomBytes(32).toString('hex');
   db.prepare('INSERT INTO sessions (token, user_id, created_at, last_used_at) VALUES (?, ?, ?, ?)').run(
-    token, user.id, Date.now(), Date.now(),
+    token, userId, Date.now(), Date.now(),
   );
   return token;
+}
+
+/**
+ * Konto für einen extern (j-lawyer) verifizierten Benutzer — wird beim ersten
+ * Login angelegt. Der Passwort-Hash-Platzhalter kann nie ein argon2-Verify
+ * bestehen; lokale Anmeldung mit diesem Konto ist damit ausgeschlossen.
+ */
+export function ensureExternalUser(db: Db, username: string): string {
+  const row = db.prepare('SELECT id FROM users WHERE username = ?').get(username.trim()) as
+    | { id: string }
+    | undefined;
+  if (row) return row.id;
+  const userId = randomUUID();
+  db.prepare('INSERT INTO users (id, username, password_hash, created_at) VALUES (?, ?, ?, ?)').run(
+    userId, username.trim(), 'extern:jlawyer', Date.now(),
+  );
+  return userId;
 }
 
 export function validateToken(db: Db, token: string): { userId: string } | null {

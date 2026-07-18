@@ -6,7 +6,11 @@ import websocket from '@fastify/websocket';
 import fastifyStatic from '@fastify/static';
 import { CommandError, type Command } from '@digital-desktop/core';
 import type { Db } from './db';
-import { needsSetup, createUser, login, logout, validateToken, createWsTickets, AuthError } from './auth';
+import {
+  needsSetup, createUser, login, logout, validateToken, createWsTickets,
+  createSession, ensureExternalUser, AuthError,
+} from './auth';
+import { validateLogin, listCases, JLawyerError } from './jlawyer';
 import {
   createDesk, listDesks, renameDesk, deleteDesk, getDeskState,
   applyDeskCommand, putDeskState, DeskNotFoundError, InvalidStateError,
@@ -18,6 +22,8 @@ export interface AppOptions {
   db: Db;
   dataDir: string;
   webDir?: string;
+  /** Basis-URL der j-lawyer-REST-API (inkl. /j-lawyer-io). Gesetzt = j-lawyer-Login-Modus. */
+  jlawyerUrl?: string;
 }
 
 const PUBLIC_PATHS = new Set(['/api/v1/auth/status', '/api/v1/auth/login', '/api/v1/auth/setup']);
@@ -30,9 +36,12 @@ function bearerToken(req: FastifyRequest): string | null {
 
 const WS_PATH = /^\/api\/v1\/desks\/[^/]+\/ws$/;
 
-export async function buildApp({ db, dataDir, webDir }: AppOptions): Promise<FastifyInstance> {
+export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions): Promise<FastifyInstance> {
   const app = Fastify();
   const wsTickets = createWsTickets();
+  // j-lawyer-Modus: Basic-Credentials der Sitzungen leben ausschließlich im RAM
+  // (nie persistiert; nach Server-Neustart melden sich alle neu an — Spec-Entscheidung).
+  const jlCreds = new Map<string, { username: string; password: string }>();
   await app.register(cors, { origin: true });
   await app.register(multipart, { limits: { fileSize: 100 * 1024 * 1024 } });
   await app.register(websocket);
@@ -69,9 +78,10 @@ export async function buildApp({ db, dataDir, webDir }: AppOptions): Promise<Fas
   });
 
   // ---- Auth ----
-  app.get('/api/v1/auth/status', async () => ({ needsSetup: needsSetup(db) }));
+  app.get('/api/v1/auth/status', async () => ({ needsSetup: jlawyerUrl ? false : needsSetup(db) }));
 
   app.post('/api/v1/auth/setup', async (req, reply) => {
+    if (jlawyerUrl) return reply.code(403).send({ error: 'Anmeldung erfolgt mit dem j-lawyer-Konto' });
     if (!needsSetup(db)) return reply.code(403).send({ error: 'Es existiert bereits ein Konto' });
     const { username, password } = (req.body ?? {}) as { username?: string; password?: string };
     try {
@@ -85,6 +95,21 @@ export async function buildApp({ db, dataDir, webDir }: AppOptions): Promise<Fas
 
   app.post('/api/v1/auth/login', async (req, reply) => {
     const { username, password } = (req.body ?? {}) as { username?: string; password?: string };
+    if (jlawyerUrl) {
+      const name = String(username ?? '').trim();
+      const pass = String(password ?? '');
+      let gueltig: boolean;
+      try {
+        gueltig = name !== '' && (await validateLogin(jlawyerUrl, name, pass));
+      } catch (e) {
+        if (e instanceof JLawyerError) return reply.code(e.status).send({ error: e.message });
+        throw e;
+      }
+      if (!gueltig) return reply.code(401).send({ error: 'Benutzername oder Passwort falsch' });
+      const token = createSession(db, ensureExternalUser(db, name));
+      jlCreds.set(token, { username: name, password: pass });
+      return { token };
+    }
     const token = await login(db, String(username ?? ''), String(password ?? ''));
     if (!token) return reply.code(401).send({ error: 'Benutzername oder Passwort falsch' });
     return { token };
@@ -92,9 +117,37 @@ export async function buildApp({ db, dataDir, webDir }: AppOptions): Promise<Fas
 
   app.post('/api/v1/auth/logout', async (req) => {
     const token = bearerToken(req);
-    if (token) logout(db, token);
+    if (token) {
+      logout(db, token);
+      jlCreds.delete(token);
+    }
     return { ok: true };
   });
+
+  // ---- j-lawyer (nur im j-lawyer-Modus) ----
+  if (jlawyerUrl) {
+    app.get('/api/v1/cases', async (req, reply) => {
+      const token = bearerToken(req)!;
+      const creds = jlCreds.get(token);
+      if (!creds) {
+        // Session stammt aus der Zeit vor einem Server-Neustart — Credentials sind weg, neu anmelden.
+        logout(db, token);
+        return reply.code(401).send({ error: 'Bitte neu anmelden' });
+      }
+      try {
+        return await listCases(jlawyerUrl, creds.username, creds.password);
+      } catch (e) {
+        if (e instanceof JLawyerError) {
+          if (e.status === 401) {
+            logout(db, token);
+            jlCreds.delete(token);
+          }
+          return reply.code(e.status).send({ error: e.message });
+        }
+        throw e;
+      }
+    });
+  }
 
   // ---- Schreibtische ----
   app.get('/api/v1/desks', async () => listDesks(db));
