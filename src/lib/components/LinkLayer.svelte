@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    CARD_W, CARD_H, findDoc, findStack, stackOf, setLinkNote, type Vec2,
+    CARD_W, CARD_H, docBox, findDoc, findStack, stackOf, setLinkNote, type Vec2,
   } from '@digital-desktop/core';
   import { debounce } from '../debounce';
   import { desktop } from '../store.svelte';
@@ -12,13 +12,16 @@
   let openLinkId = $state<string | null>(null);
   const openLink = $derived(desktop.state.links.find((l) => l.id === openLinkId) ?? null);
 
-  /** Linien-Endpunkt: Kartenmitte; liegt das Dokument in einem Stapel, endet die Linie am Stapel. */
+  /** Linien-Endpunkt: Kartenmitte (bei aufgeschlagenen Karten die Viewer-Mitte);
+      liegt das Dokument in einem Stapel, endet die Linie am Stapel. */
   function endpoint(id: string): Vec2 | null {
     const s = desktop.state;
     const stack = findStack(s, id) ?? stackOf(s, id);
     if (stack) return { x: stack.position.x + (CARD_W + 24) / 2, y: stack.position.y + (CARD_H + 24) / 2 };
     const d = findDoc(s, id);
-    return d ? { x: d.position.x + CARD_W / 2, y: d.position.y + CARD_H / 2 } : null;
+    if (!d) return null;
+    const b = docBox(d);
+    return { x: b.x + b.w / 2, y: b.y + b.h / 2 };
   }
 
   function curve(a: Vec2, b: Vec2): string {

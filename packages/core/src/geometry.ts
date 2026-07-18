@@ -1,7 +1,12 @@
 import { CARD_W, CARD_H, freeDocs, type DesktopState, type Doc, type Stack, type Vec2 } from './model';
+import { DEFAULT_OPEN_SIZE } from './viewer';
 import type { Box } from './viewport';
 
 export function docBox(d: Doc): Box {
+  if (d.open) {
+    const size = d.openSize ?? DEFAULT_OPEN_SIZE;
+    return { x: d.position.x, y: d.position.y, w: size.w, h: size.h };
+  }
   return { x: d.position.x, y: d.position.y, w: CARD_W, h: CARD_H };
 }
 
@@ -23,8 +28,9 @@ export function hitTest(
     ...s.stacks
       .filter((st) => st.id !== excludeId && inside(stackBox(st)))
       .map((st) => ({ kind: 'stack' as const, id: st.id, z: st.zIndex })),
+    // Aufgeschlagene Dokumente sind kein Stapelziel — auf ein offenes Papier stapelt man nicht.
     ...freeDocs(s)
-      .filter((d) => d.id !== excludeId && inside(docBox(d)))
+      .filter((d) => d.id !== excludeId && !d.open && inside(docBox(d)))
       .map((d) => ({ kind: 'doc' as const, id: d.id, z: d.zIndex })),
   ];
   candidates.sort((a, b) => b.z - a.z);

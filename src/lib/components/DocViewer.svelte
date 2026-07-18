@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { moveDoc, setDocPage, type Doc, type Viewport } from '@digital-desktop/core';
+  import { moveDoc, setDocPage, DEFAULT_OPEN_SIZE, type Doc, type Viewport } from '@digital-desktop/core';
   import { debounce } from '../debounce';
   import { desktop } from '../store.svelte';
   import PageRenderer from './PageRenderer.svelte';
@@ -10,7 +10,7 @@
   let pageCount = $state<number | null>(null);
   let wrapEl = $state<HTMLDivElement | null>(null);
   const page = $derived(doc.page ?? 1);
-  const size = $derived(doc.openSize ?? { w: 560, h: 720 });
+  const size = $derived(doc.openSize ?? DEFAULT_OPEN_SIZE);
 
   // Aufgeschlagene Karte direkt fokussieren, damit die Pfeiltasten sofort blättern.
   onMount(() => wrapEl?.focus({ preventScroll: true }));
