@@ -155,6 +155,32 @@ describe('App im j-lawyer-Modus', () => {
     await app.close();
   });
 
+  it('Abgleich legt für Dokumente im Papierkorb keine neue Karte an', async () => {
+    const { app } = await jlApp();
+    // eigene Akte mit genau einem Dokument, unabhängig von den anderen Tests
+    fake.documents.set('akte-korb', [
+      { id: 'jdoc-korb', caseId: 'akte-korb', name: 'Einzel.pdf', changeDate: 1750000200000, size: 10, bytes: Buffer.from('%PDF-x') },
+    ]);
+    const { token } = (
+      await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { username: 'anwalt', password: 'kanzlei123' } })
+    ).json();
+    const h = { authorization: `Bearer ${token}` };
+    // 1. Akte öffnen -> Karte für das j-lawyer-Dokument entsteht
+    const r1 = await app.inject({ method: 'GET', url: '/api/v1/cases/akte-korb/desk', headers: h });
+    const karte = r1.json().state.docs[0];
+    // 2. Karte in den Papierkorb legen
+    const trashRes = await app.inject({
+      method: 'POST', url: '/api/v1/desks/akte-korb/commands', headers: h,
+      payload: { type: 'trashObject', payload: { id: karte.id, trashedAt: '2026-07-18T12:00:00.000Z' } },
+    });
+    expect(trashRes.statusCode).toBe(200);
+    // 3. Akte erneut öffnen -> Abgleich läuft, aber es entsteht KEINE neue Karte
+    const r2 = await app.inject({ method: 'GET', url: '/api/v1/cases/akte-korb/desk', headers: h });
+    expect(r2.json().state.docs).toHaveLength(0);
+    expect(r2.json().state.trash).toHaveLength(1);
+    await app.close();
+  });
+
   it('GET /files/:id liefert im j-lawyer-Modus den Dokumentinhalt und cached ihn', async () => {
     const { app } = await jlApp();
     const { token } = (

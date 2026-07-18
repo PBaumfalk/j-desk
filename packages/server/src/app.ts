@@ -5,7 +5,7 @@ import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import websocket from '@fastify/websocket';
 import fastifyStatic from '@fastify/static';
-import { CommandError, addDoc, removeDoc, type Command, type DesktopState } from '@digital-desktop/core';
+import { CommandError, addDoc, removeDoc, trashedFileIds, type Command, type DesktopState } from '@digital-desktop/core';
 import type { Db } from './db';
 import {
   needsSetup, createUser, login, logout, validateToken, createWsTickets,
@@ -175,7 +175,8 @@ export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions):
           changed = true;
         }
       }
-      const vorhanden = new Set(state.docs.map((d) => d.fileId));
+      // Karten im Papierkorb gelten als vorhanden — sonst käme die Karte beim Abgleich zurück.
+      const vorhanden = new Set([...state.docs.map((d) => d.fileId), ...trashedFileIds(state)]);
       let n = state.docs.length;
       for (const d of jlDocs) {
         if (!vorhanden.has(d.id)) {
