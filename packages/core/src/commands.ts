@@ -7,6 +7,7 @@ import { expandDoc, collapseDoc, setDocPage, resizeDoc, extractPage } from './vi
 import { addStroke, removeStroke, type Stroke, type StrokeTool } from './ink';
 import { addNote, editNote, moveNote, removeNote, type NoteKind } from './notes';
 import { addCutout, moveCutout, removeCutout } from './cutouts';
+import { addMark, removeMark, type Mark, type MarkKind } from './marks';
 
 export class CommandError extends Error {}
 
@@ -87,6 +88,8 @@ const handlers: Record<string, (s: DesktopState, p: Record<string, unknown>) => 
   addCutout: (s, p) => wrap(() => addCutout(s, id(p.docId, 'docId'), num(p.page, 'page'), rect(p.rect), vec(p.position, 'position'), optId(p.id))),
   moveCutout: (s, p) => wrap(() => moveCutout(s, id(p.id, 'id'), vec(p.position, 'position'))),
   removeCutout: (s, p) => wrap(() => removeCutout(s, id(p.id, 'id'))),
+  addMark: (s, p) => wrap(() => addMark(s, markPayload(p.mark))),
+  removeMark: (s, p) => wrap(() => removeMark(s, id(p.markId, 'markId'))),
 };
 
 function rect(v: unknown): { x: number; y: number; w: number; h: number } {
@@ -109,6 +112,18 @@ function strokePayload(v: unknown): Omit<Stroke, 'id'> & { id?: string } {
     color: text(st.color, 'stroke.color'),
     width: num(st.width, 'stroke.width'),
     points: st.points.map((p, i) => vec(p, `stroke.points[${i}]`)),
+  };
+}
+
+function markPayload(v: unknown): Omit<Mark, 'id'> & { id?: string } {
+  const m = v as Partial<Mark> | undefined;
+  if (!m || typeof m !== 'object') throw new CommandError('Feld "mark" fehlt');
+  return {
+    ...(typeof m.id === 'string' && m.id !== '' ? { id: m.id } : {}),
+    docId: id(m.docId, 'mark.docId'),
+    page: num(m.page, 'mark.page'),
+    rect: rect(m.rect),
+    kind: m.kind as MarkKind,
   };
 }
 

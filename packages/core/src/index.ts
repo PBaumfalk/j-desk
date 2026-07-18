@@ -10,4 +10,5 @@ export * from './viewer';
 export * from './ink';
 export * from './notes';
 export * from './cutouts';
+export * from './marks';
 export * from './uid';
