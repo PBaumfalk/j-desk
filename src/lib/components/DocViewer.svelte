@@ -11,18 +11,23 @@
   const size = $derived(doc.openSize ?? { w: 560, h: 720 });
 
   let dragging = false, moved = false;
+  let headLast = { x: 0, y: 0 };
   function onHeaderPointerDown(e: PointerEvent) {
     if ((e.target as HTMLElement).closest('button')) return; // Klicks auf ‹ › ✕ nicht als Drag verschlucken
     if (e.button !== 0) return;
     e.stopPropagation();
     dragging = true; moved = false;
+    headLast = { x: e.clientX, y: e.clientY };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     void desktop.command('bringToFront', { id: doc.id });
   }
   function onHeaderPointerMove(e: PointerEvent) {
     if (!dragging) return;
     moved = true;
-    desktop.applyLocal((s) => moveDoc(s, doc.id, { x: doc.position.x + e.movementX / vp.scale, y: doc.position.y + e.movementY / vp.scale }));
+    const dx = (e.clientX - headLast.x) / vp.scale;
+    const dy = (e.clientY - headLast.y) / vp.scale;
+    headLast = { x: e.clientX, y: e.clientY };
+    desktop.applyLocal((s) => moveDoc(s, doc.id, { x: doc.position.x + dx, y: doc.position.y + dy }));
   }
   function onHeaderPointerUp() {
     if (!dragging) return;
@@ -51,15 +56,20 @@
 
   // Größe ziehen (Anfasser unten rechts)
   let resizing = false;
+  let gripLast = { x: 0, y: 0 };
   function onResizeDown(e: PointerEvent) {
     e.stopPropagation(); e.preventDefault();
     resizing = true;
+    gripLast = { x: e.clientX, y: e.clientY };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }
   function onResizeMove(e: PointerEvent) {
     if (!resizing) return;
-    const w = Math.max(220, size.w + e.movementX / vp.scale);
-    const h = Math.max(280, size.h + e.movementY / vp.scale);
+    const dx = (e.clientX - gripLast.x) / vp.scale;
+    const dy = (e.clientY - gripLast.y) / vp.scale;
+    gripLast = { x: e.clientX, y: e.clientY };
+    const w = Math.max(220, size.w + dx);
+    const h = Math.max(280, size.h + dy);
     desktop.applyLocal((s) => ({ ...s, docs: s.docs.map((d) => d.id === doc.id ? { ...d, openSize: { w, h } } : d) }));
   }
   function onResizeUp() {
@@ -93,7 +103,7 @@
 
 <style>
   .viewer { position: absolute; display: flex; flex-direction: column; background: #fff; border-radius: 6px;
-            box-shadow: 0 10px 34px rgba(0, 0, 0, .45); overflow: hidden; }
+            box-shadow: 0 10px 34px rgba(0, 0, 0, .45); overflow: hidden; touch-action: none; }
   .viewer:focus { outline: 2px solid #2c5aa0; }
   .head { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #f2f4f8;
           border-bottom: 1px solid #e4e8ef; cursor: grab; user-select: none; }
