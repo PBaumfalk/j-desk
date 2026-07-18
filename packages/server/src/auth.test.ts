@@ -55,3 +55,22 @@ describe('Auth', () => {
     expect(validateToken(db, token)).toBeNull();
   });
 });
+
+describe('createWsTickets', () => {
+  it('stellt Tickets aus, die genau einmal einlösbar sind', async () => {
+    const { createWsTickets } = await import('./auth');
+    const tickets = createWsTickets();
+    const t = tickets.issue('user-1');
+    expect(tickets.consume(t)).toEqual({ userId: 'user-1' });
+    expect(tickets.consume(t)).toBeNull();
+    expect(tickets.consume('erfunden')).toBeNull();
+  });
+
+  it('lehnt abgelaufene Tickets ab', async () => {
+    const { createWsTickets } = await import('./auth');
+    const tickets = createWsTickets(1); // 1 ms TTL
+    const t = tickets.issue('user-1');
+    await new Promise((r) => setTimeout(r, 10));
+    expect(tickets.consume(t)).toBeNull();
+  });
+});

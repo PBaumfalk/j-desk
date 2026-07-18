@@ -197,9 +197,23 @@ function closeWs(): void {
 function connectWs(): void {
   if (!api || !deskId || stopped) return;
   const generation = ++wsGeneration;
+  void (async () => {
+    let ticket: string;
+    try {
+      ticket = (await api!.wsTicket()).ticket;
+    } catch {
+      if (generation === wsGeneration) onDisconnected();
+      return;
+    }
+    if (generation !== wsGeneration || stopped || !api || !deskId) return;
+    openSocket(generation, api.wsUrl(deskId, ticket));
+  })();
+}
+
+function openSocket(generation: number, url: string): void {
   let socket: WebSocket;
   try {
-    socket = new WebSocket(api.wsUrl(deskId));
+    socket = new WebSocket(url);
   } catch {
     onDisconnected();
     return;

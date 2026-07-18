@@ -111,8 +111,13 @@ export class ApiClient {
     return new Uint8Array(await res.arrayBuffer());
   }
 
-  wsUrl(deskId: string): string {
+  /** Kurzlebiges Einmal-Ticket für den WebSocket-Verbindungsaufbau. */
+  wsTicket(): Promise<{ ticket: string }> {
+    return this.request('POST', '/ws-ticket');
+  }
+
+  wsUrl(deskId: string, ticket: string): string {
     const base = this.baseUrl || location.origin;
-    return `${base.replace(/^http/, 'ws')}/api/v1/desks/${deskId}/ws?token=${this.token ?? ''}`;
+    return `${base.replace(/^http/, 'ws')}/api/v1/desks/${deskId}/ws?ticket=${ticket}`;
   }
 }

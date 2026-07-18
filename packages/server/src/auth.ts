@@ -57,3 +57,32 @@ export function validateToken(db: Db, token: string): { userId: string } | null 
 export function logout(db: Db, token: string): void {
   db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
 }
+
+export interface WsTickets {
+  issue(userId: string): string;
+  consume(ticket: string): { userId: string } | null;
+}
+
+/**
+ * Kurzlebige Einmal-Tickets für den WebSocket-Verbindungsaufbau: Browser-WebSockets
+ * können keine Header setzen, und das Session-Token soll nicht in Query-Strings
+ * (Logs, Proxies) landen. Tickets leben nur im Speicher — nach einem Neustart
+ * holen sich die Clients beim Reconnect ohnehin ein frisches.
+ */
+export function createWsTickets(ttlMs = 30_000): WsTickets {
+  const tickets = new Map<string, { userId: string; expires: number }>();
+  return {
+    issue(userId) {
+      for (const [t, v] of tickets) if (v.expires < Date.now()) tickets.delete(t);
+      const ticket = randomBytes(32).toString('hex');
+      tickets.set(ticket, { userId, expires: Date.now() + ttlMs });
+      return ticket;
+    },
+    consume(ticket) {
+      const entry = tickets.get(ticket);
+      if (!entry) return null;
+      tickets.delete(ticket); // Einmal-Nutzung
+      return entry.expires < Date.now() ? null : { userId: entry.userId };
+    },
+  };
+}

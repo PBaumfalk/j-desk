@@ -6,7 +6,7 @@ import websocket from '@fastify/websocket';
 import fastifyStatic from '@fastify/static';
 import { CommandError, type Command } from '@digital-desktop/core';
 import type { Db } from './db';
-import { needsSetup, createUser, login, logout, validateToken, AuthError } from './auth';
+import { needsSetup, createUser, login, logout, validateToken, createWsTickets, AuthError } from './auth';
 import {
   createDesk, listDesks, renameDesk, deleteDesk, getDeskState,
   applyDeskCommand, putDeskState, DeskNotFoundError, InvalidStateError,
@@ -23,14 +23,16 @@ export interface AppOptions {
 const PUBLIC_PATHS = new Set(['/api/v1/auth/status', '/api/v1/auth/login', '/api/v1/auth/setup']);
 
 function bearerToken(req: FastifyRequest): string | null {
+  // Nur der Authorization-Header — Tokens in Query-Strings landen in Logs und Proxies.
   const header = req.headers.authorization;
-  if (header?.startsWith('Bearer ')) return header.slice(7);
-  const query = req.query as { token?: string };
-  return query?.token ?? null;
+  return header?.startsWith('Bearer ') ? header.slice(7) : null;
 }
+
+const WS_PATH = /^\/api\/v1\/desks\/[^/]+\/ws$/;
 
 export async function buildApp({ db, dataDir, webDir }: AppOptions): Promise<FastifyInstance> {
   const app = Fastify();
+  const wsTickets = createWsTickets();
   await app.register(cors, { origin: true });
   await app.register(multipart, { limits: { fileSize: 100 * 1024 * 1024 } });
   await app.register(websocket);
@@ -52,6 +54,14 @@ export async function buildApp({ db, dataDir, webDir }: AppOptions): Promise<Fas
     }
     if (!path.startsWith('/api/')) return; // statische Auslieferung ist öffentlich
     if (PUBLIC_PATHS.has(path)) return;
+    if (WS_PATH.test(path)) {
+      // Browser-WebSockets können keine Header setzen — hier gilt ausschließlich das Einmal-Ticket.
+      const ticket = (req.query as { ticket?: string })?.ticket;
+      const session = ticket ? wsTickets.consume(ticket) : null;
+      if (!session) return reply.code(401).send({ error: 'Nicht angemeldet' });
+      (req as FastifyRequest & { userId: string }).userId = session.userId;
+      return;
+    }
     const token = bearerToken(req);
     const session = token ? validateToken(db, token) : null;
     if (!session) return reply.code(401).send({ error: 'Nicht angemeldet' });
@@ -186,6 +196,10 @@ export async function buildApp({ db, dataDir, webDir }: AppOptions): Promise<Fas
   });
 
   // ---- WebSocket ----
+  app.post('/api/v1/ws-ticket', async (req) => ({
+    ticket: wsTickets.issue((req as FastifyRequest & { userId: string }).userId),
+  }));
+
   app.get('/api/v1/desks/:id/ws', { websocket: true }, (socket, req) => {
     const { id } = req.params as { id: string };
     register(id, socket);
