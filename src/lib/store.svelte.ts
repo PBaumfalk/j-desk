@@ -15,6 +15,13 @@ let reconnectDelay = 1000;
 let stopped = false;
 let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
 
+/** Passende Meldung, wenn eine Aktion mangels Verbindung nicht ausgeführt wird. */
+function offlineMeldung(): string {
+  return status === 'connecting'
+    ? 'Verbindung wird aufgebaut — gleich erneut versuchen'
+    : 'Offline — Aktion nicht möglich';
+}
+
 export const desktop = {
   get state(): DesktopState {
     return state;
@@ -53,7 +60,7 @@ export const desktop = {
   /** Optimistisch lokal anwenden, dann ans Backend; die Server-Antwort ist maßgeblich. */
   async command(type: string, payload: Command['payload']): Promise<void> {
     if (status !== 'online') {
-      showToast('Offline — Aktion nicht möglich');
+      showToast(offlineMeldung());
       return;
     }
     if (!api || !deskId) return;
@@ -89,7 +96,7 @@ export const desktop = {
   async switchDesk(id: string): Promise<void> {
     if (!api || id === deskId) return;
     if (status !== 'online') {
-      showToast('Offline — Aktion nicht möglich');
+      showToast(offlineMeldung());
       return;
     }
     status = 'connecting';
@@ -105,7 +112,7 @@ export const desktop = {
   async createDesk(name: string): Promise<void> {
     if (!api) return;
     if (status !== 'online') {
-      showToast('Offline — Aktion nicht möglich');
+      showToast(offlineMeldung());
       return;
     }
     try {
@@ -120,7 +127,7 @@ export const desktop = {
   async renameDesk(id: string, name: string): Promise<void> {
     if (!api) return;
     if (status !== 'online') {
-      showToast('Offline — Aktion nicht möglich');
+      showToast(offlineMeldung());
       return;
     }
     try {
@@ -134,7 +141,7 @@ export const desktop = {
   async deleteDesk(id: string): Promise<void> {
     if (!api) return;
     if (status !== 'online') {
-      showToast('Offline — Aktion nicht möglich');
+      showToast(offlineMeldung());
       return;
     }
     try {
@@ -209,7 +216,13 @@ function connectWs(): void {
   };
   socket.onmessage = (ev) => {
     if (generation !== wsGeneration) return;
-    const data = JSON.parse(ev.data as string) as { rev: number; state: DesktopState };
+    let data: { rev: number; state: DesktopState };
+    try {
+      data = JSON.parse(ev.data as string) as { rev: number; state: DesktopState };
+    } catch {
+      return; // fehlerhafte Nachricht verwerfen — der nächste Broadcast bringt den vollen Zustand
+    }
+    if (typeof data?.rev !== 'number' || !data.state) return;
     if (data.rev >= rev) {
       rev = data.rev;
       state = data.state;
