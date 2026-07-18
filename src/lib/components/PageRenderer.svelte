@@ -26,8 +26,8 @@
   const baseSizes = new Map<string, { w: number; h: number }>(); // Seiten können unterschiedlich groß sein
   let renderToken = 0;
 
-  async function bytesFor(id: string): Promise<Uint8Array> {
-    if (source === 'preview') return fetchPreviewBytes(api, id);
+  async function bytesFor(id: string, token: number): Promise<Uint8Array> {
+    if (source === 'preview') return fetchPreviewBytes(api, id, () => token !== renderToken);
     const cached = await idbGet(FILE_STORE, id).catch(() => null);
     if (cached) return cached;
     const bytes = await api.fetchFile(id);
@@ -45,7 +45,7 @@
         + (source === 'preview' ? ':preview' : '');
       let bmp = cache.get(key);
       if (!bmp) {
-        const data = await bytesFor(fileId);
+        const data = await bytesFor(fileId, token);
         if (token !== renderToken) return; // überholter Render: PDF gar nicht erst parsen
         let pdf: pdfjs.PDFDocumentProxy | undefined;
         try {
@@ -93,7 +93,12 @@
     if (canvas) void render();
   });
 
-  onDestroy(() => cache.clear());
+  onDestroy(() => {
+    // renderToken hochzählen, damit ein laufender Preview-Poll (fetchPreviewBytes mit
+    // isCancelled) beim Unmount/Wechsel erkennt, dass er verwaist ist, und abbricht.
+    renderToken++;
+    cache.clear();
+  });
 </script>
 
 <div class="page" style:width="{targetWidth}px">

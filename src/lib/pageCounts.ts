@@ -34,9 +34,8 @@ export function getPageCount(api: ApiClient, fileId: string, source: 'original' 
       return pdf.numPages;
     } finally {
       await pdf?.destroy?.();
-      inFlight.delete(cacheKey);
     }
-  })();
+  })().finally(() => inFlight.delete(cacheKey));
   inFlight.set(cacheKey, p);
   return p;
 }
