@@ -1,6 +1,6 @@
 # UAT-Sammelliste — alle offenen manuellen Tests (Stand 2026-07-18)
 
-Konsolidiert alle „pending user verification"-Punkte. **96 Punkte in vier Blöcken** — jeder
+Konsolidiert alle „pending user verification"-Punkte. **106 Punkte in vier Blöcken** — jeder
 Block hat ein eigenes Setup, innerhalb eines Blocks kann in einer Sitzung durchgetestet werden.
 
 **Empfohlene Reihenfolge:** Block A (aktueller Branch, enthält jetzt auch Zettel A7 und
@@ -111,6 +111,15 @@ iPad:
 - [ ] A7.4 Zettel per Kontextmenü (Rechtsklick/Lang-Druck) „Verknüpfen…" mit Karte oder Stapel → Schnur; „Mit allen Verknüpften öffnen" von der Karte aus berücksichtigt sie normal.
 - [ ] A7.5 Neuladen → Zettel, Texte und Schnüre unverändert; zweites Fenster sieht Änderungen live.
 - [ ] A7.6 Zettel entfernen → Schnur verschwindet mit.
+
+### A8 — Vision-Werkzeuge: Enthefter, Schere, Lichttisch, Lupe (NEU, automatisiert in Chrome vorgeprüft)
+
+- [ ] A8.1 **Enthefter (⧉ im Viewer-Kopf):** löst die aktuelle Seite als eigene Karte neben den Viewer; das Original bleibt unverändert (nicht destruktiv).
+- [ ] A8.2 Herausgelöste Seitenkarte: Miniatur zeigt die richtige Seite; aufgeschlagen zeigt sie „S. n" fest, ohne Blättern.
+- [ ] A8.3 **Schere (✄ im Viewer-Kopf):** Rechteck auf der Seite aufziehen → Ausschnitt landet in Originalgröße neben dem Viewer; verschieb- und verknüpfbar, übersteht Neuladen.
+- [ ] A8.4 **Lichttisch (◐ im Viewer-Kopf):** Viewer wird durchscheinend — zwei aufgeschlagene Seiten übereinandergeschoben lassen sich vergleichen. Wirkung/Deckungsgrad ok?
+- [ ] A8.5 **Lupe (🔍 im Bedienfeld):** runder 2,5-fach-Ausschnitt folgt Maus bzw. Finger; offene Viewer erscheinen darin bewusst nicht. Auf dem iPad brauchbar?
+- [ ] A8.6 **Produktfrage:** Werkzeug-Inventar-Rest der Vision (Lineal, Notizfahne, Stempel, Schwärzung, Tipp-Ex, Klebeband, Büroklammer, Locher, Kopierer/Scanner/Schredder) — Priorisierung fürs nächste Teilprojekt?
 
 ### C′ — MCP auf dem Rework-Strang (ersetzt Block C; gleiche 6 Prüfungen, neues Setup)
 
