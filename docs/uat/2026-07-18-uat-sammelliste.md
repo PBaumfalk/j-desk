@@ -1,7 +1,7 @@
 # UAT-Sammelliste — alle offenen manuellen Tests (Stand 2026-07-18)
 
-Konsolidiert alle „pending user verification"-Punkte. **88 Punkte in drei aktiven Blöcken**
-(A mit 65, C′ mit 9, D mit 14) — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
+Konsolidiert alle „pending user verification"-Punkte. **101 Punkte in drei aktiven Blöcken**
+(A mit 78, C′ mit 9, D mit 14) — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
 kann in einer Sitzung durchgetestet werden.
 
 **Empfohlene Reihenfolge:** Block A (aktueller Branch, enthält jetzt auch Zettel A7 und
@@ -15,7 +15,7 @@ MCP-Portierung C′) → Block D (j-lawyer-Modus, braucht deine Instanz).
 
 ---
 
-## Block A — Browser-App (Branch `feature/inline-viewer`, 65 Punkte)
+## Block A — Browser-App (Branch `feature/inline-viewer`, 78 Punkte)
 
 **Setup:**
 
@@ -121,6 +121,22 @@ iPad:
 - [ ] A8.4 **Lichttisch (◐ im Viewer-Kopf):** Viewer wird durchscheinend — zwei aufgeschlagene Seiten übereinandergeschoben lassen sich vergleichen. Wirkung/Deckungsgrad ok?
 - [ ] A8.5 **Lupe (🔍 im Bedienfeld):** runder 2,5-fach-Ausschnitt folgt Maus bzw. Finger; offene Viewer erscheinen darin bewusst nicht. Auf dem iPad brauchbar?
 - [ ] A8.6 **Produktfrage:** Werkzeug-Inventar-Rest der Vision (Lineal, Notizfahne, Stempel, Schwärzung, Tipp-Ex, Klebeband, Büroklammer, Locher, Kopierer/Scanner/Schredder) — Priorisierung fürs nächste Teilprojekt?
+
+### A9 — Werkzeugkasten-Runde (NEU; Command-Kette per HTTP-Smoke maschinell vorverifiziert, Chrome-UI-Vorprüfung entfiel — Extension nicht verbunden, UI-Punkte sind hier Erstkontakt)
+
+- [ ] A9.1 Bleistift (grau) und Kugelschreiber (dunkelblau) zeichnen; Radierer entfernt beide.
+- [ ] A9.2 Lineal: Ziehen ergibt eine exakte Gerade (Vorschau schon während des Ziehens gerade).
+- [ ] A9.3 Tipp-Ex deckt weiß, Schwärzung schwarz; Radierer lässt beide stehen; Ablösen nur per Klick im jeweiligen Werkzeugmodus. Beim ersten Schwärzen erscheint der Hinweis „Text bleibt im PDF" (nur einmal).
+- [ ] A9.4 Stempel: EINGANG trägt das Tagesdatum; Freitext-Stempel funktioniert; Stempel auf Seite 1 erscheint auf der Miniatur-Karte; im Stempelmodus entfernt ein Klick den Abdruck.
+- [ ] A9.5 Notizfahne: Farbe wählen, an den Seitenrand setzen → Lasche an Karte und im Viewer; Klick auf Lasche springt zur Seite; im Fahnenmodus entfernt der Klick sie.
+- [ ] A9.6 Hefter: Stapel heften → Karte zeigt 📎, kein Auffächern mehr; Doppelklick blättert als Konvolut über ALLE Mitglieder (Seitenzahl „g / G" stimmt); Zeichnen/Stempeln auf einer Konvolut-Seite bleibt nach Entheften beim richtigen Dokument.
+- [ ] A9.7 Büroklammer: „Anklammern an…" → beide Objekte ziehen gemeinsam (Abstände bleiben); „Klammer entfernen" löst die Gruppe.
+- [ ] A9.8 Klebeband: „Festkleben" sperrt das Ziehen (Maus und Finger), Klebestreifen sichtbar; „Band abziehen" gibt frei — auch auf dem iPad per Lang-Druck-Menü (Review-Fix: Menü bleibt bei festgeklebten Objekten erreichbar).
+- [ ] A9.9 Kopierer: „Kopieren" auf Karte mit Stempel/Strichen → Duplikat samt Annotationen liegt versetzt daneben; Kopie eines Zettels und eines Ausschnitts.
+- [ ] A9.10 Papierkorb: Karte hineinziehen ODER „In den Papierkorb" → Badge zählt; Panel zeigt Art/Name/Zeit; Wiederherstellen legt zurück (Schnüre sind weg — ok?); „Korb leeren…" fragt nach und löscht endgültig.
+- [ ] A9.11 j-lawyer-Modus: Akten-Karte in den Korb → Abgleich legt KEINE neue Karte an (maschinell getestet); nach „Leeren" kommt das Dokument beim nächsten Abgleich als frische Karte (gewollt — im Dialog erklärt).
+- [ ] A9.12 Reload + Zweitfenster: Marks, Stempel, Fahnen, Konvolut-Zustand, Klammern, Klebeband und Korb-Inhalt überleben ein Neuladen und erscheinen im Zweitfenster live.
+- [ ] A9.13 **Produktentscheidungen bestätigen:** Fahne = eine pro Aktivierung ok? Stempel-Optik/Sortiment ok? Konvolut ohne Enthefter/Schere im Kopf ok (nur am Einzeldokument)?
 
 ### C′ — MCP auf dem Rework-Strang (ersetzt Block C; 9 Prüfungen, neues Setup)
 
