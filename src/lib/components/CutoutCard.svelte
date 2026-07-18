@@ -2,7 +2,7 @@
   import { moveCutout, rotationFor, clipOf, type Cutout, type Viewport } from '@digital-desktop/core';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
-  import { ui, showToast } from '../ui.svelte';
+  import { ui, showToast, pointerUeberKorb } from '../ui.svelte';
   import { showCutoutMenuAt } from '../menus';
   import { moveGroupLocal, commitGroupMove, groupOf } from '../groupDrag';
   import PageRenderer from './PageRenderer.svelte';
@@ -81,6 +81,11 @@
     if (!dragging) { activePointer = null; return; }
     dragging = false;
     if (moved) {
+      if (pointerUeberKorb(e.clientX, e.clientY)) {
+        void desktop.command('trashObject', { id: cutout.id, trashedAt: new Date().toISOString() });
+        activePointer = null;
+        return;
+      }
       if (geklammert) commitGroupMove(groupOf(cutout.id));
       else void desktop.command('moveCutout', { id: cutout.id, position: { x: cutout.position.x, y: cutout.position.y } });
     }

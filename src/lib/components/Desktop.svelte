@@ -18,6 +18,7 @@
   import ContextMenu from './ContextMenu.svelte';
   import DeskSwitcher from './DeskSwitcher.svelte';
   import DeskControls from './DeskControls.svelte';
+  import TrashCan from './TrashCan.svelte';
 
   let { onlogout }: { onlogout: () => void } = $props();
 
@@ -236,6 +237,7 @@
     onpan={(dx, dy) => (vp = panBy(vp, dx, dy))}
     onfit={fitAll}
   />
+  <TrashCan />
   <div class="toolbar">
     <input
       bind:this={fileInput}

@@ -4,7 +4,7 @@
   } from '@digital-desktop/core';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
-  import { ui, showToast } from '../ui.svelte';
+  import { ui, showToast, pointerUeberKorb } from '../ui.svelte';
   import { showNoteMenu, showNoteMenuAt, NOTE_KIND_LABELS } from '../menus';
   import { moveGroupLocal, commitGroupMove, groupOf } from '../groupDrag';
 
@@ -89,6 +89,11 @@
     if (!dragging) { activePointer = null; return; }
     dragging = false;
     if (moved) {
+      if (pointerUeberKorb(e.clientX, e.clientY)) {
+        void desktop.command('trashObject', { id: note.id, trashedAt: new Date().toISOString() });
+        activePointer = null;
+        return;
+      }
       if (geklammert) commitGroupMove(groupOf(note.id));
       else void desktop.command('moveNote', { id: note.id, position: { x: note.position.x, y: note.position.y } });
     }

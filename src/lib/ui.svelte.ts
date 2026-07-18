@@ -16,6 +16,9 @@ export const ui = $state({
   deskPointers: 0,
   /** Lupe: runder vergrößerter Ausschnitt folgt dem Zeiger. */
   lupe: false,
+  /** Papierkorb: Bildschirm-Rechteck (Drop-Ziel) und geöffnetes Panel. */
+  trashRect: null as { x: number; y: number; w: number; h: number } | null,
+  trashOpen: false,
 });
 
 export function showToast(message: string): void {
@@ -23,4 +26,10 @@ export function showToast(message: string): void {
   setTimeout(() => {
     if (ui.toast === message) ui.toast = null;
   }, 4000);
+}
+
+/** Liegt der Zeiger über dem Papierkorb? (Drop-Erkennung beim Karten-Loslassen) */
+export function pointerUeberKorb(clientX: number, clientY: number): boolean {
+  const r = ui.trashRect;
+  return !!r && clientX >= r.x && clientX <= r.x + r.w && clientY >= r.y && clientY <= r.y + r.h;
 }

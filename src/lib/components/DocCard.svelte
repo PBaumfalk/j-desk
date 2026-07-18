@@ -4,7 +4,7 @@
   } from '@digital-desktop/core';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
-  import { ui, showToast } from '../ui.svelte';
+  import { ui, showToast, pointerUeberKorb } from '../ui.svelte';
   import { showDocMenu, showDocMenuAt } from '../menus';
   import { getThumbnail } from '../thumbnails';
   import { moveGroupLocal, commitGroupMove, groupOf } from '../groupDrag';
@@ -98,6 +98,11 @@
     if (!dragging) { activePointer = null; return; }
     dragging = false;
     if (!moved) { activePointer = null; return; }
+    if (pointerUeberKorb(e.clientX, e.clientY)) {
+      void desktop.command('trashObject', { id: doc.id, trashedAt: new Date().toISOString() });
+      activePointer = null;
+      return;
+    }
     if (geklammert) { commitGroupMove(groupOf(doc.id)); activePointer = null; return; }
     const center = { x: doc.position.x + CARD_W / 2, y: doc.position.y + CARD_H / 2 };
     const hit = hitTest(desktop.state, center, doc.id);
