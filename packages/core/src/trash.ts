@@ -76,8 +76,11 @@ export function restoreObject(s: DesktopState, trashId: string): DesktopState {
   const item = (s.trash ?? []).find((t) => t.id === trashId);
   if (!item) throw new Error(`Korb-Eintrag "${trashId}" nicht gefunden`);
   const p = item.payload;
+  // fileId-Duplikate sind seit dem Kopierer legitim (copyObject teilt sich die fileId der Quelle) —
+  // nur die Objekt-Identität (doc-ID) zählt als Kollision. Der j-lawyer-Abgleich prüft ohnehin
+  // separat über trashedFileIds, daher ist der fileId-Vergleich hier nicht mehr nötig.
   const belegt =
-    p.docs.some((d) => s.docs.some((x) => x.id === d.id || x.fileId === d.fileId)) ||
+    p.docs.some((d) => s.docs.some((x) => x.id === d.id)) ||
     p.notes.some((n) => (s.notes ?? []).some((x) => x.id === n.id)) ||
     p.cutouts.some((c) => (s.cutouts ?? []).some((x) => x.id === c.id)) ||
     p.stacks.some((st) => s.stacks.some((x) => x.id === st.id));

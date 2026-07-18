@@ -10,6 +10,7 @@ import { addFlag, FLAG_COLORS } from './flags';
 import { stackDocs, stapleStack } from './stacks';
 import { addClip } from './clips';
 import { trashObject, restoreObject, emptyTrash, trashedFileIds } from './trash';
+import { copyObject } from './copy';
 import { applyCommand } from './commands';
 
 const T = '2026-07-18T12:00:00.000Z';
@@ -68,10 +69,27 @@ describe('trash', () => {
     expect(s.stacks?.[0]).toMatchObject({ id: 'st1', stapled: true });
   });
 
-  it('restore wirft, wenn das Dokument (fileId) inzwischen wieder auf dem Tisch liegt', () => {
+  it('restore wirft nicht mehr wegen gleicher fileId — seit dem Kopierer sind fileId-Duplikate legitim', () => {
     let s = trashObject(voll(), 'd1', T, 't1');
-    s = addDoc(s, 'f1', 'a.pdf', { x: 50, y: 50 }, 'd9');
+    s = addDoc(s, 'f1', 'a.pdf', { x: 50, y: 50 }, 'd9'); // andere ID, gleiche fileId liegt schon auf dem Tisch
+    s = restoreObject(s, 't1');
+    expect(s.docs.map((d) => d.id).sort()).toEqual(['d1', 'd9']); // beide Karten liegen da
+  });
+
+  it('restore wirft weiterhin, wenn genau dieselbe Dokument-ID bereits wieder auf dem Tisch liegt', () => {
+    let s = trashObject(voll(), 'd1', T, 't1');
+    s = { ...s, docs: [...s.docs, { ...s.trash![0].payload.docs[0] }] }; // dieselbe doc-ID d1 künstlich zurück auf den Tisch
     expect(() => restoreObject(s, 't1')).toThrow('bereits');
+  });
+
+  it('Kopie trashen und wiederherstellen: 2 Karten mit gleicher fileId liegen am Ende auf dem Tisch', () => {
+    let s = addDoc(emptyState(), 'f1', 'a.pdf', { x: 0, y: 0 }, 'd1');
+    s = copyObject(s, 'd1'); // Kopie bekommt neue ID, gleiche fileId
+    const kopieId = s.docs.find((d) => d.id !== 'd1')!.id;
+    s = trashObject(s, kopieId, T, 't-kopie');
+    s = restoreObject(s, 't-kopie');
+    expect(s.docs).toHaveLength(2);
+    expect(s.docs.map((d) => d.fileId)).toEqual(['f1', 'f1']);
   });
 
   it('Zettel und unbekannte Objekte; emptyTrash leert endgültig', () => {
