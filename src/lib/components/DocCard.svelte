@@ -25,6 +25,7 @@
 
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
+    if (ui.deskPointers > 0) return; // Desk pannt bereits — Finger bubbelt durch und tritt dem Pinch bei
     e.stopPropagation();
     if (ui.linkingFromId && ui.linkingFromId !== doc.id) {
       const from = ui.linkingFromId;
@@ -52,7 +53,11 @@
   function onPointerMove(e: PointerEvent) {
     if (e.pointerId !== activePointer) return;
     if (!dragging) return;
-    if (pressTimer && Math.hypot(e.clientX - last.x, e.clientY - last.y) > 8) { clearTimeout(pressTimer); pressTimer = undefined; }
+    if (pressTimer) {
+      // Lang-Druck abwarten: unterhalb der 8-px-Schwelle bewegt sich die Karte nicht (kein Mikro-Drift).
+      if (Math.hypot(e.clientX - last.x, e.clientY - last.y) <= 8) return;
+      clearTimeout(pressTimer); pressTimer = undefined;
+    }
     moved = true;
     const dx = (e.clientX - last.x) / vp.scale;
     const dy = (e.clientY - last.y) / vp.scale;

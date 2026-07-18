@@ -36,9 +36,13 @@
   let pinchLast = 0;
 
   function onPointerDown(e: PointerEvent) {
-    if (e.button !== 0 || e.target !== el) return;
+    if (e.button !== 0) return;
+    // Erster Finger nur auf freier Fläche; weitere Finger dürfen von Karten kommen
+    // (die Karte reicht sie durch, solange der Desk schon pannt — Pinch-Beitritt).
+    if (e.target !== el && pointers.size === 0) return;
     el.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    ui.deskPointers = pointers.size;
     if (pointers.size === 1) { panning = true; panLast = { x: e.clientX, y: e.clientY }; }
   }
   function onPointerMove(e: PointerEvent) {
@@ -58,6 +62,7 @@
   }
   function endPointer(e: PointerEvent) {
     pointers.delete(e.pointerId);
+    ui.deskPointers = pointers.size;
     if (pointers.size < 2) pinchLast = 0;
     if (pointers.size === 0) { panning = false; panLast = null; }
     else if (pointers.size === 1) { const p = Array.from(pointers.values())[0]; panLast = { x: p.x, y: p.y }; }

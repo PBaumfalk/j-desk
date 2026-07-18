@@ -5,7 +5,7 @@
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
   import { ui } from '../ui.svelte';
-  import { showDocMenu, showStackMenu, showStackMenuAt, openDoc } from '../menus';
+  import { showDocMenu, showStackMenu, showStackMenuAt } from '../menus';
   import { getThumbnail } from '../thumbnails';
 
   let { stack, vp }: { stack: Stack; vp: Viewport } = $props();
@@ -26,6 +26,7 @@
 
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
+    if (ui.deskPointers > 0) return; // Desk pannt bereits — Finger bubbelt durch und tritt dem Pinch bei
     e.stopPropagation();
     if (ui.linkingFromId && ui.linkingFromId !== stack.id) {
       const from = ui.linkingFromId;
@@ -52,7 +53,11 @@
   function onPointerMove(e: PointerEvent) {
     if (e.pointerId !== activePointer) return;
     if (!dragging) return;
-    if (pressTimer && Math.hypot(e.clientX - last.x, e.clientY - last.y) > 8) { clearTimeout(pressTimer); pressTimer = undefined; }
+    if (pressTimer) {
+      // Lang-Druck abwarten: unterhalb der 8-px-Schwelle bewegt sich die Karte nicht (kein Mikro-Drift).
+      if (Math.hypot(e.clientX - last.x, e.clientY - last.y) <= 8) return;
+      clearTimeout(pressTimer); pressTimer = undefined;
+    }
     moved = true;
     const dx = (e.clientX - last.x) / vp.scale;
     const dy = (e.clientY - last.y) / vp.scale;
@@ -89,8 +94,14 @@
           position: { x: w.x - CARD_W / 2, y: w.y - CARD_H / 2 },
         });
       } else {
-        const d = findDoc(desktop.state, docId);
-        if (d) void openDoc(d);
+        // Klick: Papier aus dem Stapel ziehen und direkt aufschlagen (statt neuen Tab öffnen)
+        void (async () => {
+          await desktop.command('removeFromStack', {
+            docId,
+            position: { x: stack.position.x + CARD_W + 48, y: stack.position.y },
+          });
+          await desktop.command('expandDoc', { id: docId });
+        })();
       }
     };
     window.addEventListener('pointerup', onUp);
