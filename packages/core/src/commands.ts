@@ -9,6 +9,7 @@ import { addNote, editNote, moveNote, removeNote, type NoteKind } from './notes'
 import { addCutout, moveCutout, removeCutout } from './cutouts';
 import { addMark, removeMark, type Mark, type MarkKind } from './marks';
 import { addStamp, removeStamp, type Stamp } from './stamps';
+import { addFlag, removeFlag, type Flag } from './flags';
 
 export class CommandError extends Error {}
 
@@ -93,6 +94,8 @@ const handlers: Record<string, (s: DesktopState, p: Record<string, unknown>) => 
   removeMark: (s, p) => wrap(() => removeMark(s, id(p.markId, 'markId'))),
   addStamp: (s, p) => wrap(() => addStamp(s, stampPayload(p.stamp))),
   removeStamp: (s, p) => wrap(() => removeStamp(s, id(p.stampId, 'stampId'))),
+  addFlag: (s, p) => wrap(() => addFlag(s, flagPayload(p.flag))),
+  removeFlag: (s, p) => wrap(() => removeFlag(s, id(p.flagId, 'flagId'))),
 };
 
 function rect(v: unknown): { x: number; y: number; w: number; h: number } {
@@ -145,6 +148,19 @@ function stampPayload(v: unknown): Omit<Stamp, 'id'> & { id?: string } {
     ...(st.date !== undefined ? { date: text(st.date, 'stamp.date') } : {}),
     baseW: num(st.baseW, 'stamp.baseW'),
     baseH: num(st.baseH, 'stamp.baseH'),
+  };
+}
+
+function flagPayload(v: unknown): Omit<Flag, 'id'> & { id?: string } {
+  const f = v as Partial<Flag> | undefined;
+  if (!f || typeof f !== 'object') throw new CommandError('Feld "flag" fehlt');
+  return {
+    ...(typeof f.id === 'string' && f.id !== '' ? { id: f.id } : {}),
+    docId: id(f.docId, 'flag.docId'),
+    page: num(f.page, 'flag.page'),
+    offset: num(f.offset, 'flag.offset'),
+    color: text(f.color, 'flag.color'),
+    ...(f.label !== undefined ? { label: text(f.label, 'flag.label') } : {}),
   };
 }
 

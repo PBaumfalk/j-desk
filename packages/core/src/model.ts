@@ -44,13 +44,15 @@ export interface DesktopState {
   marks?: import('./marks').Mark[];
   /** Kanzlei-Stempel auf PDF-Seiten; fehlt in älteren Staaten. */
   stamps?: import('./stamps').Stamp[];
+  /** Notizfahnen: farbige Laschen am rechten Seitenrand; fehlt in älteren Staaten. */
+  flags?: import('./flags').Flag[];
 }
 
 export const CARD_W = 180;
 export const CARD_H = 240;
 
 export function emptyState(): DesktopState {
-  return { docs: [], links: [], stacks: [], strokes: [], notes: [], cutouts: [], marks: [], stamps: [] };
+  return { docs: [], links: [], stacks: [], strokes: [], notes: [], cutouts: [], marks: [], stamps: [], flags: [] };
 }
 
 export function findDoc(s: DesktopState, id: string): Doc | undefined {
@@ -81,6 +83,7 @@ export function isValidState(v: unknown): v is DesktopState {
     (s.cutouts === undefined || Array.isArray(s.cutouts)) &&
     (s.marks === undefined || Array.isArray(s.marks)) &&
     (s.stamps === undefined || Array.isArray(s.stamps)) &&
+    (s.flags === undefined || Array.isArray(s.flags)) &&
     s.docs.every(
       (d) =>
         !!d && typeof d.id === 'string' && typeof d.fileId === 'string' && typeof d.name === 'string',

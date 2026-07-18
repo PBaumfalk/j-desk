@@ -12,4 +12,5 @@ export * from './notes';
 export * from './cutouts';
 export * from './marks';
 export * from './stamps';
+export * from './flags';
 export * from './uid';
