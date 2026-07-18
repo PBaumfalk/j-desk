@@ -39,10 +39,10 @@ export function addClip(s: DesktopState, aId: string, bId: string, id: string = 
   }
   const existing = a ?? b;
   if (existing) {
-    const neu = a ? bId : aId;
+    const newcomer = a ? bId : aId;
     return {
       ...s,
-      clips: (s.clips ?? []).map((c) => (c.id === existing.id ? { ...c, memberIds: [...c.memberIds, neu] } : c)),
+      clips: (s.clips ?? []).map((c) => (c.id === existing.id ? { ...c, memberIds: [...c.memberIds, newcomer] } : c)),
     };
   }
   return { ...s, clips: [...(s.clips ?? []), { id, memberIds: [aId, bId] }] };

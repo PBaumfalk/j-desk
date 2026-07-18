@@ -4,7 +4,7 @@ import type { DesktopState } from './model';
 export function setTaped(s: DesktopState, objectId: string, taped: boolean): DesktopState {
   const flag = taped ? { taped: true as const } : {};
   const strip = <T extends { taped?: boolean }>(o: T): T => {
-    const { taped: _weg, ...rest } = o;
+    const { taped: _dropped, ...rest } = o;
     return { ...(rest as T), ...flag };
   };
   if (s.docs.some((d) => d.id === objectId)) {
