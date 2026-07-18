@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { screenToWorld, zoomAt, zoomToFit, type Viewport } from './viewport';
+import { screenToWorld, zoomAt, zoomToFit, panBy, type Viewport } from './viewport';
 
 describe('screenToWorld', () => {
   it('rechnet Bildschirm- in Weltkoordinaten um', () => {
@@ -37,5 +37,14 @@ describe('zoomToFit', () => {
     expect(250 * vp.scale + vp.y).toBeCloseTo(350);
     // Inhalt (1000 breit) passt in 1000 - 2*80 → scale = 840/1000
     expect(vp.scale).toBeCloseTo(0.84);
+  });
+});
+
+describe('panBy', () => {
+  it('addiert das Delta auf x/y, lässt die Skala unverändert', () => {
+    expect(panBy({ x: 10, y: 20, scale: 2 }, 5, -7)).toEqual({ x: 15, y: 13, scale: 2 });
+  });
+  it('ist bei Delta 0 identisch', () => {
+    expect(panBy({ x: 3, y: 4, scale: 1.5 }, 0, 0)).toEqual({ x: 3, y: 4, scale: 1.5 });
   });
 });

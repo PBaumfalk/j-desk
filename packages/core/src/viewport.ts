@@ -31,3 +31,7 @@ export function zoomToFit(boxes: Box[], view: { w: number; h: number }, padding 
     y: view.h / 2 - ((minY + maxY) / 2) * scale,
   };
 }
+
+export function panBy(vp: Viewport, dx: number, dy: number): Viewport {
+  return { ...vp, x: vp.x + dx, y: vp.y + dy };
+}
