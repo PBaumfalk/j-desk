@@ -5,7 +5,7 @@
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
   import { ui } from '../ui.svelte';
-  import { showDocMenu, showStackMenu, openDoc } from '../menus';
+  import { showDocMenu, showStackMenu, showStackMenuAt, openDoc } from '../menus';
   import { getThumbnail } from '../thumbnails';
 
   let { stack, vp }: { stack: Stack; vp: Viewport } = $props();
@@ -20,6 +20,9 @@
 
   let dragging = false;
   let moved = false;
+  let last = { x: 0, y: 0 };
+  let pressTimer: ReturnType<typeof setTimeout> | undefined;
+
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
     e.stopPropagation();
@@ -29,23 +32,28 @@
       void desktop.command('addLink', { fromId: from, toId: stack.id, id: uid() });
       return;
     }
-    if (ui.linkingFromId === stack.id) {
-      ui.linkingFromId = null;
-      return;
-    }
+    if (ui.linkingFromId === stack.id) { ui.linkingFromId = null; return; }
     dragging = true;
     moved = false;
+    last = { x: e.clientX, y: e.clientY };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     void desktop.command('bringToFront', { id: stack.id });
+    if (e.pointerType !== 'mouse') {
+      clearTimeout(pressTimer);
+      pressTimer = setTimeout(() => { dragging = false; showStackMenuAt(last.x, last.y, stack); }, 500);
+    }
   }
   function onPointerMove(e: PointerEvent) {
     if (!dragging) return;
+    if (pressTimer && Math.hypot(e.clientX - last.x, e.clientY - last.y) > 8) { clearTimeout(pressTimer); pressTimer = undefined; }
     moved = true;
-    desktop.applyLocal((s) =>
-      moveStack(s, stack.id, { x: stack.position.x + e.movementX / vp.scale, y: stack.position.y + e.movementY / vp.scale }),
-    );
+    const dx = (e.clientX - last.x) / vp.scale;
+    const dy = (e.clientY - last.y) / vp.scale;
+    last = { x: e.clientX, y: e.clientY };
+    desktop.applyLocal((s) => moveStack(s, stack.id, { x: stack.position.x + dx, y: stack.position.y + dy }));
   }
   function onPointerUp() {
+    clearTimeout(pressTimer); pressTimer = undefined;
     if (!dragging) return;
     dragging = false;
     if (moved) void desktop.command('moveStack', { stackId: stack.id, position: { x: stack.position.x, y: stack.position.y } });
@@ -83,7 +91,7 @@
 
 <div class="stack" style:left="{stack.position.x}px" style:top="{stack.position.y}px" style:z-index={stack.zIndex}
      style:width="{CARD_W + 24}px" style:height="{CARD_H + 24}px"
-     onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp}
+     onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp} onpointercancel={onPointerUp}
      oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showStackMenu(e, stack); }}>
   <div class="sheet s2"></div>
   <div class="sheet s1"></div>
@@ -119,7 +127,7 @@
 </div>
 
 <style>
-  .stack { position: absolute; cursor: grab; user-select: none; }
+  .stack { position: absolute; cursor: grab; user-select: none; touch-action: none; }
   .sheet { position: absolute; width: 180px; height: 240px; background: #fff; border-radius: 4px;
            box-shadow: 0 6px 18px rgba(0, 0, 0, .35); overflow: hidden; }
   .sheet.s2 { left: 16px; top: 16px; transform: rotate(2deg); }

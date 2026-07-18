@@ -34,10 +34,9 @@ export async function downloadDoc(doc: Doc): Promise<void> {
   }
 }
 
-export function showDocMenu(e: MouseEvent, doc: Doc): void {
+export function showDocMenuAt(x: number, y: number, doc: Doc): void {
   ui.menu = {
-    x: e.clientX,
-    y: e.clientY,
+    x, y,
     items: [
       { label: 'Aufschlagen', action: () => void desktop.command('expandDoc', { id: doc.id }) },
       { label: 'In neuem Tab öffnen', action: () => void openDoc(doc) },
@@ -49,10 +48,13 @@ export function showDocMenu(e: MouseEvent, doc: Doc): void {
   };
 }
 
-export function showStackMenu(e: MouseEvent, stack: Stack): void {
+export function showDocMenu(e: MouseEvent, doc: Doc): void {
+  showDocMenuAt(e.clientX, e.clientY, doc);
+}
+
+export function showStackMenuAt(x: number, y: number, stack: Stack): void {
   ui.menu = {
-    x: e.clientX,
-    y: e.clientY,
+    x, y,
     items: [
       { label: 'Auffächern', action: () => { ui.fannedStackId = ui.fannedStackId === stack.id ? null : stack.id; } },
       { label: 'Mit allen Verknüpften öffnen', action: () => openWithLinked(stack.id) },
@@ -62,4 +64,8 @@ export function showStackMenu(e: MouseEvent, stack: Stack): void {
       { label: 'Vom Schreibtisch entfernen', action: () => void desktop.command('removeStack', { stackId: stack.id }) },
     ],
   };
+}
+
+export function showStackMenu(e: MouseEvent, stack: Stack): void {
+  showStackMenuAt(e.clientX, e.clientY, stack);
 }

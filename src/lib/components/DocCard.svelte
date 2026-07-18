@@ -5,7 +5,7 @@
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
   import { ui } from '../ui.svelte';
-  import { showDocMenu } from '../menus';
+  import { showDocMenu, showDocMenuAt } from '../menus';
   import { getThumbnail } from '../thumbnails';
   import DocViewer from './DocViewer.svelte';
 
@@ -19,6 +19,9 @@
 
   let dragging = false;
   let moved = false;
+  let last = { x: 0, y: 0 };
+  let pressTimer: ReturnType<typeof setTimeout> | undefined;
+
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
     e.stopPropagation();
@@ -28,23 +31,28 @@
       void desktop.command('addLink', { fromId: from, toId: doc.id, id: uid() });
       return;
     }
-    if (ui.linkingFromId === doc.id) {
-      ui.linkingFromId = null;
-      return;
-    }
+    if (ui.linkingFromId === doc.id) { ui.linkingFromId = null; return; }
     dragging = true;
     moved = false;
+    last = { x: e.clientX, y: e.clientY };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     void desktop.command('bringToFront', { id: doc.id });
+    if (e.pointerType !== 'mouse') {
+      clearTimeout(pressTimer);
+      pressTimer = setTimeout(() => { dragging = false; showDocMenuAt(last.x, last.y, doc); }, 500);
+    }
   }
   function onPointerMove(e: PointerEvent) {
     if (!dragging) return;
+    if (pressTimer && Math.hypot(e.clientX - last.x, e.clientY - last.y) > 8) { clearTimeout(pressTimer); pressTimer = undefined; }
     moved = true;
-    desktop.applyLocal((s) =>
-      moveDoc(s, doc.id, { x: doc.position.x + e.movementX / vp.scale, y: doc.position.y + e.movementY / vp.scale }),
-    );
+    const dx = (e.clientX - last.x) / vp.scale;
+    const dy = (e.clientY - last.y) / vp.scale;
+    last = { x: e.clientX, y: e.clientY };
+    desktop.applyLocal((s) => moveDoc(s, doc.id, { x: doc.position.x + dx, y: doc.position.y + dy }));
   }
   function onPointerUp() {
+    clearTimeout(pressTimer); pressTimer = undefined;
     if (!dragging) return;
     dragging = false;
     if (!moved) return;
@@ -63,7 +71,7 @@
        style:left="{doc.position.x}px" style:top="{doc.position.y}px"
        style:z-index={doc.zIndex} style:transform="rotate({doc.rotation}deg)"
        style:width="{CARD_W}px" style:height="{CARD_H}px"
-       onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp}
+       onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp} onpointercancel={onPointerUp}
        ondblclick={() => void desktop.command('expandDoc', { id: doc.id })}
        oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showDocMenu(e, doc); }}>
     <div class="body">
@@ -79,7 +87,7 @@
 
 <style>
   .card { position: absolute; display: flex; flex-direction: column; background: #fff; border-radius: 4px;
-          box-shadow: 0 6px 18px rgba(0, 0, 0, .35); cursor: grab; user-select: none; }
+          box-shadow: 0 6px 18px rgba(0, 0, 0, .35); cursor: grab; user-select: none; touch-action: none; }
   .body { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden;
           border-radius: 4px 4px 0 0; }
   img { width: 100%; height: 100%; object-fit: cover; object-position: top; pointer-events: none; }
