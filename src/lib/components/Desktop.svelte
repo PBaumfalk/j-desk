@@ -6,6 +6,8 @@
   } from '@digital-desktop/core';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
+  import { clearSession } from '../session';
+  import { revokeFileUrls } from '../fileCache';
   import { ui, showToast } from '../ui.svelte';
   import DocCard from './DocCard.svelte';
   import StackCard from './StackCard.svelte';
@@ -13,6 +15,8 @@
   import ContextMenu from './ContextMenu.svelte';
   import DeskSwitcher from './DeskSwitcher.svelte';
   import DeskControls from './DeskControls.svelte';
+
+  let { onlogout }: { onlogout: () => void } = $props();
 
   let vp = $state<Viewport>({ x: 0, y: 0, scale: 1 });
   let el: HTMLDivElement;
@@ -82,6 +86,15 @@
 
   function onDragOver(e: DragEvent): void {
     e.preventDefault();
+  }
+
+  async function abmelden(): Promise<void> {
+    // Server-Invalidierung ist Best-Effort — lokal wird die Sitzung in jedem Fall beendet.
+    await desktop.api?.logout().catch(() => {});
+    clearSession();
+    revokeFileUrls();
+    await desktop.stop();
+    onlogout();
   }
 
   function onDrop(e: DragEvent): void {
@@ -154,6 +167,7 @@
       onchange={onFilesPicked}
     />
     <button onclick={() => fileInput.click()} title="PDF hinzufügen">＋ PDF</button>
+    <button onclick={() => void abmelden()} title="Abmelden">Abmelden</button>
   </div>
   {#if ui.linkingFromId}
     <div class="hint">Verknüpfen: Ziel anklicken (Esc bricht ab)</div>

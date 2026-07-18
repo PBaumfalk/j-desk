@@ -33,7 +33,7 @@
 {#if phase === 'login'}
   <LoginScreen onConnected={connect} />
 {:else if phase === 'desk'}
-  <Desktop />
+  <Desktop onlogout={() => (phase = 'login')} />
 {/if}
 
 <style>
