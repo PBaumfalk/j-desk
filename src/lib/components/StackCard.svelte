@@ -45,7 +45,19 @@
       return;
     }
     if (ui.clippingFromId === stack.id) { ui.clippingFromId = null; return; }
-    if (taped) return; // festgeklebt: kein Drag — Menü/Auffächern bleiben möglich
+    if (taped) {
+      // Festgeklebt: kein Drag — aber das Lang-Druck-Menü bleibt erreichbar (Band abziehen!)
+      activePointer = e.pointerId;
+      dragging = false;
+      last = { x: e.clientX, y: e.clientY };
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      clearTimeout(pressTimer);
+      pressTimer = undefined;
+      if (e.pointerType !== 'mouse') {
+        pressTimer = setTimeout(() => { showStackMenuAt(last.x + 16, last.y + 12, stack); }, 500);
+      }
+      return;
+    }
     // Nur blocken, solange das div den gemerkten Pointer wirklich noch hält (siehe DocCard):
     // ein bei gedrücktem Finger ersetztes div verpasst sein pointerup — Guard wäre sonst permanent.
     if (activePointer !== null && (e.currentTarget as HTMLElement).hasPointerCapture(activePointer)) return;

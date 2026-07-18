@@ -43,7 +43,19 @@
       return;
     }
     if (ui.clippingFromId === note.id) { ui.clippingFromId = null; return; }
-    if (taped) return; // festgeklebt: kein Drag — Menü/Bearbeiten bleiben möglich
+    if (taped) {
+      // Festgeklebt: kein Drag — aber das Lang-Druck-Menü bleibt erreichbar (Band abziehen!)
+      activePointer = e.pointerId;
+      dragging = false;
+      last = { x: e.clientX, y: e.clientY };
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      clearTimeout(pressTimer);
+      pressTimer = undefined;
+      if (e.pointerType !== 'mouse') {
+        pressTimer = setTimeout(() => { showNoteMenuAt(last.x + 16, last.y + 12, note); }, 500);
+      }
+      return;
+    }
     if (activePointer !== null && (e.currentTarget as HTMLElement).hasPointerCapture(activePointer)) return;
     activePointer = e.pointerId;
     dragging = true;
