@@ -157,3 +157,10 @@ Seiten- oder Größenwechsel neu gezeichnet.
 
 - Teilprojekte B–F (siehe Kontext). `PageRenderer` ist bewusst als
   wiederverwendbarer Baustein für E (Annotationen) angelegt.
+- Architektur-Leitplanke aus dem Spike `docs/vision/2026-07-18-spike-dom-vs-canvas.md`:
+  Freihand/Textmarker kommen später als eigene, über die Seite gelegte
+  `desynchronized`-Canvas-Ebene (Hybrid nach tldraw-Vorbild, Svelte bleibt).
+  Der `PageRenderer` soll die gerenderte Seite deshalb in einem klar
+  abgegrenzten Element halten, über das sich eine solche Overlay-Ebene später
+  deckungsgleich legen lässt (gleiche Zielbreite/Seitengeometrie). In dieser
+  Stufe wird die Overlay-Ebene NICHT gebaut — nur die Struktur nicht verbaut.
