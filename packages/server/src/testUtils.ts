@@ -22,3 +22,9 @@ export async function createTestApp(): Promise<TestContext> {
   const app = await buildApp({ db, dataDir });
   return { app, db, dataDir, token, authHeaders: { authorization: `Bearer ${token}` } };
 }
+
+/** Weiteres Konto samt Session-Token (z. B. für Mehrbenutzer-Tests des MCP). */
+export async function addUser(db: Db, username: string): Promise<{ token: string }> {
+  await createUser(db, username, 'test-passwort');
+  return { token: (await login(db, username, 'test-passwort'))! };
+}

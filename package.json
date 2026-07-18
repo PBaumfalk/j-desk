@@ -13,7 +13,9 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "test": "vitest run",
-    "server": "npm run dev -w @digital-desktop/server"
+    "server": "npm run dev -w @digital-desktop/server",
+    "mcp": "npm run dev -w @digital-desktop/mcp",
+    "mcp:token": "npm run token -w @digital-desktop/mcp"
   },
   "license": "MIT",
   "dependencies": {
