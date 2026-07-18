@@ -11,4 +11,5 @@ export * from './ink';
 export * from './notes';
 export * from './cutouts';
 export * from './marks';
+export * from './stamps';
 export * from './uid';

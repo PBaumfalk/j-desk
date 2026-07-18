@@ -42,13 +42,15 @@ export interface DesktopState {
   cutouts?: import('./cutouts').Cutout[];
   /** Tipp-Ex-/Schwärzungs-Flächen auf PDF-Seiten; fehlt in älteren Staaten. */
   marks?: import('./marks').Mark[];
+  /** Kanzlei-Stempel auf PDF-Seiten; fehlt in älteren Staaten. */
+  stamps?: import('./stamps').Stamp[];
 }
 
 export const CARD_W = 180;
 export const CARD_H = 240;
 
 export function emptyState(): DesktopState {
-  return { docs: [], links: [], stacks: [], strokes: [], notes: [], cutouts: [], marks: [] };
+  return { docs: [], links: [], stacks: [], strokes: [], notes: [], cutouts: [], marks: [], stamps: [] };
 }
 
 export function findDoc(s: DesktopState, id: string): Doc | undefined {
@@ -78,6 +80,7 @@ export function isValidState(v: unknown): v is DesktopState {
     (s.notes === undefined || Array.isArray(s.notes)) &&
     (s.cutouts === undefined || Array.isArray(s.cutouts)) &&
     (s.marks === undefined || Array.isArray(s.marks)) &&
+    (s.stamps === undefined || Array.isArray(s.stamps)) &&
     s.docs.every(
       (d) =>
         !!d && typeof d.id === 'string' && typeof d.fileId === 'string' && typeof d.name === 'string',

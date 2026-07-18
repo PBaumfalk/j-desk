@@ -8,6 +8,7 @@ import { addStroke, removeStroke, type Stroke, type StrokeTool } from './ink';
 import { addNote, editNote, moveNote, removeNote, type NoteKind } from './notes';
 import { addCutout, moveCutout, removeCutout } from './cutouts';
 import { addMark, removeMark, type Mark, type MarkKind } from './marks';
+import { addStamp, removeStamp, type Stamp } from './stamps';
 
 export class CommandError extends Error {}
 
@@ -90,6 +91,8 @@ const handlers: Record<string, (s: DesktopState, p: Record<string, unknown>) => 
   removeCutout: (s, p) => wrap(() => removeCutout(s, id(p.id, 'id'))),
   addMark: (s, p) => wrap(() => addMark(s, markPayload(p.mark))),
   removeMark: (s, p) => wrap(() => removeMark(s, id(p.markId, 'markId'))),
+  addStamp: (s, p) => wrap(() => addStamp(s, stampPayload(p.stamp))),
+  removeStamp: (s, p) => wrap(() => removeStamp(s, id(p.stampId, 'stampId'))),
 };
 
 function rect(v: unknown): { x: number; y: number; w: number; h: number } {
@@ -124,6 +127,24 @@ function markPayload(v: unknown): Omit<Mark, 'id'> & { id?: string } {
     page: num(m.page, 'mark.page'),
     rect: rect(m.rect),
     kind: m.kind as MarkKind,
+  };
+}
+
+function stampPayload(v: unknown): Omit<Stamp, 'id'> & { id?: string } {
+  const st = v as Partial<Stamp> | undefined;
+  if (!st || typeof st !== 'object') throw new CommandError('Feld "stamp" fehlt');
+  return {
+    ...(typeof st.id === 'string' && st.id !== '' ? { id: st.id } : {}),
+    docId: id(st.docId, 'stamp.docId'),
+    page: num(st.page, 'stamp.page'),
+    x: num(st.x, 'stamp.x'),
+    y: num(st.y, 'stamp.y'),
+    angle: num(st.angle, 'stamp.angle'),
+    text: text(st.text, 'stamp.text'),
+    color: st.color as Stamp['color'],
+    ...(st.date !== undefined ? { date: text(st.date, 'stamp.date') } : {}),
+    baseW: num(st.baseW, 'stamp.baseW'),
+    baseH: num(st.baseH, 'stamp.baseH'),
   };
 }
 
