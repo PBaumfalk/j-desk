@@ -1,12 +1,19 @@
 <script lang="ts">
   import { ui } from '../ui.svelte';
+
+  // Verhindert, dass ein synthetischer Klick (z. B. von Safari beim Abheben nach Lang-Druck)
+  // sofort den unter dem Finger liegenden Menüeintrag auslöst.
+  let openedAt = 0;
+  $effect(() => {
+    if (ui.menu) openedAt = Date.now();
+  });
 </script>
 
 {#if ui.menu}
   <div class="backdrop" onpointerdown={(e) => { e.stopPropagation(); ui.menu = null; }} oncontextmenu={(e) => { e.preventDefault(); ui.menu = null; }}></div>
   <div class="menu" style:left="{ui.menu.x}px" style:top="{ui.menu.y}px">
     {#each ui.menu.items as item (item.label)}
-      <button onpointerdown={(e) => e.stopPropagation()} onclick={() => { item.action(); ui.menu = null; }}>
+      <button onpointerdown={(e) => e.stopPropagation()} onclick={() => { if (Date.now() - openedAt < 300) return; item.action(); ui.menu = null; }}>
         {item.label}
       </button>
     {/each}

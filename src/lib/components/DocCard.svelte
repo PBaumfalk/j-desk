@@ -21,6 +21,7 @@
   let moved = false;
   let last = { x: 0, y: 0 };
   let pressTimer: ReturnType<typeof setTimeout> | undefined;
+  let activePointer: number | null = null;
 
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
@@ -32,6 +33,8 @@
       return;
     }
     if (ui.linkingFromId === doc.id) { ui.linkingFromId = null; return; }
+    if (activePointer !== null) return;
+    activePointer = e.pointerId;
     dragging = true;
     moved = false;
     last = { x: e.clientX, y: e.clientY };
@@ -43,6 +46,7 @@
     }
   }
   function onPointerMove(e: PointerEvent) {
+    if (e.pointerId !== activePointer) return;
     if (!dragging) return;
     if (pressTimer && Math.hypot(e.clientX - last.x, e.clientY - last.y) > 8) { clearTimeout(pressTimer); pressTimer = undefined; }
     moved = true;
@@ -51,15 +55,17 @@
     last = { x: e.clientX, y: e.clientY };
     desktop.applyLocal((s) => moveDoc(s, doc.id, { x: doc.position.x + dx, y: doc.position.y + dy }));
   }
-  function onPointerUp() {
+  function onPointerUp(e: PointerEvent) {
+    if (e.pointerId !== activePointer) return;
     clearTimeout(pressTimer); pressTimer = undefined;
-    if (!dragging) return;
+    if (!dragging) { activePointer = null; return; }
     dragging = false;
-    if (!moved) return;
+    if (!moved) { activePointer = null; return; }
     const center = { x: doc.position.x + CARD_W / 2, y: doc.position.y + CARD_H / 2 };
     const hit = hitTest(desktop.state, center, doc.id);
     if (hit) void desktop.command('stackDocs', { draggedId: doc.id, targetId: hit.id, id: uid() });
     else void desktop.command('moveDoc', { id: doc.id, position: { x: doc.position.x, y: doc.position.y } });
+    activePointer = null;
   }
 
 </script>

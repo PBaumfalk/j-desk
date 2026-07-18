@@ -84,7 +84,7 @@
 <div class="viewer" bind:this={wrapEl} tabindex="0"
      style:left="{doc.position.x}px" style:top="{doc.position.y}px" style:z-index={doc.zIndex}
      style:width="{size.w}px" style:height="{size.h}px">
-  <div class="head" onpointerdown={onHeaderPointerDown} onpointermove={onHeaderPointerMove} onpointerup={onHeaderPointerUp}>
+  <div class="head" onpointerdown={onHeaderPointerDown} onpointermove={onHeaderPointerMove} onpointerup={onHeaderPointerUp} onpointercancel={onHeaderPointerUp}>
     <span class="title">{doc.name}</span>
     <span class="pager">
       <button onclick={() => turn(-1)} disabled={page <= 1} aria-label="Zurück">‹</button>
@@ -98,7 +98,7 @@
       <PageRenderer api={desktop.api} fileId={doc.fileId} {page} targetWidth={Math.round(size.w - 20)} onpagecount={(n) => (pageCount = n)} />
     {/if}
   </div>
-  <div class="grip" onpointerdown={onResizeDown} onpointermove={onResizeMove} onpointerup={onResizeUp} aria-hidden="true"></div>
+  <div class="grip" onpointerdown={onResizeDown} onpointermove={onResizeMove} onpointerup={onResizeUp} onpointercancel={onResizeUp} aria-hidden="true"></div>
 </div>
 
 <style>

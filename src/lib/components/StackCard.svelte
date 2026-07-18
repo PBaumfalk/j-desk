@@ -22,6 +22,7 @@
   let moved = false;
   let last = { x: 0, y: 0 };
   let pressTimer: ReturnType<typeof setTimeout> | undefined;
+  let activePointer: number | null = null;
 
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
@@ -33,6 +34,8 @@
       return;
     }
     if (ui.linkingFromId === stack.id) { ui.linkingFromId = null; return; }
+    if (activePointer !== null) return;
+    activePointer = e.pointerId;
     dragging = true;
     moved = false;
     last = { x: e.clientX, y: e.clientY };
@@ -44,6 +47,7 @@
     }
   }
   function onPointerMove(e: PointerEvent) {
+    if (e.pointerId !== activePointer) return;
     if (!dragging) return;
     if (pressTimer && Math.hypot(e.clientX - last.x, e.clientY - last.y) > 8) { clearTimeout(pressTimer); pressTimer = undefined; }
     moved = true;
@@ -52,12 +56,14 @@
     last = { x: e.clientX, y: e.clientY };
     desktop.applyLocal((s) => moveStack(s, stack.id, { x: stack.position.x + dx, y: stack.position.y + dy }));
   }
-  function onPointerUp() {
+  function onPointerUp(e: PointerEvent) {
+    if (e.pointerId !== activePointer) return;
     clearTimeout(pressTimer); pressTimer = undefined;
-    if (!dragging) return;
+    if (!dragging) { activePointer = null; return; }
     dragging = false;
     if (moved) void desktop.command('moveStack', { stackId: stack.id, position: { x: stack.position.x, y: stack.position.y } });
     else ui.fannedStackId = fanned ? null : stack.id;
+    activePointer = null;
   }
 
   /** Gefächerter Eintrag: >30 px ziehen = herausnehmen, sonst Klick = öffnen. */
