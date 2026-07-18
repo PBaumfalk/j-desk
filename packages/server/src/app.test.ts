@@ -139,13 +139,19 @@ describe('Dateien (echter HTTP-Server für multipart)', () => {
 
     let res = await upload(pdf, 'a.pdf');
     expect(res.status).toBe(201);
-    const { fileId } = (await res.json()) as { fileId: string };
+    const { fileId, kind } = (await res.json()) as { fileId: string; kind: string };
+    expect(kind).toBe('pdf');
 
     res = await upload(pdf, 'kopie.pdf');
     expect(((await res.json()) as { fileId: string }).fileId).toBe(fileId); // Dedup
 
+    // kein Endungs-/Magic-Zwang mehr: unbekannter Inhalt wird klassifiziert statt abgelehnt
     res = await upload(Buffer.from('kein pdf'), 'a.pdf');
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(201);
+    expect(((await res.json()) as { kind: string }).kind).toBe('other');
+
+    res = await upload(Buffer.alloc(0), 'leer.pdf');
+    expect(res.status).toBe(400); // Größe/Leer-Ablehnung bleibt
 
     res = await fetch(`${base}/files/${fileId}`, { headers: authHeaders });
     expect(res.status).toBe(200);

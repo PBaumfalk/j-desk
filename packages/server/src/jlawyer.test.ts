@@ -225,6 +225,7 @@ describe('App im j-lawyer-Modus', () => {
     const state = r.json().state;
     expect(state.docs).toHaveLength(vorher + 1);
     expect(state.docs.some((d: { name: string }) => d.name === 'Schriftsatz.pdf')).toBe(true);
+    expect(state.docs.find((d: { name: string }) => d.name === 'Schriftsatz.pdf').kind).toBe('pdf');
     // Dokument liegt wirklich in j-lawyer
     expect(fake.documents.get('akte-2')!.some((d) => d.name === 'Schriftsatz.pdf')).toBe(true);
     await app.close();

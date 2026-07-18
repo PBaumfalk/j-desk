@@ -19,7 +19,7 @@ import {
   createDesk, listDesks, renameDesk, deleteDesk, getDeskState, ensureDesk,
   applyDeskCommand, putDeskState, DeskNotFoundError, InvalidStateError,
 } from './deskStore';
-import { storeFile, getFilePath, fileExists, FileError } from './files';
+import { storeFile, getFilePath, fileExists, classify, FileError } from './files';
 import { register, unregister, broadcast } from './broadcast';
 
 export interface AppOptions {
@@ -226,9 +226,10 @@ export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions):
         const userId = (req as FastifyRequest & { userId: string }).userId;
         ensureDesk(db, caseId, userId, caseId);
         const anzahl = getDeskState(db, caseId)!.state.docs.length;
+        const kind = classify(bytes, part.filename);
         const result = applyDeskCommand(db, caseId, {
           type: 'addDoc',
-          payload: { fileId: docId, name: part.filename, position: eingang(anzahl) },
+          payload: { fileId: docId, name: part.filename, position: eingang(anzahl), kind },
         });
         broadcast(caseId, result);
         reply.code(201);
@@ -351,7 +352,7 @@ export async function buildApp({ db, dataDir, webDir, jlawyerUrl }: AppOptions):
       try {
         const meta = storeFile(db, dataDir, bytes, part.filename);
         reply.code(201);
-        return { fileId: meta.id, name: meta.originalName };
+        return { fileId: meta.id, kind: meta.kind };
       } catch (e) {
         if (e instanceof FileError) return reply.code(400).send({ error: e.message });
         throw e;
