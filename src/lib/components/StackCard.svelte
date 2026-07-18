@@ -34,15 +34,18 @@
       return;
     }
     if (ui.linkingFromId === stack.id) { ui.linkingFromId = null; return; }
-    if (activePointer !== null) return;
+    // Nur blocken, solange das div den gemerkten Pointer wirklich noch hält (siehe DocCard):
+    // ein bei gedrücktem Finger ersetztes div verpasst sein pointerup — Guard wäre sonst permanent.
+    if (activePointer !== null && (e.currentTarget as HTMLElement).hasPointerCapture(activePointer)) return;
     activePointer = e.pointerId;
     dragging = true;
     moved = false;
     last = { x: e.clientX, y: e.clientY };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     void desktop.command('bringToFront', { id: stack.id });
+    clearTimeout(pressTimer);
+    pressTimer = undefined;
     if (e.pointerType !== 'mouse') {
-      clearTimeout(pressTimer);
       pressTimer = setTimeout(() => { dragging = false; showStackMenuAt(last.x, last.y, stack); }, 500);
     }
   }

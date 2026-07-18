@@ -33,15 +33,19 @@
       return;
     }
     if (ui.linkingFromId === doc.id) { ui.linkingFromId = null; return; }
-    if (activePointer !== null) return;
+    // Nur blocken, solange das div den gemerkten Pointer wirklich noch hält — wird die Karte
+    // bei gedrücktem Finger durch den Viewer ersetzt ({#if doc.open}), erreicht das pointerup
+    // das alte div nie; ohne diese Prüfung bliebe die Karte dauerhaft unverschiebbar.
+    if (activePointer !== null && (e.currentTarget as HTMLElement).hasPointerCapture(activePointer)) return;
     activePointer = e.pointerId;
     dragging = true;
     moved = false;
     last = { x: e.clientX, y: e.clientY };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     void desktop.command('bringToFront', { id: doc.id });
+    clearTimeout(pressTimer);
+    pressTimer = undefined;
     if (e.pointerType !== 'mouse') {
-      clearTimeout(pressTimer);
       pressTimer = setTimeout(() => { dragging = false; showDocMenuAt(last.x, last.y, doc); }, 500);
     }
   }
