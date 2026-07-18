@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { emptyState } from './model';
 import { addDoc } from './documents';
-import { expandDoc, collapseDoc, setDocPage, resizeDoc, DEFAULT_OPEN_SIZE } from './viewer';
+import { expandDoc, collapseDoc, setDocPage, resizeDoc, extractPage, DEFAULT_OPEN_SIZE } from './viewer';
 
 const pos = { x: 0, y: 0 };
 function withDoc() { return addDoc(emptyState(), 'file-a', 'a.pdf', pos, 'id-a'); }
@@ -70,5 +70,23 @@ describe('resizeDoc', () => {
   });
   it('wirft bei unbekanntem Dokument', () => {
     expect(() => resizeDoc(emptyState(), 'fehlt', { w: 640, h: 480 })).toThrow(/nicht gefunden/);
+  });
+});
+
+describe('extractPage (Enthefterzange)', () => {
+  it('löst eine Seite als eigene Karte heraus, Original bleibt', () => {
+    const s0 = expandDoc(withDoc(), 'id-a');
+    const s = extractPage(s0, 'id-a', 3, { x: 500, y: 100 }, 'seite-3');
+    expect(s.docs).toHaveLength(2);
+    const seite = s.docs.find((d) => d.id === 'seite-3')!;
+    expect(seite).toMatchObject({ fileId: s0.docs[0].fileId, pageOnly: 3, position: { x: 500, y: 100 } });
+    expect(seite.name).toContain('S. 3');
+    expect(s.docs[0].pageOnly).toBeUndefined();
+    expect(seite.zIndex).toBeGreaterThan(s.docs[0].zIndex);
+  });
+
+  it('wirft bei unbekanntem Dokument und ungültiger Seite', () => {
+    expect(() => extractPage(emptyState(), 'nix', 1, { x: 0, y: 0 })).toThrow(/nicht gefunden/);
+    expect(() => extractPage(withDoc(), 'id-a', 0, { x: 0, y: 0 })).toThrow(/Ungültige Seite/);
   });
 });

@@ -14,16 +14,18 @@ function remember(fileId: string, bytes: Uint8Array): string {
   return url;
 }
 
-/** Object-URL der Miniatur der ersten Seite (PNG-Cache pro fileId); null, wenn nicht renderbar. */
+/** Object-URL der Miniatur (erste bzw. herausgelöste Seite; PNG-Cache); null, wenn nicht renderbar. */
 export async function getThumbnail(api: ApiClient, doc: Doc): Promise<string | null> {
-  const cached = urls.get(doc.fileId);
+  const seite = doc.pageOnly ?? 1;
+  const key = seite === 1 ? doc.fileId : `${doc.fileId}:${seite}`;
+  const cached = urls.get(key);
   if (cached) return cached;
   try {
-    const stored = await idbGet(THUMB_STORE, doc.fileId).catch(() => null);
-    if (stored) return remember(doc.fileId, stored);
+    const stored = await idbGet(THUMB_STORE, key).catch(() => null);
+    if (stored) return remember(key, stored);
     const data = await api.fetchFile(doc.fileId);
     const pdf = await pdfjs.getDocument({ data }).promise;
-    const page = await pdf.getPage(1);
+    const page = await pdf.getPage(Math.min(seite, pdf.numPages));
     const scale = 360 / page.getViewport({ scale: 1 }).width;
     const viewport = page.getViewport({ scale });
     const canvas = document.createElement('canvas');
@@ -34,8 +36,8 @@ export async function getThumbnail(api: ApiClient, doc: Doc): Promise<string | n
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob fehlgeschlagen'))), 'image/png'),
     );
     const bytes = new Uint8Array(await blob.arrayBuffer());
-    await idbPut(THUMB_STORE, doc.fileId, bytes).catch(() => {});
-    return remember(doc.fileId, bytes);
+    await idbPut(THUMB_STORE, key, bytes).catch(() => {});
+    return remember(key, bytes);
   } catch {
     return null; // defekt oder (noch) nicht ladbar → generisches Symbol
   }

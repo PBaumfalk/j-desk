@@ -10,7 +10,8 @@
 
   let pageCount = $state<number | null>(null);
   let wrapEl = $state<HTMLDivElement | null>(null);
-  const page = $derived(doc.page ?? 1);
+  const seitenfix = $derived(doc.pageOnly !== undefined); // herausgelöste Einzelseite: kein Blättern
+  const page = $derived(doc.pageOnly ?? doc.page ?? 1);
   const size = $derived(doc.openSize ?? DEFAULT_OPEN_SIZE);
   const pageWidth = $derived(Math.round(size.w - 20));
 
@@ -63,6 +64,7 @@
   });
 
   function turn(delta: number) {
+    if (seitenfix) return;
     const next = page + delta;
     if (next < 1 || (pageCount !== null && next > pageCount)) return;
     desktop.applyLocal((s) => setDocPage(s, doc.id, next));
@@ -117,15 +119,23 @@
   <div class="head" role="toolbar" tabindex="-1" aria-label="Dokumentleiste" onpointerdown={onHeaderPointerDown} onpointermove={onHeaderPointerMove} onpointerup={onHeaderPointerUp} onpointercancel={onHeaderPointerUp}>
     <span class="title">{doc.name}</span>
     <span class="tools">
+      {#if !seitenfix}
+        <button onclick={() => void desktop.command('extractPage', { docId: doc.id, page, position: { x: doc.position.x + size.w + 24, y: doc.position.y } })}
+                aria-label="Seite herauslösen" title="Seite herauslösen (Enthefterzange)">⧉</button>
+      {/if}
       <button class:on={inkTool === 'pen'} onclick={() => toggleTool('pen')} aria-pressed={inkTool === 'pen'} aria-label="Stift" title="Stift">✎</button>
       <button class:on={inkTool === 'marker'} onclick={() => toggleTool('marker')} aria-pressed={inkTool === 'marker'} aria-label="Textmarker" title="Textmarker"><span class="marker-chip"></span></button>
       <button class:on={inkTool === 'eraser'} onclick={() => toggleTool('eraser')} aria-pressed={inkTool === 'eraser'} aria-label="Radierer" title="Radierer">⌫</button>
     </span>
-    <span class="pager">
-      <button onclick={() => turn(-1)} disabled={page <= 1} aria-label="Zurück">‹</button>
-      <span class="pos">{page}{#if pageCount} / {pageCount}{/if}</span>
-      <button onclick={() => turn(1)} disabled={pageCount !== null && page >= pageCount} aria-label="Weiter">›</button>
-    </span>
+    {#if seitenfix}
+      <span class="pos">S. {page}</span>
+    {:else}
+      <span class="pager">
+        <button onclick={() => turn(-1)} disabled={page <= 1} aria-label="Zurück">‹</button>
+        <span class="pos">{page}{#if pageCount} / {pageCount}{/if}</span>
+        <button onclick={() => turn(1)} disabled={pageCount !== null && page >= pageCount} aria-label="Weiter">›</button>
+      </span>
+    {/if}
     <button class="close" onclick={() => void desktop.command('collapseDoc', { id: doc.id })} aria-label="Schließen">✕</button>
   </div>
   <div class="body" role="presentation" onwheel={(e) => { if (!e.ctrlKey && !e.metaKey) e.stopPropagation(); }} onpointerdown={onBodyPointerDown} onpointerup={onBodyPointerUp}>

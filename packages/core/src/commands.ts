@@ -3,7 +3,7 @@ import { addDoc, moveDoc, bringToFront } from './documents';
 import { addLink, setLinkNote, removeLink } from './links';
 import { stackDocs, removeFromStack, dissolveStack, renameStack, moveStack } from './stacks';
 import { removeDoc, removeStack } from './removal';
-import { expandDoc, collapseDoc, setDocPage, resizeDoc } from './viewer';
+import { expandDoc, collapseDoc, setDocPage, resizeDoc, extractPage } from './viewer';
 import { addStroke, removeStroke, type Stroke, type StrokeTool } from './ink';
 import { addNote, editNote, moveNote, removeNote, type NoteKind } from './notes';
 
@@ -76,6 +76,7 @@ const handlers: Record<string, (s: DesktopState, p: Record<string, unknown>) => 
   collapseDoc: (s, p) => wrap(() => collapseDoc(s, id(p.id, 'id'))),
   setDocPage: (s, p) => wrap(() => setDocPage(s, id(p.id, 'id'), num(p.page, 'page'))),
   resizeDoc: (s, p) => wrap(() => resizeDoc(s, id(p.id, 'id'), size(p.size, 'size'))),
+  extractPage: (s, p) => wrap(() => extractPage(s, id(p.docId, 'docId'), num(p.page, 'page'), vec(p.position, 'position'), optId(p.id))),
   addStroke: (s, p) => wrap(() => addStroke(s, strokePayload(p.stroke))),
   removeStroke: (s, p) => wrap(() => removeStroke(s, id(p.strokeId, 'strokeId'))),
   addNote: (s, p) => wrap(() => addNote(s, p.kind as NoteKind, text(p.text, 'text'), vec(p.position, 'position'), optId(p.id))),

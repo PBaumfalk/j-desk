@@ -12,6 +12,7 @@ export interface Doc {
   open?: boolean;      // aufgeschlagen (große Karte) statt Miniatur
   openSize?: Size;     // Größe der großen Karte (Weltkoordinaten)
   page?: number;       // aktuell sichtbare Seite, 1-basiert
+  pageOnly?: number;   // herausgelöste Einzelseite (Enthefterzange): Karte zeigt nur diese Seite
 }
 
 export interface Link {

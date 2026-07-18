@@ -1,4 +1,6 @@
 import type { DesktopState, Size } from './model';
+import { rotationFor } from './documents';
+import { uid } from './uid';
 
 export const DEFAULT_OPEN_SIZE: Size = { w: 560, h: 720 };
 
@@ -30,4 +32,31 @@ export function setDocPage(s: DesktopState, id: string, page: number): DesktopSt
 export function resizeDoc(s: DesktopState, id: string, size: Size): DesktopState {
   if (!(size.w > 0) || !(size.h > 0)) throw new Error(`Ungültige Größe: ${size.w}×${size.h}`);
   return mapDoc(s, id, (d) => ({ ...d, openSize: { w: size.w, h: size.h } }));
+}
+
+/**
+ * Enthefterzange: löst eine Seite als eigene Karte heraus — nicht destruktiv,
+ * das Originaldokument bleibt unverändert liegen.
+ */
+export function extractPage(
+  s: DesktopState,
+  docId: string,
+  page: number,
+  position: { x: number; y: number },
+  id?: string,
+): DesktopState {
+  const quelle = s.docs.find((d) => d.id === docId);
+  if (!quelle) throw new Error(`Dokument "${docId}" nicht gefunden`);
+  if (!Number.isInteger(page) || page < 1) throw new Error(`Ungültige Seite: ${page}`);
+  const neueId = id ?? uid();
+  const doc = {
+    id: neueId,
+    fileId: quelle.fileId,
+    name: `${quelle.name} – S. ${page}`,
+    position,
+    rotation: rotationFor(neueId),
+    zIndex: Math.max(0, ...s.docs.map((d) => d.zIndex), ...s.stacks.map((st) => st.zIndex)) + 1,
+    pageOnly: page,
+  };
+  return { ...s, docs: [...s.docs, doc] };
 }
