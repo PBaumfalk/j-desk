@@ -16,7 +16,9 @@ export class PageBitmapCache {
     while (this.map.size > this.max) {
       const oldest = this.map.keys().next().value as string | undefined;
       if (oldest === undefined) break;
+      const victim = this.map.get(oldest);
       this.map.delete(oldest);
+      victim?.close?.(); // Bitmap freigeben; defensiv, falls .close fehlt (z. B. in Tests)
     }
   }
 }

@@ -31,20 +31,27 @@
       let bmp = cache.get(key);
       if (!bmp) {
         const data = await bytesFor(fileId);
-        const pdf = await pdfjs.getDocument({ data }).promise;
-        if (token !== renderToken) return;
-        onpagecount?.(pdf.numPages);
-        const p = Math.min(Math.max(1, page), pdf.numPages); // clampen auf 1..Seitenzahl
-        const pg = await pdf.getPage(p);
-        const scale = (targetWidth * (window.devicePixelRatio || 1)) / pg.getViewport({ scale: 1 }).width;
-        const viewport = pg.getViewport({ scale });
-        const off = document.createElement('canvas');
-        off.width = Math.ceil(viewport.width);
-        off.height = Math.ceil(viewport.height);
-        await pg.render({ canvas: off, canvasContext: off.getContext('2d')!, viewport }).promise;
-        if (token !== renderToken) return;
-        bmp = await createImageBitmap(off);
-        cache.set(key, bmp);
+        if (token !== renderToken) return; // überholter Render: PDF gar nicht erst parsen
+        let pdf: pdfjs.PDFDocumentProxy | undefined;
+        try {
+          pdf = await pdfjs.getDocument({ data }).promise;
+          if (token !== renderToken) return;
+          onpagecount?.(pdf.numPages);
+          const p = Math.min(Math.max(1, page), pdf.numPages); // clampen auf 1..Seitenzahl
+          const pg = await pdf.getPage(p);
+          const scale = (targetWidth * (window.devicePixelRatio || 1)) / pg.getViewport({ scale: 1 }).width;
+          const viewport = pg.getViewport({ scale });
+          const off = document.createElement('canvas');
+          off.width = Math.ceil(viewport.width);
+          off.height = Math.ceil(viewport.height);
+          await pg.render({ canvas: off, canvasContext: off.getContext('2d')!, viewport }).promise;
+          if (token !== renderToken) return;
+          bmp = await createImageBitmap(off);
+          cache.set(key, bmp);
+        } finally {
+          // Dokument stets freigeben (auch im Fehler-/Abbruchfall), sonst Worker-Leak bei vielen Wechseln
+          await pdf?.destroy?.();
+        }
       }
       if (token !== renderToken || !canvas) return;
       canvas.width = bmp.width;
@@ -63,16 +70,15 @@
 </script>
 
 <div class="page" style:width="{targetWidth}px">
+  <canvas bind:this={canvas}></canvas>
   {#if failed}
     <div class="ph">Seite kann nicht angezeigt werden</div>
-  {:else}
-    <canvas bind:this={canvas}></canvas>
   {/if}
 </div>
 
 <style>
   .page { position: relative; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .2); }
   canvas { display: block; width: 100%; height: auto; }
-  .ph { display: flex; align-items: center; justify-content: center; min-height: 200px;
-        color: #a33; font-size: 13px; padding: 20px; text-align: center; }
+  .ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        min-height: 200px; background: #fff; color: #a33; font-size: 13px; padding: 20px; text-align: center; }
 </style>
