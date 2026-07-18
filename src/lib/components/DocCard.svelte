@@ -1,12 +1,13 @@
 <script lang="ts">
   import {
-    CARD_W, CARD_H, moveDoc, hitTest, stampsFor, flagsFor, type Doc, type Viewport,
+    CARD_W, CARD_H, moveDoc, hitTest, stampsFor, flagsFor, clipOf, type Doc, type Viewport,
   } from '@digital-desktop/core';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
-  import { ui } from '../ui.svelte';
+  import { ui, showToast } from '../ui.svelte';
   import { showDocMenu, showDocMenuAt } from '../menus';
   import { getThumbnail } from '../thumbnails';
+  import { moveGroupLocal, commitGroupMove, groupOf } from '../groupDrag';
   import DocViewer from './DocViewer.svelte';
 
   let { doc, vp }: { doc: Doc; vp: Viewport } = $props();
@@ -18,6 +19,8 @@
   });
   const kartenStempel = $derived(stampsFor(desktop.state, doc.id, doc.pageOnly ?? 1));
   const kartenFahnen = $derived(flagsFor(desktop.state, doc.id));
+  const taped = $derived(doc.taped === true);
+  const geklammert = $derived(clipOf(desktop.state, doc.id) !== undefined);
 
   let dragging = false;
   let moved = false;
@@ -36,6 +39,14 @@
       return;
     }
     if (ui.linkingFromId === doc.id) { ui.linkingFromId = null; return; }
+    if (ui.clippingFromId && ui.clippingFromId !== doc.id) {
+      const from = ui.clippingFromId;
+      ui.clippingFromId = null;
+      desktop.command('addClip', { aId: from, bId: doc.id, id: uid() }).catch((e) => showToast(e instanceof Error ? e.message : 'Anklammern fehlgeschlagen'));
+      return;
+    }
+    if (ui.clippingFromId === doc.id) { ui.clippingFromId = null; return; }
+    if (taped) return; // festgeklebt: kein Drag — Menü/Doppelklick bleiben möglich
     // Nur blocken, solange das div den gemerkten Pointer wirklich noch hält — wird die Karte
     // bei gedrücktem Finger durch den Viewer ersetzt ({#if doc.open}), erreicht das pointerup
     // das alte div nie; ohne diese Prüfung bliebe die Karte dauerhaft unverschiebbar.
@@ -66,7 +77,8 @@
     const dx = (e.clientX - last.x) / vp.scale;
     const dy = (e.clientY - last.y) / vp.scale;
     last = { x: e.clientX, y: e.clientY };
-    desktop.applyLocal((s) => moveDoc(s, doc.id, { x: doc.position.x + dx, y: doc.position.y + dy }));
+    if (geklammert) moveGroupLocal(groupOf(doc.id), dx, dy);
+    else desktop.applyLocal((s) => moveDoc(s, doc.id, { x: doc.position.x + dx, y: doc.position.y + dy }));
   }
   function onPointerUp(e: PointerEvent) {
     if (e.pointerId !== activePointer) return;
@@ -74,6 +86,7 @@
     if (!dragging) { activePointer = null; return; }
     dragging = false;
     if (!moved) { activePointer = null; return; }
+    if (geklammert) { commitGroupMove(groupOf(doc.id)); activePointer = null; return; }
     const center = { x: doc.position.x + CARD_W / 2, y: doc.position.y + CARD_H / 2 };
     const hit = hitTest(desktop.state, center, doc.id);
     if (hit) void desktop.command('stackDocs', { draggedId: doc.id, targetId: hit.id, id: uid() });
@@ -93,6 +106,8 @@
        onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp} onpointercancel={onPointerUp}
        ondblclick={() => void desktop.command('expandDoc', { id: doc.id })}
        oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showDocMenu(e, doc); }}>
+    {#if taped}<div class="tape" aria-hidden="true"></div>{/if}
+    {#if geklammert}<div class="klammer" aria-hidden="true">🖇</div>{/if}
     <div class="body">
       {#if thumb}
         <img src={thumb} alt="" draggable="false" />
@@ -129,4 +144,9 @@
           background: rgba(255, 255, 255, .9); border-top: 1px solid #eee; border-radius: 0 0 4px 4px; }
   .mini-fahne { position: absolute; right: -8px; width: 16px; height: 10px; border-radius: 0 3px 3px 0;
                 box-shadow: 1px 1px 2px rgba(0, 0, 0, .3); pointer-events: none; }
+  .tape { position: absolute; top: -8px; left: 24px; width: 64px; height: 20px; transform: rotate(-8deg);
+          background: rgba(240, 235, 210, .65); border: 1px solid rgba(180, 170, 140, .5); border-radius: 2px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, .15); pointer-events: none; }
+  .klammer { position: absolute; top: -10px; right: 10px; font-size: 18px; pointer-events: none;
+             filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .3)); }
 </style>

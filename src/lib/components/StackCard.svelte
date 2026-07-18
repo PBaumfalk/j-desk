@@ -1,15 +1,18 @@
 <script lang="ts">
   import {
-    CARD_W, CARD_H, findDoc, moveStack, screenToWorld, type Stack, type Viewport,
+    CARD_W, CARD_H, findDoc, moveStack, clipOf, screenToWorld, type Stack, type Viewport,
   } from '@digital-desktop/core';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
-  import { ui } from '../ui.svelte';
+  import { ui, showToast } from '../ui.svelte';
   import { showDocMenu, showStackMenu, showStackMenuAt } from '../menus';
   import { getThumbnail } from '../thumbnails';
+  import { moveGroupLocal, commitGroupMove, groupOf } from '../groupDrag';
 
   let { stack, vp }: { stack: Stack; vp: Viewport } = $props();
   const fanned = $derived(ui.fannedStackId === stack.id);
+  const taped = $derived(stack.taped === true);
+  const geklammert = $derived(clipOf(desktop.state, stack.id) !== undefined);
 
   const topDoc = $derived(findDoc(desktop.state, stack.docIds[stack.docIds.length - 1]));
   let thumb = $state<string | null>(null);
@@ -35,6 +38,14 @@
       return;
     }
     if (ui.linkingFromId === stack.id) { ui.linkingFromId = null; return; }
+    if (ui.clippingFromId && ui.clippingFromId !== stack.id) {
+      const from = ui.clippingFromId;
+      ui.clippingFromId = null;
+      desktop.command('addClip', { aId: from, bId: stack.id, id: uid() }).catch((e) => showToast(e instanceof Error ? e.message : 'Anklammern fehlgeschlagen'));
+      return;
+    }
+    if (ui.clippingFromId === stack.id) { ui.clippingFromId = null; return; }
+    if (taped) return; // festgeklebt: kein Drag — Menü/Auffächern bleiben möglich
     // Nur blocken, solange das div den gemerkten Pointer wirklich noch hält (siehe DocCard):
     // ein bei gedrücktem Finger ersetztes div verpasst sein pointerup — Guard wäre sonst permanent.
     if (activePointer !== null && (e.currentTarget as HTMLElement).hasPointerCapture(activePointer)) return;
@@ -64,15 +75,20 @@
     const dx = (e.clientX - last.x) / vp.scale;
     const dy = (e.clientY - last.y) / vp.scale;
     last = { x: e.clientX, y: e.clientY };
-    desktop.applyLocal((s) => moveStack(s, stack.id, { x: stack.position.x + dx, y: stack.position.y + dy }));
+    if (geklammert) moveGroupLocal(groupOf(stack.id), dx, dy);
+    else desktop.applyLocal((s) => moveStack(s, stack.id, { x: stack.position.x + dx, y: stack.position.y + dy }));
   }
   function onPointerUp(e: PointerEvent) {
     if (e.pointerId !== activePointer) return;
     clearTimeout(pressTimer); pressTimer = undefined;
     if (!dragging) { activePointer = null; return; }
     dragging = false;
-    if (moved) void desktop.command('moveStack', { stackId: stack.id, position: { x: stack.position.x, y: stack.position.y } });
-    else ui.fannedStackId = fanned ? null : stack.id;
+    if (moved) {
+      if (geklammert) commitGroupMove(groupOf(stack.id));
+      else void desktop.command('moveStack', { stackId: stack.id, position: { x: stack.position.x, y: stack.position.y } });
+    } else {
+      ui.fannedStackId = fanned ? null : stack.id;
+    }
     activePointer = null;
   }
 
@@ -120,6 +136,8 @@
      style:width="{CARD_W + 24}px" style:height="{CARD_H + 24}px"
      onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp} onpointercancel={onPointerUp}
      oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showStackMenu(e, stack); }}>
+  {#if taped}<div class="tape" aria-hidden="true"></div>{/if}
+  {#if geklammert}<div class="klammer" aria-hidden="true">🖇</div>{/if}
   <div class="sheet s2"></div>
   <div class="sheet s1"></div>
   <div class="sheet top">
@@ -169,6 +187,11 @@
   .name { position: absolute; left: 0; bottom: -26px; width: 100%; text-align: center; font-size: 12px; }
   .name.label { color: #fdf9ec; text-shadow: 0 1px 3px rgba(0, 0, 0, .7); }
   input.name { box-sizing: border-box; border-radius: 6px; border: none; padding: 3px 6px; }
+  .tape { position: absolute; top: -8px; left: 24px; width: 64px; height: 20px; transform: rotate(-8deg);
+          background: rgba(240, 235, 210, .65); border: 1px solid rgba(180, 170, 140, .5); border-radius: 2px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, .15); pointer-events: none; }
+  .klammer { position: absolute; top: -10px; right: 10px; font-size: 18px; pointer-events: none;
+             filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .3)); z-index: 1; }
   .fan { position: absolute; left: 0; top: 100%; margin-top: 34px; display: flex; flex-direction: column;
          gap: 4px; width: 220px; background: rgba(255, 255, 255, .95); border-radius: 10px; padding: 6px;
          box-shadow: 0 8px 30px rgba(0, 0, 0, .35); }

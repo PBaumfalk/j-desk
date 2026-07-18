@@ -170,6 +170,7 @@
       if (e.code === 'Space') spaceDown = true;
       if (e.code === 'Escape') {
         ui.linkingFromId = null;
+        ui.clippingFromId = null;
         ui.menu = null;
       }
       if (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
@@ -250,6 +251,9 @@
   </div>
   {#if ui.linkingFromId}
     <div class="hint">Verknüpfen: Ziel anklicken (Esc bricht ab)</div>
+  {/if}
+  {#if ui.clippingFromId}
+    <div class="hint">Anklammern: Ziel anklicken (Esc bricht ab)</div>
   {/if}
   {#if desktop.status === 'offline' || desktop.status === 'connecting'}
     <div class="banner">

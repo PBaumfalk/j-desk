@@ -5,6 +5,8 @@ export interface MenuItem {
 
 export const ui = $state({
   linkingFromId: null as string | null,
+  /** Büroklammer: „Anklammern an…" wartet auf das Zielobjekt (Muster linkingFromId). */
+  clippingFromId: null as string | null,
   editingStackId: null as string | null,
   editingNoteId: null as string | null,
   fannedStackId: null as string | null,

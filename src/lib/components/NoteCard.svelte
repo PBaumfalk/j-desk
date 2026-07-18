@@ -1,11 +1,12 @@
 <script lang="ts">
   import {
-    NOTE_W, NOTE_H, moveNote, rotationFor, type Note, type Viewport,
+    NOTE_W, NOTE_H, moveNote, rotationFor, clipOf, type Note, type Viewport,
   } from '@digital-desktop/core';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
-  import { ui } from '../ui.svelte';
+  import { ui, showToast } from '../ui.svelte';
   import { showNoteMenu, showNoteMenuAt, NOTE_KIND_LABELS } from '../menus';
+  import { moveGroupLocal, commitGroupMove, groupOf } from '../groupDrag';
 
   let { note, vp }: { note: Note; vp: Viewport } = $props();
 
@@ -17,6 +18,8 @@
   let textEl = $state<HTMLTextAreaElement | null>(null);
 
   const bearbeiten = $derived(ui.editingNoteId === note.id);
+  const taped = $derived(note.taped === true);
+  const geklammert = $derived(clipOf(desktop.state, note.id) !== undefined);
   $effect(() => {
     if (bearbeiten) textEl?.focus();
   });
@@ -33,6 +36,14 @@
       return;
     }
     if (ui.linkingFromId === note.id) { ui.linkingFromId = null; return; }
+    if (ui.clippingFromId && ui.clippingFromId !== note.id) {
+      const from = ui.clippingFromId;
+      ui.clippingFromId = null;
+      desktop.command('addClip', { aId: from, bId: note.id, id: uid() }).catch((e) => showToast(e instanceof Error ? e.message : 'Anklammern fehlgeschlagen'));
+      return;
+    }
+    if (ui.clippingFromId === note.id) { ui.clippingFromId = null; return; }
+    if (taped) return; // festgeklebt: kein Drag — Menü/Bearbeiten bleiben möglich
     if (activePointer !== null && (e.currentTarget as HTMLElement).hasPointerCapture(activePointer)) return;
     activePointer = e.pointerId;
     dragging = true;
@@ -57,14 +68,18 @@
     const dx = (e.clientX - last.x) / vp.scale;
     const dy = (e.clientY - last.y) / vp.scale;
     last = { x: e.clientX, y: e.clientY };
-    desktop.applyLocal((s) => moveNote(s, note.id, { x: note.position.x + dx, y: note.position.y + dy }));
+    if (geklammert) moveGroupLocal(groupOf(note.id), dx, dy);
+    else desktop.applyLocal((s) => moveNote(s, note.id, { x: note.position.x + dx, y: note.position.y + dy }));
   }
   function onPointerUp(e: PointerEvent) {
     if (e.pointerId !== activePointer) return;
     clearTimeout(pressTimer); pressTimer = undefined;
     if (!dragging) { activePointer = null; return; }
     dragging = false;
-    if (moved) void desktop.command('moveNote', { id: note.id, position: { x: note.position.x, y: note.position.y } });
+    if (moved) {
+      if (geklammert) commitGroupMove(groupOf(note.id));
+      else void desktop.command('moveNote', { id: note.id, position: { x: note.position.x, y: note.position.y } });
+    }
     activePointer = null;
   }
 
@@ -82,6 +97,8 @@
      onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp} onpointercancel={onPointerUp}
      ondblclick={() => (ui.editingNoteId = note.id)}
      oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showNoteMenu(e, note); }}>
+  {#if taped}<div class="tape" aria-hidden="true"></div>{/if}
+  {#if geklammert}<div class="klammer" aria-hidden="true">🖇</div>{/if}
   {#if note.kind !== 'notiz'}
     <div class="badge">{NOTE_KIND_LABELS[note.kind]}</div>
   {/if}
@@ -109,4 +126,9 @@
           overflow-wrap: break-word; color: #2a2a20; }
   textarea { flex: 1; border: none; background: transparent; resize: none; font: inherit;
              font-size: 13px; line-height: 1.35; color: #2a2a20; outline: 2px solid rgba(44, 90, 160, .5); }
+  .tape { position: absolute; top: -8px; left: 24px; width: 64px; height: 20px; transform: rotate(-8deg);
+          background: rgba(240, 235, 210, .65); border: 1px solid rgba(180, 170, 140, .5); border-radius: 2px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, .15); pointer-events: none; }
+  .klammer { position: absolute; top: -10px; right: 10px; font-size: 18px; pointer-events: none;
+             filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .3)); }
 </style>

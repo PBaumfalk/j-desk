@@ -142,6 +142,7 @@
   let headLast = { x: 0, y: 0 };
   function onHeaderPointerDown(e: PointerEvent) {
     if ((e.target as HTMLElement).closest('button')) return; // Klicks auf ‹ › ✕ nicht als Drag verschlucken
+    if (doc.taped) return;
     if (e.button !== 0) return;
     e.stopPropagation();
     dragging = true; moved = false;
