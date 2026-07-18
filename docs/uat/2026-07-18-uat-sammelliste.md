@@ -2,9 +2,9 @@
 
 Konsolidiert alle „pending user verification"-Punkte aus TP-A (Browser-Port), Inline-Viewer,
 Schreibtisch-Navigation/Touch (inkl. der drei Nachzügler-Fixes), der Backlog-Runde vom
-2026-07-18 (A5), TP3 (Benutzerverwaltung & Teilen) und TP4 (MCP-Server mit anymize).
-**67 Punkte in drei Blöcken** — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
-kann in einer Sitzung durchgetestet werden.
+2026-07-18 (A5), dem neuen Pencil-Zeichnen (A6), TP3 (Benutzerverwaltung & Teilen) und
+TP4 (MCP-Server mit anymize). **76 Punkte in drei Blöcken** — jeder Block hat ein eigenes
+Setup, innerhalb eines Blocks kann in einer Sitzung durchgetestet werden.
 
 **Empfohlene Reihenfolge:** Block A (aktueller Branch) → Block B → Block C (Branch von B enthält TP3).
 
@@ -14,7 +14,7 @@ kann in einer Sitzung durchgetestet werden.
 
 ---
 
-## Block A — Browser-App (Branch `feature/inline-viewer`, 44 Punkte)
+## Block A — Browser-App (Branch `feature/inline-viewer`, 53 Punkte)
 
 **Setup:**
 
@@ -90,6 +90,18 @@ iPad:
 - [ ] A5.8 **iPad:** Ein Finger auf dem Filz, zweiter Finger auf einer Karte → Pinch zoomt den Tisch (die Karte wird nicht verschoben).
 - [ ] A5.9 **iPad:** Lang-Druck mit leicht zitterndem Finger → Karte bleibt exakt liegen, Menü erscheint leicht versetzt; auch nach **langem** Halten löst das Loslassen keinen Menüeintrag aus.
 - [ ] A5.10 Server währenddessen stoppen: Aktionen melden „Offline — Aktion nicht möglich"; direkt nach Server-Neustart kurz „Verbindung wird aufgebaut".
+
+### A6 — Pencil-Zeichnen: Stift & Marker auf PDF-Seiten (NEU, automatisiert in Chrome vorgeprüft)
+
+- [ ] A6.1 Karte aufschlagen, „✎" (Stift) aktivieren, mit Maus/Finger zeichnen → dunkelblauer Strich liegt auf der Seite.
+- [ ] A6.2 Marker-Knopf (gelbes Quadrat) → breiter halbtransparenter gelber Strich, Text darunter bleibt lesbar.
+- [ ] A6.3 Blättern (‹/›) → Striche bleiben bei ihrer Seite; andere Seiten sind sauber.
+- [ ] A6.4 Viewer am Anfasser größer/kleiner ziehen → Striche skalieren exakt mit der Seite.
+- [ ] A6.5 „⌫" (Radierer): über einen Strich tippen/streichen → genau dieser Strich verschwindet.
+- [ ] A6.6 Werkzeug abschalten (erneuter Klick) → normales Verhalten: Wischen blättert, Kopf zieht den Viewer.
+- [ ] A6.7 Neuladen → Striche noch da; zweites Fenster (gleiches Konto) sieht neue Striche live.
+- [ ] A6.8 **iPad, Apple Pencil:** Zeichnen ist flüssig und ohne spürbare Verzögerung; Handballen löst nichts aus, solange kein Werkzeug aktiv ist.
+- [ ] A6.9 **Produktentscheidungen bestätigen:** feste Farben (blau/gelb) ohne Farbwahl ok? Strichweiser Radierer ok? Werkzeug nur explizit aktivieren (kein Auto-Pencil-Modus) ok?
 
 ---
 
