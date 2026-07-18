@@ -5,6 +5,7 @@ import { stackDocs, removeFromStack, dissolveStack, renameStack, moveStack } fro
 import { removeDoc, removeStack } from './removal';
 import { expandDoc, collapseDoc, setDocPage, resizeDoc } from './viewer';
 import { addStroke, removeStroke, type Stroke, type StrokeTool } from './ink';
+import { addNote, editNote, moveNote, removeNote, type NoteKind } from './notes';
 
 export class CommandError extends Error {}
 
@@ -77,6 +78,10 @@ const handlers: Record<string, (s: DesktopState, p: Record<string, unknown>) => 
   resizeDoc: (s, p) => wrap(() => resizeDoc(s, id(p.id, 'id'), size(p.size, 'size'))),
   addStroke: (s, p) => wrap(() => addStroke(s, strokePayload(p.stroke))),
   removeStroke: (s, p) => wrap(() => removeStroke(s, id(p.strokeId, 'strokeId'))),
+  addNote: (s, p) => wrap(() => addNote(s, p.kind as NoteKind, text(p.text, 'text'), vec(p.position, 'position'), optId(p.id))),
+  editNote: (s, p) => wrap(() => editNote(s, id(p.id, 'id'), text(p.text, 'text'))),
+  moveNote: (s, p) => wrap(() => moveNote(s, id(p.id, 'id'), vec(p.position, 'position'))),
+  removeNote: (s, p) => wrap(() => removeNote(s, id(p.id, 'id'))),
 };
 
 function strokePayload(v: unknown): Omit<Stroke, 'id'> & { id?: string } {

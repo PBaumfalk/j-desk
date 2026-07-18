@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    CARD_W, CARD_H, docBox, findDoc, findStack, stackOf, setLinkNote, type Vec2,
+    CARD_W, CARD_H, docBox, findDoc, findNote, findStack, noteBox, stackOf, setLinkNote, type Vec2,
   } from '@digital-desktop/core';
   import { debounce } from '../debounce';
   import { desktop } from '../store.svelte';
@@ -18,6 +18,11 @@
     const s = desktop.state;
     const stack = findStack(s, id) ?? stackOf(s, id);
     if (stack) return { x: stack.position.x + (CARD_W + 24) / 2, y: stack.position.y + (CARD_H + 24) / 2 };
+    const n = findNote(s, id);
+    if (n) {
+      const nb = noteBox(n);
+      return { x: nb.x + nb.w / 2, y: nb.y + nb.h / 2 };
+    }
     const d = findDoc(s, id);
     if (!d) return null;
     const b = docBox(d);

@@ -1,7 +1,15 @@
-import { collectLinkedDocs, type Doc, type Stack } from '@digital-desktop/core';
+import { collectLinkedDocs, type Doc, type Note, type NoteKind, type Stack } from '@digital-desktop/core';
 import { desktop } from './store.svelte';
 import { ui, showToast } from './ui.svelte';
 import { getFileUrl } from './fileCache';
+
+export const NOTE_KIND_LABELS: Record<NoteKind, string> = {
+  notiz: 'Notiz',
+  frage: 'Frage',
+  these: 'These',
+  angriffspunkt: 'Angriffspunkt',
+  risiko: 'Risiko',
+};
 
 export async function openDoc(doc: Doc): Promise<void> {
   if (!desktop.api) return;
@@ -68,4 +76,19 @@ export function showStackMenuAt(x: number, y: number, stack: Stack): void {
 
 export function showStackMenu(e: MouseEvent, stack: Stack): void {
   showStackMenuAt(e.clientX, e.clientY, stack);
+}
+
+export function showNoteMenuAt(x: number, y: number, note: Note): void {
+  ui.menu = {
+    x, y,
+    items: [
+      { label: 'Bearbeiten', action: () => { ui.editingNoteId = note.id; } },
+      { label: 'Verknüpfen…', action: () => { ui.linkingFromId = note.id; } },
+      { label: 'Vom Schreibtisch entfernen', action: () => void desktop.command('removeNote', { id: note.id }) },
+    ],
+  };
+}
+
+export function showNoteMenu(e: MouseEvent, note: Note): void {
+  showNoteMenuAt(e.clientX, e.clientY, note);
 }

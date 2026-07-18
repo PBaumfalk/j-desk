@@ -2,7 +2,12 @@ import { uid } from './uid';
 import type { DesktopState, Vec2 } from './model';
 
 function maxZ(s: DesktopState): number {
-  return Math.max(0, ...s.docs.map((d) => d.zIndex), ...s.stacks.map((st) => st.zIndex));
+  return Math.max(
+    0,
+    ...s.docs.map((d) => d.zIndex),
+    ...s.stacks.map((st) => st.zIndex),
+    ...(s.notes ?? []).map((n) => n.zIndex),
+  );
 }
 
 /** Deterministische leichte Drehung aus der id, in [-3, 3] Grad. */
@@ -35,6 +40,7 @@ export function bringToFront(s: DesktopState, id: string): DesktopState {
     ...s,
     docs: s.docs.map((d) => (d.id === id ? { ...d, zIndex: z } : d)),
     stacks: s.stacks.map((st) => (st.id === id ? { ...st, zIndex: z } : st)),
+    ...(s.notes ? { notes: s.notes.map((n) => (n.id === id ? { ...n, zIndex: z } : n)) } : {}),
   };
 }
 

@@ -1,5 +1,6 @@
 import { CARD_W, CARD_H, freeDocs, type DesktopState, type Doc, type Stack, type Vec2 } from './model';
 import { DEFAULT_OPEN_SIZE } from './viewer';
+import { noteBox } from './notes';
 import type { Box } from './viewport';
 
 export function docBox(d: Doc): Box {
@@ -15,7 +16,7 @@ export function stackBox(st: Stack): Box {
 }
 
 export function allBoxes(s: DesktopState): Box[] {
-  return [...freeDocs(s).map(docBox), ...s.stacks.map(stackBox)];
+  return [...freeDocs(s).map(docBox), ...s.stacks.map(stackBox), ...(s.notes ?? []).map(noteBox)];
 }
 
 export function hitTest(

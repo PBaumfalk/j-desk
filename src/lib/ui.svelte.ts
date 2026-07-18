@@ -6,6 +6,7 @@ export interface MenuItem {
 export const ui = $state({
   linkingFromId: null as string | null,
   editingStackId: null as string | null,
+  editingNoteId: null as string | null,
   fannedStackId: null as string | null,
   menu: null as { x: number; y: number; items: MenuItem[] } | null,
   toast: null as string | null,

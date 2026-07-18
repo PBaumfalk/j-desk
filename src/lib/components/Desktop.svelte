@@ -1,16 +1,18 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
-    freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes, panBy, docBox, stackBox,
-    type Box, type Vec2, type Viewport,
+    freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes, panBy, docBox, stackBox, noteBox,
+    NOTE_KINDS, NOTE_W, NOTE_H, type Box, type NoteKind, type Vec2, type Viewport,
   } from '@digital-desktop/core';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
+  import { NOTE_KIND_LABELS } from '../menus';
   import { clearSession } from '../session';
   import { revokeFileUrls } from '../fileCache';
   import { ui, showToast } from '../ui.svelte';
   import DocCard from './DocCard.svelte';
   import StackCard from './StackCard.svelte';
+  import NoteCard from './NoteCard.svelte';
   import LinkLayer from './LinkLayer.svelte';
   import ContextMenu from './ContextMenu.svelte';
   import DeskSwitcher from './DeskSwitcher.svelte';
@@ -110,6 +112,23 @@
     e.preventDefault();
   }
 
+  /** Zettel-Typ wählen, dann einen leeren Zettel in der Bildschirmmitte anlegen und bearbeiten. */
+  function neuerZettel(e: MouseEvent): void {
+    ui.menu = {
+      x: e.clientX, y: e.clientY,
+      items: NOTE_KINDS.map((kind: NoteKind) => ({
+        label: NOTE_KIND_LABELS[kind],
+        action: () => {
+          const center = screenToWorld(vp, { x: el.clientWidth / 2, y: el.clientHeight / 2 });
+          const id = uid();
+          void desktop
+            .command('addNote', { kind, text: '', position: { x: center.x - NOTE_W / 2, y: center.y - NOTE_H / 2 }, id })
+            .then(() => (ui.editingNoteId = id));
+        },
+      })),
+    };
+  }
+
   async function abmelden(): Promise<void> {
     // Server-Invalidierung ist Best-Effort — lokal wird die Sitzung in jedem Fall beendet.
     await desktop.api?.logout().catch(() => {});
@@ -173,6 +192,9 @@
     {#each desktop.state.stacks.filter((st) => imSichtfenster(stackBox(st))) as stack (stack.id)}
       <StackCard {stack} {vp} />
     {/each}
+    {#each (desktop.state.notes ?? []).filter((n) => imSichtfenster(noteBox(n))) as note (note.id)}
+      <NoteCard {note} {vp} />
+    {/each}
   </div>
   <DeskSwitcher />
   <DeskControls
@@ -190,6 +212,7 @@
       onchange={onFilesPicked}
     />
     <button onclick={() => fileInput.click()} title="PDF hinzufügen">＋ PDF</button>
+    <button onclick={neuerZettel} title="Notizzettel hinzufügen">＋ Zettel</button>
     <button onclick={() => void abmelden()} title="Abmelden">Abmelden</button>
   </div>
   {#if ui.linkingFromId}

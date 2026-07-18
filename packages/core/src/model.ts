@@ -35,13 +35,15 @@ export interface DesktopState {
   stacks: Stack[];
   /** Freihand-Striche (Stift/Marker) auf PDF-Seiten; fehlt in Staaten vor Teilprojekt E. */
   strokes?: import('./ink').Stroke[];
+  /** Notizzettel/Gedankenobjekte; fehlt in älteren Staaten. */
+  notes?: import('./notes').Note[];
 }
 
 export const CARD_W = 180;
 export const CARD_H = 240;
 
 export function emptyState(): DesktopState {
-  return { docs: [], links: [], stacks: [], strokes: [] };
+  return { docs: [], links: [], stacks: [], strokes: [], notes: [] };
 }
 
 export function findDoc(s: DesktopState, id: string): Doc | undefined {
@@ -68,6 +70,7 @@ export function isValidState(v: unknown): v is DesktopState {
     Array.isArray(s.links) &&
     Array.isArray(s.stacks) &&
     (s.strokes === undefined || Array.isArray(s.strokes)) &&
+    (s.notes === undefined || Array.isArray(s.notes)) &&
     s.docs.every(
       (d) =>
         !!d && typeof d.id === 'string' && typeof d.fileId === 'string' && typeof d.name === 'string',

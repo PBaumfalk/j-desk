@@ -65,7 +65,7 @@ describe('Desk-Routen', () => {
     expect(res.statusCode).toBe(200);
 
     res = await app.inject({ method: 'GET', url: `/api/v1/desks/${desk.id}/state`, headers: authHeaders });
-    expect(res.json()).toEqual({ rev: 0, state: { docs: [], links: [], stacks: [], strokes: [] } });
+    expect(res.json()).toEqual({ rev: 0, state: { docs: [], links: [], stacks: [], strokes: [], notes: [] } });
 
     res = await app.inject({ method: 'DELETE', url: `/api/v1/desks/${desk.id}`, headers: authHeaders });
     expect(res.statusCode).toBe(200);
