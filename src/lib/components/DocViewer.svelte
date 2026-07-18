@@ -5,6 +5,7 @@
   import { desktop } from '../store.svelte';
   import { showToast } from '../ui.svelte';
   import PageRenderer from './PageRenderer.svelte';
+  import ImagePage from './ImagePage.svelte';
   import InkOverlay, { type InkTool } from './InkOverlay.svelte';
   import MarkLayer from './MarkLayer.svelte';
   import StampPopover from './StampPopover.svelte';
@@ -16,8 +17,10 @@
   let pageCount = $state<number | null>(null);
   let wrapEl = $state<HTMLDivElement | null>(null);
   let bodyH = $state(0);
-  const seitenfix = $derived(doc.pageOnly !== undefined); // herausgelöste Einzelseite: kein Blättern
-  const page = $derived(doc.pageOnly ?? doc.page ?? 1);
+  // Bild-Dokument: eine "Seite" (die Bildpixel selbst) — kein Blättern, kein Herauslösen.
+  const bildmodus = $derived((doc.kind ?? 'pdf') === 'image');
+  const seitenfix = $derived(doc.pageOnly !== undefined || bildmodus); // kein Blättern
+  const page = $derived(bildmodus ? 1 : (doc.pageOnly ?? doc.page ?? 1));
   const size = $derived(doc.openSize ?? DEFAULT_OPEN_SIZE);
   const pageWidth = $derived(Math.round(size.w - 20));
 
@@ -259,7 +262,9 @@
       <button class:on={inkTool === 'scissors'} onclick={() => toggleTool('scissors')} aria-pressed={inkTool === 'scissors'} aria-label="Schere" title="Schere: Ausschnitt aufziehen">✄</button>
       <button class:on={lichttisch} onclick={() => (lichttisch = !lichttisch)} aria-pressed={lichttisch} aria-label="Lichttisch" title="Lichttisch: durchscheinend übereinanderlegen">◐</button>
     </span>
-    {#if seitenfix}
+    {#if bildmodus}
+      <span class="pos">Bild</span>
+    {:else if seitenfix}
       <span class="pos">S. {page}</span>
     {:else}
       <span class="pager">
@@ -284,8 +289,13 @@
   <div class="body" role="presentation" onwheel={(e) => { if (!e.ctrlKey && !e.metaKey) e.stopPropagation(); }} onpointerdown={onBodyPointerDown} onpointerup={onBodyPointerUp}>
     {#if desktop.api}
       <div class="pagewrap">
-        <PageRenderer api={desktop.api} fileId={doc.fileId} {page} targetWidth={pageWidth}
-          onpagecount={(n) => (pageCount = n)} onbasesize={(s) => (baseSize = s)} />
+        {#if bildmodus}
+          <ImagePage api={desktop.api} fileId={doc.fileId} name={doc.name} targetWidth={pageWidth}
+            onbasesize={(s) => (baseSize = s)} />
+        {:else}
+          <PageRenderer api={desktop.api} fileId={doc.fileId} {page} targetWidth={pageWidth}
+            onpagecount={(n) => (pageCount = n)} onbasesize={(s) => (baseSize = s)} />
+        {/if}
         <InkOverlay docId={doc.id} {page} base={baseSize} renderedWidth={pageWidth}
           tool={inkTool === 'scissors' || inkTool === 'tippex' || inkTool === 'redact' ? null : inkTool} />
         {#if rectTool && baseSize}
