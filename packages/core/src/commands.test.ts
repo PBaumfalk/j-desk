@@ -74,3 +74,37 @@ describe('applyCommand', () => {
     expect(s.docs.map((d) => d.id)).toEqual(['id-a']);
   });
 });
+
+describe('Viewer-Commands', () => {
+  const base = () => addDoc(emptyState(), 'file-a', 'a.pdf', { x: 0, y: 0 }, 'id-a');
+
+  it('expandDoc / collapseDoc', () => {
+    let s = applyCommand(base(), { type: 'expandDoc', payload: { id: 'id-a' } });
+    expect(s.docs[0].open).toBe(true);
+    expect(s.docs[0].page).toBe(1);
+    s = applyCommand(s, { type: 'collapseDoc', payload: { id: 'id-a' } });
+    expect(s.docs[0].open).toBe(false);
+  });
+
+  it('setDocPage setzt die Seite und lehnt page < 1 ab', () => {
+    const s = applyCommand(base(), { type: 'expandDoc', payload: { id: 'id-a' } });
+    expect(applyCommand(s, { type: 'setDocPage', payload: { id: 'id-a', page: 5 } }).docs[0].page).toBe(5);
+    expect(() => applyCommand(s, { type: 'setDocPage', payload: { id: 'id-a', page: 0 } })).toThrow();
+  });
+
+  it('setDocPage wirft CommandError bei fehlender/ungültiger Zahl', () => {
+    const s = applyCommand(base(), { type: 'expandDoc', payload: { id: 'id-a' } });
+    expect(() => applyCommand(s, { type: 'setDocPage', payload: { id: 'id-a' } })).toThrow(CommandError);
+  });
+
+  it('resizeDoc setzt die Größe und lehnt nicht-positive Maße ab', () => {
+    const s = applyCommand(base(), { type: 'expandDoc', payload: { id: 'id-a' } });
+    expect(applyCommand(s, { type: 'resizeDoc', payload: { id: 'id-a', size: { w: 700, h: 500 } } }).docs[0].openSize).toEqual({ w: 700, h: 500 });
+    expect(() => applyCommand(s, { type: 'resizeDoc', payload: { id: 'id-a', size: { w: 0, h: 500 } } })).toThrow();
+  });
+
+  it('resizeDoc wirft CommandError bei fehlendem size', () => {
+    const s = applyCommand(base(), { type: 'expandDoc', payload: { id: 'id-a' } });
+    expect(() => applyCommand(s, { type: 'resizeDoc', payload: { id: 'id-a' } })).toThrow(CommandError);
+  });
+});

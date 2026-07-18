@@ -6,3 +6,4 @@ export * from './removal';
 export * from './commands';
 export * from './viewport';
 export * from './geometry';
+export * from './viewer';
