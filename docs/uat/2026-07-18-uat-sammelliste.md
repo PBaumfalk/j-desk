@@ -143,13 +143,22 @@ npm run mcp                                 # Terminal 2
 
 ## Block D — j-lawyer-Modus komplett: TP-B + TP-C (braucht deine j-lawyer-Test-Instanz, 14 Punkte)
 
-**Setup** (auf `feature/inline-viewer`; TP-C ist gegen einen quellcode-genauen Fake-j-lawyer
-vollständig E2E-vorverifiziert — gegen die **echte** Instanz ist es der erste Lauf):
+**Setup** (auf `feature/inline-viewer`). **NEU: bereits gegen einen ECHTEN j-lawyer
+(offizielle Docker-Images, admin/a) maschinell verifiziert** — Login, Aktenliste,
+Eingangskarten, Base64-PDF, Upload, Abgleich ohne Duplikate. Dabei gefunden und
+gefixt: /rest-Pfadpräfix und das [UTC]-Datumsformat. Deine Tests hier sind damit
+Bestätigung auf DEINER Instanz/Version statt erster Kontakt.
 
 ```bash
+# Test-j-lawyer per Docker (falls keine eigene Instanz):
+docker compose -f docs/deployment/jlawyer-test-compose.yaml up -d   # Login admin/a, Port 8000
 npm run build
-JLAWYER_URL=http://<host>:8080/j-lawyer-io DATA_DIR=/tmp/dd-jl npm run server
+JLAWYER_URL=http://localhost:8000/j-lawyer-io DATA_DIR=/tmp/dd-jl npm run server
 ```
+
+> Docker-Eigenheit: Bei Akten, die NUR per REST erstellt wurden, muss der Ordner
+> `archivefiles/<caseId>` im j-lawyer-Datenvolume existieren, sonst schlägt der
+> Upload fehl (HTTP 500) — der j-lawyer-Desktop-Client legt ihn normal an.
 
 - [ ] D1 Login-Maske zeigt **keine** Ersteinrichtung; Anmeldung mit j-lawyer-Benutzername/-Passwort klappt.
 - [ ] D2 Falsches Passwort → „Benutzername oder Passwort falsch".
