@@ -1,7 +1,7 @@
 # UAT-Sammelliste — alle offenen manuellen Tests (Stand 2026-07-18)
 
-Konsolidiert alle „pending user verification"-Punkte. **101 Punkte in drei aktiven Blöcken**
-(A mit 78, C′ mit 9, D mit 14) — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
+Konsolidiert alle „pending user verification"-Punkte. **111 Punkte in drei aktiven Blöcken**
+(A mit 88, C′ mit 9, D mit 14) — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
 kann in einer Sitzung durchgetestet werden.
 
 **Empfohlene Reihenfolge:** Block A (aktueller Branch, enthält jetzt auch Zettel A7 und
@@ -15,7 +15,7 @@ MCP-Portierung C′) → Block D (j-lawyer-Modus, braucht deine Instanz).
 
 ---
 
-## Block A — Browser-App (Branch `feature/inline-viewer`, 78 Punkte)
+## Block A — Browser-App (Branch `feature/inline-viewer`, 88 Punkte)
 
 **Setup:**
 
@@ -137,6 +137,19 @@ iPad:
 - [ ] A9.11 j-lawyer-Modus: Akten-Karte in den Korb → Abgleich legt KEINE neue Karte an (maschinell getestet); nach „Leeren" kommt das Dokument beim nächsten Abgleich als frische Karte (gewollt — im Dialog erklärt).
 - [ ] A9.12 Reload + Zweitfenster: Marks, Stempel, Fahnen, Konvolut-Zustand, Klammern, Klebeband und Korb-Inhalt überleben ein Neuladen und erscheinen im Zweitfenster live.
 - [ ] A9.13 **Produktentscheidungen bestätigen:** Fahne = eine pro Aktivierung ok? Stempel-Optik/Sortiment ok? Konvolut ohne Enthefter/Schere im Kopf ok (nur am Einzeldokument)?
+
+### A10 — Dateitypen-Runde (NEU; Klassifizierung/Preview-Semantik per HTTP-Smoke + 3 Testsuiten maschinell vorverifiziert, Chrome-UI-Vorprüfung entfiel — UI-Punkte sind Erstkontakt. Für A10.3/A10.4/A10.6 den Euro-Office-Container starten: `docker compose -f docs/deployment/eurooffice-compose.yaml up -d` + Env laut README)
+
+- [ ] A10.1 „＋"-Menü: Datei…/Zettel… — Mehrfachauswahl beliebiger Typen; Drag-and-drop ebenso.
+- [ ] A10.2 Bild (JPG/PNG) hochladen → Karte zeigt das Foto (Polaroid-Optik); aufschlagen → Bildansicht, Kopf zeigt „Bild"; Stempel/Zeichnen/Schere funktionieren auf dem Bild (Scheren-Ausschnitt zeigt den Bildausschnitt!); Reload erhält alles.
+- [ ] A10.3 ODT hochladen (Euro-Office-Container läuft) → Karte „Vorschau wird erstellt…", dann Miniatur; aufschlagen → blättert wie ein PDF; Werkzeuge funktionieren. **Gegenprobe echte Instanz:** ConvertService-Pfad/JWT_ENABLED-Annahme (Compose-Kommentar) bestätigen.
+- [ ] A10.4 DOCX/XLSX aus der j-lawyer-Akte → gleiches Verhalten; Original bleibt unverändert in der Akte (Stichprobe: „Herunterladen" liefert das Original, nicht das Vorschau-PDF).
+- [ ] A10.5 ZIP hochladen → generische Karte mit Typ-Kürzel; kein „Aufschlagen" im Menü; Herunterladen liefert die Datei.
+- [ ] A10.6 Euro-Office-Container stoppen → ODT-Aufschlag-Versuch meldet „Vorschau-Dienst nicht erreichbar"; Container starten → nächster Versuch konvertiert.
+- [ ] A10.7 Ohne EUROOFFICE_URL-Konfiguration: konvertierbare Typen verhalten sich wie generische Karten mit Hinweis; PDFs/Bilder normal (maschinell vorverifiziert).
+- [ ] A10.8 MCP: „Lies Dokument X" auf einer ODT → Zusammenfassung über die Vorschau (anonymisiert wie PDFs); auf einem Bild → klare Fehlermeldung.
+- [ ] A10.9 Zweitfenster/Reload: kind-abhängige Darstellung überall konsistent (Bild bleibt Bild, other bleibt other; bekannte Grenze: extern geänderte j-lawyer-Dokumente können bis zum Cache-Leeren eine veraltete Vorschau zeigen).
+- [ ] A10.10 **Produktentscheidungen bestätigen:** Bild-Karte als „Polaroid" ok? Generisches Karten-Design ok? Lazy-Konvertierung (erst beim Anschauen) ok?
 
 ### C′ — MCP auf dem Rework-Strang (ersetzt Block C; 9 Prüfungen, neues Setup)
 
