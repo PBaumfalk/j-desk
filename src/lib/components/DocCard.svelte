@@ -47,7 +47,9 @@
     clearTimeout(pressTimer);
     pressTimer = undefined;
     if (e.pointerType !== 'mouse') {
-      pressTimer = setTimeout(() => { dragging = false; showDocMenuAt(last.x, last.y, doc); }, 500);
+      // Leicht versetzt öffnen: der synthetische Klick beim Fingerheben landet so auf dem
+      // Backdrop (schließt nur per pointerdown) statt auf dem ersten Menüeintrag.
+      pressTimer = setTimeout(() => { dragging = false; showDocMenuAt(last.x + 16, last.y + 12, doc); }, 500);
     }
   }
   function onPointerMove(e: PointerEvent) {

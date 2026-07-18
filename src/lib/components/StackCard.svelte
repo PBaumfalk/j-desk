@@ -47,7 +47,9 @@
     clearTimeout(pressTimer);
     pressTimer = undefined;
     if (e.pointerType !== 'mouse') {
-      pressTimer = setTimeout(() => { dragging = false; showStackMenuAt(last.x, last.y, stack); }, 500);
+      // Leicht versetzt öffnen: der synthetische Klick beim Fingerheben landet so auf dem
+      // Backdrop (schließt nur per pointerdown) statt auf dem ersten Menüeintrag.
+      pressTimer = setTimeout(() => { dragging = false; showStackMenuAt(last.x + 16, last.y + 12, stack); }, 500);
     }
   }
   function onPointerMove(e: PointerEvent) {
@@ -78,7 +80,11 @@
   function fanPointerDown(e: PointerEvent, docId: string) {
     if (e.button !== 0) return;
     e.stopPropagation();
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      // Capture ist Komfort (Ziehen über den Rand) — der Klick-Pfad funktioniert auch ohne
+    }
     const startX = e.clientX;
     const startY = e.clientY;
     const cleanup = () => {
