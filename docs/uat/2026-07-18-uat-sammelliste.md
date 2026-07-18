@@ -1,16 +1,16 @@
 # UAT-Sammelliste — alle offenen manuellen Tests (Stand 2026-07-18)
 
-Konsolidiert alle „pending user verification"-Punkte aus TP-A (Browser-Port), Inline-Viewer,
-Schreibtisch-Navigation/Touch (inkl. der drei Nachzügler-Fixes), der Backlog-Runde vom
-2026-07-18 (A5), dem neuen Pencil-Zeichnen (A6), TP3 (Benutzerverwaltung & Teilen) und
-TP4 (MCP-Server mit anymize). **76 Punkte in drei Blöcken** — jeder Block hat ein eigenes
-Setup, innerhalb eines Blocks kann in einer Sitzung durchgetestet werden.
+Konsolidiert alle „pending user verification"-Punkte. **91 Punkte in vier Blöcken** — jeder
+Block hat ein eigenes Setup, innerhalb eines Blocks kann in einer Sitzung durchgetestet werden.
 
-**Empfohlene Reihenfolge:** Block A (aktueller Branch) → Block B → Block C (Branch von B enthält TP3).
+**Empfohlene Reihenfolge:** Block A (aktueller Branch, enthält jetzt auch Zettel A7 und
+MCP-Portierung C′) → Block D (j-lawyer-Modus, braucht deine Instanz).
 
-> **Strategischer Hinweis zu B und C:** Der j-lawyer-Rework ersetzt die eigene Kontenverwaltung
-> perspektivisch. Ob TP3/TP4 noch gemergt werden, ist offen — deren UAT lohnt nur, wenn der
-> Merge weiterhin geplant ist. Block A ist davon unberührt.
+> **TP3/TP4-Entscheidung ist gefallen (2026-07-18):** Beide wurden in den Rework überführt.
+> Der MCP läuft jetzt portiert auf `feature/inline-viewer` (Block C′ ersetzt Block C);
+> TP3s Kontenverwaltung entfällt zugunsten des j-lawyer-Logins (Block D). **Die alten
+> Blöcke B und C auf den TP3-/TP4-Branches müssen damit NICHT mehr getestet werden** —
+> sie bleiben unten nur als Referenz stehen, die Branches werden nicht gemergt.
 
 ---
 
@@ -103,9 +103,57 @@ iPad:
 - [ ] A6.8 **iPad, Apple Pencil:** Zeichnen ist flüssig und ohne spürbare Verzögerung; Handballen löst nichts aus, solange kein Werkzeug aktiv ist.
 - [ ] A6.9 **Produktentscheidungen bestätigen:** feste Farben (blau/gelb) ohne Farbwahl ok? Strichweiser Radierer ok? Werkzeug nur explizit aktivieren (kein Auto-Pencil-Modus) ok?
 
+### A7 — Notizzettel & Gedankenobjekte (NEU, automatisiert in Chrome vorgeprüft)
+
+- [ ] A7.1 „＋ Zettel" → Typwahl (Notiz/Frage/These/Angriffspunkt/Risiko) → Zettel erscheint in der Mitte und ist sofort beschreibbar; Speichern per Klick daneben oder Cmd/Ctrl+Enter.
+- [ ] A7.2 Farben/Badges der fünf Typen gefallen? (gelb/blau/grün/orange/rot, Typ-Label außer bei „Notiz")
+- [ ] A7.3 Zettel verschieben (Maus **und** iPad-Finger); Doppelklick/Doppeltipp bearbeitet.
+- [ ] A7.4 Zettel per Kontextmenü (Rechtsklick/Lang-Druck) „Verknüpfen…" mit Karte oder Stapel → Schnur; „Mit allen Verknüpften öffnen" von der Karte aus berücksichtigt sie normal.
+- [ ] A7.5 Neuladen → Zettel, Texte und Schnüre unverändert; zweites Fenster sieht Änderungen live.
+- [ ] A7.6 Zettel entfernen → Schnur verschwindet mit.
+
+### C′ — MCP auf dem Rework-Strang (ersetzt Block C; gleiche 6 Prüfungen, neues Setup)
+
+**Setup:** anymize-Key in `.env.local`; ZDR im anymize-Account AUS — **alles auf `feature/inline-viewer`:**
+
+```bash
+npm run server                              # Terminal 1
+npm run mcp:token                           # Token erzeugen (Login mit deinem Konto)
+npm run mcp                                 # Terminal 2
+# Token in Claude Code eintragen: claude mcp add …
+```
+
+- [ ] C′.1 Token via `npm run mcp:token` → funktioniert.
+- [ ] C′.2 „Welche Schreibtische habe ich?" → anonymisierte Desk-Namen.
+- [ ] C′.3 „Lies Dokument X und fasse zusammen" → Platzhalter; `deanonymize` liefert Klartext.
+- [ ] C′.4 „Staple die Rechnungen, benenne nach Absender" → Stapel in Klartext, in der UI sichtbar.
+- [ ] C′.5 anymize-Key absichtlich falsch → Lese-Tools verweigern, `move_document` geht weiter.
+- [ ] C′.6 Reales anymize-Platzhalterformat matcht `PLACEHOLDER_RE` (nie live geprüft).
+
 ---
 
-## Block B — Benutzerverwaltung & Teilen, TP3 (Branch `feature/benutzer-teilen`, 17 Punkte)
+## Block D — j-lawyer-Login-Modus (TP-B-Kern, braucht deine j-lawyer-Test-Instanz, 9 Punkte)
+
+**Setup** (auf `feature/inline-viewer`):
+
+```bash
+npm run build
+JLAWYER_URL=http://<host>:8080/j-lawyer-io DATA_DIR=/tmp/dd-jl npm run server
+```
+
+- [ ] D1 Login-Maske zeigt **keine** Ersteinrichtung; Anmeldung mit j-lawyer-Benutzername/-Passwort klappt.
+- [ ] D2 Falsches Passwort → „Benutzername oder Passwort falsch".
+- [ ] D3 j-lawyer gestoppt → Login meldet „j-lawyer ist nicht erreichbar" (kein Hänger, ~10 s Timeout).
+- [ ] D4 Nach Login: Schreibtisch-Funktionen wie gewohnt (Karten, Zettel, Zeichnen, Live-Sync).
+- [ ] D5 `GET /api/v1/cases` (z. B. via `curl -H "Authorization: Bearer <token>"`) liefert deine Aktenliste mit Aktenzeichen/Rubrum. *(Die Akten-UI kommt mit TP-C.)*
+- [ ] D6 Server neu starten → alte Sitzung wird beim nächsten Aktenzugriff abgemeldet (Credentials leben nur im RAM); Neuanmeldung klappt.
+- [ ] D7 Zweiter j-lawyer-Nutzer meldet sich an → sieht dieselben Schreibtische (kanzlei-weit geteilt, Rework-Semantik).
+- [ ] D8 `npm run mcp:token` mit j-lawyer-Zugangsdaten → MCP funktioniert im j-lawyer-Modus.
+- [ ] D9 **API-Spike-Vorbereitung für TP-C:** Stelle Zugangsdaten der Test-Instanz bereit — der Spike klärt Feldnamen/Kodierung, bevor Akten-Schreibtische gebaut werden (Plan: `docs/superpowers/plans/2026-07-18-tp-c-akten-schreibtische.md`).
+
+---
+
+## ~~Block B — Benutzerverwaltung & Teilen, TP3~~ (OBSOLET — durch j-lawyer-Login ersetzt, Branch wird nicht gemergt; nur Referenz)
 
 **Setup** (noch Tauri-Client!):
 
@@ -148,7 +196,7 @@ Für die Teilen-Tests: zwei Konten und zwei Fenster/Instanzen.
 
 ---
 
-## Block C — MCP-Server mit anymize, TP4 (Branch `feature/mcp-server`, 6 Punkte)
+## ~~Block C — MCP-Server mit anymize, TP4~~ (OBSOLET — portiert; stattdessen Block C′ oben testen)
 
 **Setup:** anymize-API-Key in `.env.local` ablegen; **ZDR im anymize-Account AUS**.
 
