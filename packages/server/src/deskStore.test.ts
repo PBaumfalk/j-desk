@@ -26,7 +26,7 @@ describe('Desk-CRUD', () => {
 
   it('neuer Schreibtisch startet leer mit rev 0', () => {
     const desk = createDesk(db, 'u1', 'Neu');
-    expect(getDeskState(db, desk.id)).toEqual({ rev: 0, state: { docs: [], links: [], stacks: [], strokes: [], notes: [] } });
+    expect(getDeskState(db, desk.id)).toEqual({ rev: 0, state: { docs: [], links: [], stacks: [], strokes: [], notes: [], cutouts: [] } });
     expect(getDeskState(db, 'gibtsnicht')).toBeNull();
   });
 });
