@@ -54,13 +54,15 @@ export interface DesktopState {
   flags?: import('./flags').Flag[];
   /** Büroklammer-Gruppen: lose gemeinsam verschobene Objekte; fehlt in älteren Staaten. */
   clips?: import('./clips').Clip[];
+  /** Papierkorb: entfernte Objekte, wiederherstellbar bis geleert; fehlt in älteren Staaten. */
+  trash?: import('./trash').TrashedItem[];
 }
 
 export const CARD_W = 180;
 export const CARD_H = 240;
 
 export function emptyState(): DesktopState {
-  return { docs: [], links: [], stacks: [], strokes: [], notes: [], cutouts: [], marks: [], stamps: [], flags: [], clips: [] };
+  return { docs: [], links: [], stacks: [], strokes: [], notes: [], cutouts: [], marks: [], stamps: [], flags: [], clips: [], trash: [] };
 }
 
 export function findDoc(s: DesktopState, id: string): Doc | undefined {
@@ -93,6 +95,7 @@ export function isValidState(v: unknown): v is DesktopState {
     (s.stamps === undefined || Array.isArray(s.stamps)) &&
     (s.flags === undefined || Array.isArray(s.flags)) &&
     (s.clips === undefined || Array.isArray(s.clips)) &&
+    (s.trash === undefined || Array.isArray(s.trash)) &&
     s.docs.every(
       (d) =>
         !!d && typeof d.id === 'string' && typeof d.fileId === 'string' && typeof d.name === 'string',

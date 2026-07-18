@@ -17,3 +17,5 @@ export * from './flags';
 export * from './clips';
 export * from './tape';
 export * from './uid';
+export * from './trash';
+export * from './copy';
