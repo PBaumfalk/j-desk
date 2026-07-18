@@ -100,7 +100,13 @@ Kartenpositionen.
   plus einen kleinen In-Memory-Cache der zuletzt gerenderten Seite für flüssiges
   Blättern. Einzige Stelle mit pdfjs-Seitenrendering; später von Teilprojekt E
   (Annotationen) als Hintergrund wiederverwendbar. Fehlerpfad: ruhiger
-  Platzhalter statt Absturz.
+  Platzhalter statt Absturz. Struktur-Leitplanke aus der Referenzanalyse
+  (`docs/research/open-source-reference-matrix.md`, LeedPDF): Die gerenderte
+  PDF-Seite liegt in einem eigenen, klar begrenzten Positionskontext, über den
+  sich später eine deckungsgleiche Annotations-Canvas legen lässt
+  (Zwei-Canvas-Muster); jene spätere Ebene rechnet in Basiskoordinaten
+  (Skalierung 1.0 / Rotation 0). In DIESER Stufe wird keine zweite Canvas
+  gebaut — nur die Positionierung nicht verbaut.
 - **`DocViewer.svelte`** (neu) — die große aufgeschlagene Karte: rahmt den
   `PageRenderer`, zeigt Blätter-Pfeile + Seitenanzeige („3 / 12"), ✕ zum
   Schließen, Anfasser unten rechts zum Größe-Ziehen. Verschieben wie jede Karte
