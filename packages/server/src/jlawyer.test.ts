@@ -230,6 +230,44 @@ describe('App im j-lawyer-Modus', () => {
     await app.close();
   });
 
+  it('extern gelöschtes Dokument in einem gehefteten 2er-Konvolut: Abgleich enthäftet statt mit 500 zu scheitern', async () => {
+    const { app } = await jlApp();
+    // eigene Akte mit genau zwei Dokumenten, unabhängig von den anderen Tests
+    fake.documents.set('akte-deadlock', [
+      { id: 'jdoc-dl-1', caseId: 'akte-deadlock', name: 'Erste.pdf', changeDate: 1750000300000, size: 10, bytes: Buffer.from('%PDF-a') },
+      { id: 'jdoc-dl-2', caseId: 'akte-deadlock', name: 'Zweite.pdf', changeDate: 1750000400000, size: 10, bytes: Buffer.from('%PDF-b') },
+    ]);
+    const { token } = (
+      await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { username: 'anwalt', password: 'kanzlei123' } })
+    ).json();
+    const h = { authorization: `Bearer ${token}` };
+    // 1. Akte öffnen -> zwei Karten entstehen
+    const r1 = await app.inject({ method: 'GET', url: '/api/v1/cases/akte-deadlock/desk', headers: h });
+    const [karte1, karte2] = r1.json().state.docs;
+    // 2. zu einem Stapel zusammenführen und heften (Konvolut)
+    const stackRes = await app.inject({
+      method: 'POST', url: '/api/v1/desks/akte-deadlock/commands', headers: h,
+      payload: { type: 'stackDocs', payload: { draggedId: karte2.id, targetId: karte1.id, id: 'st-deadlock' } },
+    });
+    expect(stackRes.statusCode).toBe(200);
+    const stapelRes = await app.inject({
+      method: 'POST', url: '/api/v1/desks/akte-deadlock/commands', headers: h,
+      payload: { type: 'stapleStack', payload: { stackId: 'st-deadlock' } },
+    });
+    expect(stapelRes.statusCode).toBe(200);
+    expect(stapelRes.json().state.stacks[0]).toMatchObject({ id: 'st-deadlock', stapled: true });
+    // 3. eines der beiden Dokumente extern (in j-lawyer) löschen
+    const docs = fake.documents.get('akte-deadlock')!;
+    docs.pop();
+    // 4. Akte erneut öffnen -> Abgleich entfernt die Karte; das Konvolut wird vorher automatisch enthäftet
+    //    statt dass dissolveStack am gehefteten Rest-Stapel wirft (server 500 -> Akte dauerhaft unöffnbar)
+    const r2 = await app.inject({ method: 'GET', url: '/api/v1/cases/akte-deadlock/desk', headers: h });
+    expect(r2.statusCode).toBe(200);
+    expect(r2.json().state.docs).toHaveLength(1);
+    expect(r2.json().state.stacks).toHaveLength(0);
+    await app.close();
+  });
+
   it('ohne jlawyerUrl existiert /api/v1/cases nicht', async () => {
     const db = openDb(':memory:');
     const dataDir = mkdtempSync(join(tmpdir(), 'dd-plain-'));

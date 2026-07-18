@@ -6,6 +6,7 @@ import { extractPage } from './viewer';
 import { konvolutPages, expandStack, collapseStack, setStackPage, resizeStack } from './konvolut';
 import { hitTest } from './geometry';
 import { applyCommand } from './commands';
+import { removeDoc } from './removal';
 
 function mitStapel(): DesktopState {
   let s = addDoc(emptyState(), 'f1', 'a.pdf', { x: 0, y: 0 }, 'd1');
@@ -70,6 +71,14 @@ describe('Hefter/Konvolut', () => {
       { docId: 'd3', fileId: 'f1', page: 5 },
     ]);
     expect(konvolutPages(s, st, { f1: 3 })).toBeNull(); // f2 unbekannt -> null
+  });
+
+  it('removeDoc am gehefteten 2er-Konvolut: enthäftet vor dem Auto-Auflösen statt zu werfen (j-lawyer-Sync-Deadlock)', () => {
+    let s = stapleStack(mitStapel(), 'st1');
+    expect(() => removeDoc(s, 'd2')).not.toThrow();
+    s = removeDoc(s, 'd2');
+    expect(s.stacks).toHaveLength(0);
+    expect(s.docs.some((d) => d.id === 'd1')).toBe(true);
   });
 
   it('Commands laufen durch applyCommand', () => {

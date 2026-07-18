@@ -5,7 +5,7 @@ import { removeMarksForDocs } from './marks';
 import { removeStampsForDocs } from './stamps';
 import { removeFlagsForDocs } from './flags';
 import { removeFromClips } from './clips';
-import { dissolveStack } from './stacks';
+import { dissolveStack, unstapleStack } from './stacks';
 
 export function removeDoc(s: DesktopState, docId: string): DesktopState {
   const st = stackOf(s, docId);
@@ -19,7 +19,9 @@ export function removeDoc(s: DesktopState, docId: string): DesktopState {
         x.id === st.id ? { ...x, docIds: x.docIds.filter((i) => i !== docId) } : x,
       ),
     };
-    if (findStack(next, st.id)!.docIds.length === 1) next = dissolveStack(next, st.id);
+    // Auto-Aufräumen (kein Nutzer-Kommando): am gehefteten Konvolut zuerst entheften,
+    // sonst wirft dissolveStack und der j-lawyer-Abgleich (server app.ts) bricht mit 500 ab.
+    if (findStack(next, st.id)!.docIds.length === 1) next = dissolveStack(unstapleStack(next, st.id), st.id);
   }
   return next;
 }
