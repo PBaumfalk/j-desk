@@ -17,8 +17,10 @@
   let pageCount = $state<number | null>(null);
   let wrapEl = $state<HTMLDivElement | null>(null);
   let bodyH = $state(0);
+  const kind = $derived(doc.kind ?? 'pdf');
   // Bild-Dokument: eine "Seite" (die Bildpixel selbst) — kein Blättern, kein Herauslösen.
-  const bildmodus = $derived((doc.kind ?? 'pdf') === 'image');
+  const bildmodus = $derived(kind === 'image');
+  const seitenQuelle = $derived(kind === 'convertible' ? 'preview' : 'original');
   const seitenfix = $derived(doc.pageOnly !== undefined || bildmodus); // kein Blättern
   const page = $derived(bildmodus ? 1 : (doc.pageOnly ?? doc.page ?? 1));
   const size = $derived(doc.openSize ?? DEFAULT_OPEN_SIZE);
@@ -293,7 +295,7 @@
           <ImagePage api={desktop.api} fileId={doc.fileId} name={doc.name} targetWidth={pageWidth}
             onbasesize={(s) => (baseSize = s)} />
         {:else}
-          <PageRenderer api={desktop.api} fileId={doc.fileId} {page} targetWidth={pageWidth}
+          <PageRenderer api={desktop.api} fileId={doc.fileId} {page} targetWidth={pageWidth} source={seitenQuelle}
             onpagecount={(n) => (pageCount = n)} onbasesize={(s) => (baseSize = s)} />
         {/if}
         <InkOverlay docId={doc.id} {page} base={baseSize} renderedWidth={pageWidth}

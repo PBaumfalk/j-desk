@@ -127,7 +127,8 @@
       {/if}
     {:else if desktop.api}
       <PageRenderer api={desktop.api} fileId={cutout.fileId} page={cutout.page}
-        targetWidth={Math.round(cutout.rect.w)} sourceRect={cutout.rect} />
+        targetWidth={Math.round(cutout.rect.w)} sourceRect={cutout.rect}
+        source={cutout.kind === 'convertible' ? 'preview' : 'original'} />
     {/if}
   </div>
 </div>

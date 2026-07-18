@@ -18,8 +18,10 @@
   const topDoc = $derived(findDoc(desktop.state, stack.docIds[stack.docIds.length - 1]));
   let thumb = $state<string | null>(null);
   $effect(() => {
-    if (topDoc && desktop.api) void getThumbnail(desktop.api, topDoc).then((t) => (thumb = t));
-    else thumb = null;
+    if (topDoc && desktop.api) {
+      const quelle = (topDoc.kind ?? 'pdf') === 'convertible' ? 'preview' : 'original';
+      void getThumbnail(desktop.api, topDoc, quelle).then((t) => (thumb = t));
+    } else thumb = null;
   });
 
   let dragging = false;
