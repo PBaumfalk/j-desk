@@ -1,5 +1,6 @@
 import { type DesktopState, type Vec2 } from './model';
 import { removeLinksFor } from './links';
+import { removeFromClips } from './clips';
 import type { Box } from './viewport';
 import { uid } from './uid';
 
@@ -13,6 +14,7 @@ export interface Note {
   text: string;
   position: Vec2;    // Weltkoordinaten, linke obere Ecke
   zIndex: number;
+  taped?: boolean;   // Klebeband: am Tisch festgeklebt, Drag gesperrt
 }
 
 export const NOTE_W = 170;
@@ -57,7 +59,7 @@ export function moveNote(s: DesktopState, id: string, position: Vec2): DesktopSt
 export function removeNote(s: DesktopState, id: string): DesktopState {
   const notes = s.notes ?? [];
   if (!notes.some((n) => n.id === id)) throw new Error(`Notizzettel "${id}" nicht gefunden`);
-  const next = removeLinksFor(s, id);
+  const next = removeFromClips(removeLinksFor(s, id), id);
   return { ...next, notes: notes.filter((n) => n.id !== id) };
 }
 

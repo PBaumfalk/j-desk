@@ -6,8 +6,8 @@ describe('isValidState', () => {
   it('akzeptiert einen gültigen Zustand', () => {
     const s = addDoc(emptyState(), 'file-a', 'a.pdf', { x: 1, y: 2 }, 'id-a');
     expect(isValidState(JSON.parse(JSON.stringify(s)))).toBe(true);
-    // emptyState soll marks, stamps und flags enthalten
-    expect(emptyState()).toMatchObject({ marks: [], stamps: [], flags: [] });
+    // emptyState soll marks, stamps, flags und clips enthalten
+    expect(emptyState()).toMatchObject({ marks: [], stamps: [], flags: [], clips: [] });
   });
 
   it('lehnt Nicht-Objekte und falsche Strukturen ab', () => {

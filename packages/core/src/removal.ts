@@ -4,12 +4,14 @@ import { removeStrokesForDocs } from './ink';
 import { removeMarksForDocs } from './marks';
 import { removeStampsForDocs } from './stamps';
 import { removeFlagsForDocs } from './flags';
+import { removeFromClips } from './clips';
 import { dissolveStack } from './stacks';
 
 export function removeDoc(s: DesktopState, docId: string): DesktopState {
   const st = stackOf(s, docId);
   let next = removeFlagsForDocs(removeStampsForDocs(removeMarksForDocs(removeStrokesForDocs(removeLinksFor(s, docId), [docId]), [docId]), [docId]), [docId]);
   next = { ...next, docs: next.docs.filter((d) => d.id !== docId) };
+  next = removeFromClips(next, docId);
   if (st) {
     next = {
       ...next,
@@ -27,6 +29,8 @@ export function removeStack(s: DesktopState, stackId: string): DesktopState {
   if (!st) return s;
   let next = removeFlagsForDocs(removeStampsForDocs(removeMarksForDocs(removeStrokesForDocs(removeLinksFor(s, stackId), st.docIds), st.docIds), st.docIds), st.docIds);
   for (const docId of st.docIds) next = removeLinksFor(next, docId);
+  next = removeFromClips(next, stackId);
+  for (const docId of st.docIds) next = removeFromClips(next, docId);
   return {
     ...next,
     docs: next.docs.filter((d) => !st.docIds.includes(d.id)),

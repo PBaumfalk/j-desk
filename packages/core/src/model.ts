@@ -13,6 +13,7 @@ export interface Doc {
   openSize?: Size;     // Größe der großen Karte (Weltkoordinaten)
   page?: number;       // aktuell sichtbare Seite, 1-basiert
   pageOnly?: number;   // herausgelöste Einzelseite (Enthefterzange): Karte zeigt nur diese Seite
+  taped?: boolean;     // Klebeband: am Tisch festgeklebt, Drag gesperrt
 }
 
 export interface Link {
@@ -28,6 +29,7 @@ export interface Stack {
   docIds: string[];    // Reihenfolge: unten → oben
   position: Vec2;
   zIndex: number;
+  taped?: boolean;     // Klebeband: am Tisch festgeklebt, Drag gesperrt
 }
 
 export interface DesktopState {
@@ -46,13 +48,15 @@ export interface DesktopState {
   stamps?: import('./stamps').Stamp[];
   /** Notizfahnen: farbige Laschen am rechten Seitenrand; fehlt in älteren Staaten. */
   flags?: import('./flags').Flag[];
+  /** Büroklammer-Gruppen: lose gemeinsam verschobene Objekte; fehlt in älteren Staaten. */
+  clips?: import('./clips').Clip[];
 }
 
 export const CARD_W = 180;
 export const CARD_H = 240;
 
 export function emptyState(): DesktopState {
-  return { docs: [], links: [], stacks: [], strokes: [], notes: [], cutouts: [], marks: [], stamps: [], flags: [] };
+  return { docs: [], links: [], stacks: [], strokes: [], notes: [], cutouts: [], marks: [], stamps: [], flags: [], clips: [] };
 }
 
 export function findDoc(s: DesktopState, id: string): Doc | undefined {
@@ -84,6 +88,7 @@ export function isValidState(v: unknown): v is DesktopState {
     (s.marks === undefined || Array.isArray(s.marks)) &&
     (s.stamps === undefined || Array.isArray(s.stamps)) &&
     (s.flags === undefined || Array.isArray(s.flags)) &&
+    (s.clips === undefined || Array.isArray(s.clips)) &&
     s.docs.every(
       (d) =>
         !!d && typeof d.id === 'string' && typeof d.fileId === 'string' && typeof d.name === 'string',

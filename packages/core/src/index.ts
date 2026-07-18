@@ -13,4 +13,6 @@ export * from './cutouts';
 export * from './marks';
 export * from './stamps';
 export * from './flags';
+export * from './clips';
+export * from './tape';
 export * from './uid';

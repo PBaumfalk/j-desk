@@ -1,5 +1,6 @@
 import { findDoc, type DesktopState, type Vec2 } from './model';
 import { removeLinksFor } from './links';
+import { removeFromClips } from './clips';
 import type { Box } from './viewport';
 import { uid } from './uid';
 
@@ -11,6 +12,7 @@ export interface Cutout {
   rect: { x: number; y: number; w: number; h: number }; // Basiskoordinaten der Seite (scale = 1)
   position: Vec2;                            // Weltkoordinaten, linke obere Ecke
   zIndex: number;
+  taped?: boolean;                           // Klebeband: am Tisch festgeklebt, Drag gesperrt
 }
 
 function maxZ(s: DesktopState): number {
@@ -50,7 +52,7 @@ export function moveCutout(s: DesktopState, id: string, position: Vec2): Desktop
 export function removeCutout(s: DesktopState, id: string): DesktopState {
   const cutouts = s.cutouts ?? [];
   if (!cutouts.some((c) => c.id === id)) throw new Error(`Ausschnitt "${id}" nicht gefunden`);
-  const next = removeLinksFor(s, id);
+  const next = removeFromClips(removeLinksFor(s, id), id);
   return { ...next, cutouts: cutouts.filter((c) => c.id !== id) };
 }
 

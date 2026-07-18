@@ -10,6 +10,8 @@ import { addCutout, moveCutout, removeCutout } from './cutouts';
 import { addMark, removeMark, type Mark, type MarkKind } from './marks';
 import { addStamp, removeStamp, type Stamp } from './stamps';
 import { addFlag, removeFlag, type Flag } from './flags';
+import { addClip, removeClip } from './clips';
+import { setTaped } from './tape';
 
 export class CommandError extends Error {}
 
@@ -96,6 +98,10 @@ const handlers: Record<string, (s: DesktopState, p: Record<string, unknown>) => 
   removeStamp: (s, p) => wrap(() => removeStamp(s, id(p.stampId, 'stampId'))),
   addFlag: (s, p) => wrap(() => addFlag(s, flagPayload(p.flag))),
   removeFlag: (s, p) => wrap(() => removeFlag(s, id(p.flagId, 'flagId'))),
+  addClip: (s, p) => wrap(() => addClip(s, id(p.aId, 'aId'), id(p.bId, 'bId'), optId(p.id))),
+  removeClip: (s, p) => wrap(() => removeClip(s, id(p.clipId, 'clipId'))),
+  tapeObject: (s, p) => wrap(() => setTaped(s, id(p.id, 'id'), true)),
+  untapeObject: (s, p) => wrap(() => setTaped(s, id(p.id, 'id'), false)),
 };
 
 function rect(v: unknown): { x: number; y: number; w: number; h: number } {
