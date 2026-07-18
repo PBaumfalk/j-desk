@@ -68,4 +68,7 @@ describe('resizeDoc', () => {
     expect(() => resizeDoc(s, 'id-a', { w: 0, h: 480 })).toThrow();
     expect(() => resizeDoc(s, 'id-a', { w: 640, h: -1 })).toThrow();
   });
+  it('wirft bei unbekanntem Dokument', () => {
+    expect(() => resizeDoc(emptyState(), 'fehlt', { w: 640, h: 480 })).toThrow(/nicht gefunden/);
+  });
 });

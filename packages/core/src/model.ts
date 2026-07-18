@@ -67,6 +67,7 @@ export function isValidState(v: unknown): v is DesktopState {
     Array.isArray(s.docs) &&
     Array.isArray(s.links) &&
     Array.isArray(s.stacks) &&
+    (s.strokes === undefined || Array.isArray(s.strokes)) &&
     s.docs.every(
       (d) =>
         !!d && typeof d.id === 'string' && typeof d.fileId === 'string' && typeof d.name === 'string',

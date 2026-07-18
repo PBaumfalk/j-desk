@@ -36,6 +36,15 @@ describe('getFileUrl', () => {
     expect(fetchFile).toHaveBeenCalledTimes(1);
   });
 
+  it('bedient sich aus IndexedDB, ohne den Server zu fragen', async () => {
+    const { idbPut, FILE_STORE } = await import('./idb');
+    await idbPut(FILE_STORE, 'file-cache-test-idb', new Uint8Array([9, 9]));
+    const fetchFile = vi.fn();
+    const api = { fetchFile } as unknown as ApiClient;
+    await expect(getFileUrl(api, 'file-cache-test-idb')).resolves.toMatch(/^blob:/);
+    expect(fetchFile).not.toHaveBeenCalled();
+  });
+
   it('wiederholt nach einem Fehlschlag statt den Fehler zu cachen', async () => {
     const fetchFile = vi
       .fn()

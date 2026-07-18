@@ -14,6 +14,12 @@ describe('isValidState', () => {
     expect(isValidState({ docs: [], links: [] })).toBe(false);
     expect(isValidState({ docs: [{ id: 'x' }], links: [], stacks: [] })).toBe(false);
   });
+
+  it('akzeptiert fehlendes strokes-Feld, lehnt Nicht-Array ab', () => {
+    expect(isValidState({ docs: [], links: [], stacks: [] })).toBe(true);
+    expect(isValidState({ docs: [], links: [], stacks: [], strokes: [] })).toBe(true);
+    expect(isValidState({ docs: [], links: [], stacks: [], strokes: 'kritzel' })).toBe(false);
+  });
 });
 
 describe('Doc-Viewer-Felder (Abwärtskompatibilität)', () => {
