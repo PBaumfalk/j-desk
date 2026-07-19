@@ -2,7 +2,7 @@
   import {
     strokesFor, uid, type Size, type Stroke, type StrokeTool, type Vec2,
   } from '@digital-desktop/core';
-  import { toBase, toScreen, hitStroke } from '../inkMath';
+  import { clientToBase, toScreen, hitStroke } from '../inkMath';
   import { desktop } from '../store.svelte';
 
   export type InkTool = StrokeTool | 'eraser' | 'line';
@@ -74,8 +74,11 @@
 
   function localPoint(e: PointerEvent): Vec2 | null {
     if (!canvas || !base) return null;
+    // getBoundingClientRect liefert die ECHTE Bildschirmgröße (inkl. Welt-Zoom) —
+    // nur damit landet der Strich exakt unter dem Cursor.
     const r = canvas.getBoundingClientRect();
-    return toBase({ x: e.clientX - r.left, y: e.clientY - r.top }, renderedWidth, base);
+    if (r.width === 0) return null;
+    return clientToBase({ x: e.clientX, y: e.clientY }, r, base);
   }
 
   function onPointerDown(e: PointerEvent) {

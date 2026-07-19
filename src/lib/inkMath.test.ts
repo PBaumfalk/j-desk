@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toBase, toScreen, distPointToSegment, hitStroke } from './inkMath';
+import { toBase, toScreen, clientToBase, distPointToSegment, hitStroke } from './inkMath';
 import type { Stroke } from '@digital-desktop/core';
 
 const base = { w: 300, h: 400 };
@@ -14,6 +14,24 @@ describe('Koordinaten-Mapping', () => {
 
   it('ist bei renderedWidth == baseWidth die Identität', () => {
     expect(toBase({ x: 10, y: 20 }, 300, base)).toEqual({ x: 10, y: 20 });
+  });
+});
+
+describe('clientToBase (UAT-Befund: Strich neben dem Cursor bei Tisch-Zoom ≠ 1)', () => {
+  it('nutzt die tatsächlich gerenderte Rect-Breite, nicht die nominelle', () => {
+    // Seite nominell 600px breit gerendert, aber die Welt ist auf 0.8 gezoomt:
+    // auf dem Bildschirm ist die Seite nur 480px breit.
+    const rect = { left: 100, top: 50, width: 480 };
+    // Klick exakt in die Seitenmitte auf dem Bildschirm:
+    const b = clientToBase({ x: 100 + 240, y: 50 + 320 }, rect, base);
+    expect(b.x).toBeCloseTo(150, 6); // Mitte im Basisraum
+    expect(b.y).toBeCloseTo(200, 6);
+  });
+
+  it('stimmt bei Zoom 1 mit toBase überein', () => {
+    const rect = { left: 10, top: 20, width: 600 };
+    const client = { x: 10 + 150, y: 20 + 100 };
+    expect(clientToBase(client, rect, base)).toEqual(toBase({ x: 150, y: 100 }, 600, base));
   });
 });
 

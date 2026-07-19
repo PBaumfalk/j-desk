@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { moveDoc, setDocPage, uid, DEFAULT_OPEN_SIZE, FLAG_COLORS, type Doc, type Size, type Viewport } from '@digital-desktop/core';
   import { debounce } from '../debounce';
+  import { clientToBase } from '../inkMath';
   import { desktop } from '../store.svelte';
   import { showToast } from '../ui.svelte';
   import PageRenderer from './PageRenderer.svelte';
@@ -93,9 +94,11 @@
   function pagePoint(e: PointerEvent): { x: number; y: number } | null {
     const wrap = (e.currentTarget as HTMLElement).closest('.pagewrap');
     if (!wrap || !baseSize) return null;
+    // Echte Bildschirmbreite statt nomineller pageWidth — der Viewer liegt in der
+    // gezoomten Welt-Ebene (UAT-Befund: Schnitt/Stempel neben dem Cursor).
     const r = wrap.getBoundingClientRect();
-    const f = baseSize.w / pageWidth; // Overlay-Pixel -> Basiskoordinaten
-    return { x: (e.clientX - r.left) * f, y: (e.clientY - r.top) * f };
+    if (r.width === 0) return null;
+    return clientToBase({ x: e.clientX, y: e.clientY }, r, baseSize);
   }
   function schnittDown(e: PointerEvent) {
     if (e.button !== 0 || schnittPointer !== null) return;

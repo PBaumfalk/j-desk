@@ -12,6 +12,19 @@ export function toScreen(p: Vec2, renderedWidth: number, base: Size): Vec2 {
   return { x: p.x * f, y: p.y * f };
 }
 
+/** Bildschirm-Koordinate (clientX/Y) → Basisraum, über die TATSÄCHLICH gerenderte
+    Rect-Breite. Wichtig: Der Viewer liegt in der gezoomten Welt-Ebene — bei Zoom ≠ 1
+    ist die Bildschirmbreite nicht die nominelle CSS-Breite; wer mit der nominellen
+    rechnet, zeichnet neben dem Cursor (UAT-Befund A6/A8/A9). */
+export function clientToBase(
+  client: Vec2,
+  rect: { left: number; top: number; width: number },
+  base: Size,
+): Vec2 {
+  const f = base.w / rect.width;
+  return { x: (client.x - rect.left) * f, y: (client.y - rect.top) * f };
+}
+
 /** Kürzester Abstand eines Punkts zum Segment a–b. */
 export function distPointToSegment(p: Vec2, a: Vec2, b: Vec2): number {
   const abx = b.x - a.x;
