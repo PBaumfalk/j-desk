@@ -147,10 +147,14 @@ export function buildMcpServer(deps: McpDeps): McpServer {
 
   tool(server, 'add_note',
     'Legt einen Notizzettel bzw. ein Gedankenobjekt auf den Schreibtisch (Platzhalter im Text werden in Klartext übersetzt).',
-    { deskId: z.string(), kind: z.enum(['notiz', 'frage', 'these', 'angriffspunkt', 'risiko']), text: z.string(), x: z.number(), y: z.number() },
+    { deskId: z.string(), kind: z.enum(['notiz', 'frage', 'these', 'angriffspunkt', 'risiko', 'behauptung', 'beweisziel', 'idee', 'todo', 'argument', 'rechtsfrage', 'eigen']),
+      text: z.string(), x: z.number(), y: z.number(), customLabel: z.string().optional() },
     async (a) => {
       const id = randomUUID();
-      await cmd(a.deskId, 'addNote', { kind: a.kind, text: deanon(String(a.text)), position: { x: a.x, y: a.y }, id });
+      await cmd(a.deskId, 'addNote', {
+        kind: a.kind, text: deanon(String(a.text)), position: { x: a.x, y: a.y }, id,
+        ...(a.customLabel !== undefined ? { customLabel: deanon(String(a.customLabel)) } : {}),
+      });
       return { ok: true, id };
     });
 
@@ -161,6 +165,67 @@ export function buildMcpServer(deps: McpDeps): McpServer {
   tool(server, 'remove_note', 'Entfernt einen Notizzettel samt seiner Schnüre.',
     { deskId: z.string(), noteId: z.string() },
     (a) => cmd(a.deskId, 'removeNote', { id: a.noteId }));
+
+  const FLAG_FARBEN: Record<string, string> = { gelb: '#f5c518', rot: '#e5484d', blau: '#3b82f6', gruen: '#30a46c' };
+  const STAMP_PRESETS: Record<string, { color: 'red' | 'blue'; withDate?: boolean }> = {
+    ERLEDIGT: { color: 'red' }, WICHTIG: { color: 'red' }, 'FRIST!': { color: 'red' },
+    GEPRÜFT: { color: 'blue' }, EINGANG: { color: 'blue', withDate: true }, ENTWURF: { color: 'blue' }, KOPIE: { color: 'blue' },
+  };
+
+  tool(server, 'add_stamp',
+    'Stempelt eine Dokumentseite: preset (ERLEDIGT/WICHTIG/FRIST!/GEPRÜFT/EINGANG/ENTWURF/KOPIE) ODER freeText (Platzhalter werden übersetzt). Position automatisch oben rechts.',
+    { deskId: z.string(), docId: z.string(), page: z.number(), preset: z.string().optional(), freeText: z.string().optional() },
+    async (a) => {
+      const id = randomUUID();
+      const preset = a.preset === undefined ? undefined : STAMP_PRESETS[String(a.preset)];
+      if (a.preset !== undefined && !preset) throw new Error(`Unbekanntes Preset: ${String(a.preset)}`);
+      if (!preset && a.freeText === undefined) throw new Error('preset oder freeText angeben');
+      const text = preset ? String(a.preset) : deanon(String(a.freeText));
+      await cmd(a.deskId, 'addStamp', { stamp: {
+        id, docId: a.docId, page: a.page, x: 595 - 130, y: 70,
+        angle: (id.charCodeAt(0) % 13) - 6, text, color: preset?.color ?? 'blue',
+        ...(preset?.withDate ? { date: new Date().toISOString().slice(0, 10) } : {}),
+        baseW: 595, baseH: 842,
+      } });
+      return { ok: true, id };
+    });
+
+  tool(server, 'remove_stamp', 'Entfernt einen Stempelabdruck.', { deskId: z.string(), stampId: z.string() },
+    (a) => cmd(a.deskId, 'removeStamp', { stampId: a.stampId }));
+
+  tool(server, 'add_flag', 'Setzt eine Notizfahne (gelb/rot/blau/gruen) an den Seitenrand — Klick springt zur Seite.',
+    { deskId: z.string(), docId: z.string(), page: z.number(), color: z.enum(['gelb', 'rot', 'blau', 'gruen']) },
+    async (a) => {
+      const id = randomUUID();
+      const s = await desk.getState(base, token, String(a.deskId));
+      const vorhandene = (s.state.flags ?? []).filter((f) => f.docId === a.docId).length;
+      await cmd(a.deskId, 'addFlag', { flag: { id, docId: a.docId, page: a.page, offset: Math.min(0.9, 0.08 + vorhandene * 0.18), color: FLAG_FARBEN[String(a.color)] } });
+      return { ok: true, id };
+    });
+
+  tool(server, 'remove_flag', 'Entfernt eine Notizfahne.', { deskId: z.string(), flagId: z.string() },
+    (a) => cmd(a.deskId, 'removeFlag', { flagId: a.flagId }));
+
+  tool(server, 'staple_stack', 'Heftet einen Stapel zum Konvolut (blättert dann als Ganzes).', { deskId: z.string(), stackId: z.string() },
+    (a) => cmd(a.deskId, 'stapleStack', { stackId: a.stackId }));
+
+  tool(server, 'unstaple_stack', 'Entheftet ein Konvolut wieder zum losen Stapel.', { deskId: z.string(), stackId: z.string() },
+    (a) => cmd(a.deskId, 'unstapleStack', { stackId: a.stackId }));
+
+  tool(server, 'clip_objects', 'Klammert zwei Objekte zusammen (gemeinsames Verschieben).', { deskId: z.string(), aId: z.string(), bId: z.string() },
+    (a) => cmd(a.deskId, 'addClip', { aId: a.aId, bId: a.bId, id: randomUUID() }));
+
+  tool(server, 'remove_clip', 'Löst eine Büroklammer-Gruppe.', { deskId: z.string(), clipId: z.string() },
+    (a) => cmd(a.deskId, 'removeClip', { clipId: a.clipId }));
+
+  tool(server, 'trash_object', 'Legt ein Objekt in den Papierkorb (wiederherstellbar — NICHT endgültig).', { deskId: z.string(), objectId: z.string() },
+    (a) => cmd(a.deskId, 'trashObject', { id: a.objectId, trashedAt: new Date().toISOString() }));
+
+  tool(server, 'restore_trash', 'Holt einen Korb-Eintrag zurück auf den Tisch.', { deskId: z.string(), trashId: z.string() },
+    (a) => cmd(a.deskId, 'restoreObject', { trashId: a.trashId }));
+
+  tool(server, 'set_note_done', 'Hakt einen To-do-Zettel ab oder hebt das Abhaken auf.', { deskId: z.string(), noteId: z.string(), done: z.boolean() },
+    (a) => cmd(a.deskId, 'setNoteDone', { id: a.noteId, done: a.done }));
 
   tool(server, 'extract_page',
     'Enthefterzange: löst eine Seite eines Dokuments als eigene Karte heraus (nicht destruktiv).',

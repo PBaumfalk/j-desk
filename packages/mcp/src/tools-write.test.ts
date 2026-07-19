@@ -172,3 +172,165 @@ describe('Vision-Objekte (Zettel, Schnüre, Enthefter)', () => {
     expect(seite.name).toContain('S. 2');
   });
 });
+
+describe('Neue Schreib-Tools (Stempel, Fahnen, Heften, Klammern, Korb, To-do)', () => {
+  it('add_stamp: Preset landet mit korrekter Farbe im State, Position oben rechts', async () => {
+    const deskId = await ts.createDesk('Stempel-Desk');
+    const docId = await ts.addDoc(deskId, 'Vertrag.pdf');
+    const r = await ts.mcpClient.callTool({ name: 'add_stamp', arguments: { deskId, docId, page: 1, preset: 'ERLEDIGT' } });
+    expect(r.isError).toBeFalsy();
+    const s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s.state.stamps).toHaveLength(1);
+    const stamp = s.state.stamps![0];
+    expect(stamp.text).toBe('ERLEDIGT');
+    expect(stamp.color).toBe('red');
+    expect(stamp.x > stamp.baseW / 2 && stamp.y < stamp.baseH / 4).toBe(true);
+  });
+
+  it('add_stamp: freeText wird deanonymisiert', async () => {
+    const deskId = await ts.createDesk('Stempel-Freitext-Desk');
+    await ts.addDoc(deskId, 'Rechnung Max Mustermann.pdf');
+    await ts.mcpClient.callTool({ name: 'get_desk', arguments: { deskId } }); // füllt Mapping
+    const docId = await ts.addDoc(deskId, 'Vertrag.pdf');
+    const r = await ts.mcpClient.callTool({
+      name: 'add_stamp',
+      arguments: { deskId, docId, page: 1, freeText: 'Für [[Person-TEST1]]' },
+    });
+    expect(r.isError).toBeFalsy();
+    const s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s.state.stamps![0].text).toBe('Für Max Mustermann');
+    expect(s.state.stamps![0].color).toBe('blue');
+  });
+
+  it('add_stamp: Preset EINGANG trägt ein Datum', async () => {
+    const deskId = await ts.createDesk('Stempel-Eingang-Desk');
+    const docId = await ts.addDoc(deskId, 'Post.pdf');
+    const r = await ts.mcpClient.callTool({ name: 'add_stamp', arguments: { deskId, docId, page: 1, preset: 'EINGANG' } });
+    expect(r.isError).toBeFalsy();
+    const s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(typeof s.state.stamps![0].date).toBe('string');
+  });
+
+  it('remove_stamp entfernt einen Stempel wieder', async () => {
+    const deskId = await ts.createDesk('Stempel-Entfernen-Desk');
+    const docId = await ts.addDoc(deskId, 'Vertrag.pdf');
+    const angelegt = JSON.parse(textOf(await ts.mcpClient.callTool({
+      name: 'add_stamp', arguments: { deskId, docId, page: 1, preset: 'KOPIE' },
+    })));
+    await ts.mcpClient.callTool({ name: 'remove_stamp', arguments: { deskId, stampId: angelegt.id } });
+    const s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s.state.stamps).toHaveLength(0);
+  });
+
+  it('add_flag/remove_flag: Farbe wird gemappt, Offset wächst je Fahne am Dokument', async () => {
+    const deskId = await ts.createDesk('Fahnen-Desk');
+    const docId = await ts.addDoc(deskId, 'Akte.pdf');
+    const r1 = await ts.mcpClient.callTool({ name: 'add_flag', arguments: { deskId, docId, page: 1, color: 'gelb' } });
+    expect(r1.isError).toBeFalsy();
+    const r2 = await ts.mcpClient.callTool({ name: 'add_flag', arguments: { deskId, docId, page: 2, color: 'gruen' } });
+    expect(r2.isError).toBeFalsy();
+    const s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s.state.flags).toHaveLength(2);
+    expect(s.state.flags![0].color).toBe('#f5c518');
+    expect(s.state.flags![0].offset).toBeCloseTo(0.08);
+    expect(s.state.flags![1].color).toBe('#30a46c');
+    expect(s.state.flags![1].offset).toBeCloseTo(0.26);
+
+    const id2 = JSON.parse(textOf(r2)).id;
+    await ts.mcpClient.callTool({ name: 'remove_flag', arguments: { deskId, flagId: id2 } });
+    const s2 = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s2.state.flags).toHaveLength(1);
+  });
+
+  it('staple_stack/unstaple_stack: Konvolut-Status wird umgeschaltet', async () => {
+    const deskId = await ts.createDesk('Heft-Desk');
+    const a = await ts.addDoc(deskId, 'A.pdf');
+    const b = await ts.addDoc(deskId, 'B.pdf');
+    await ts.mcpClient.callTool({ name: 'stack_documents', arguments: { deskId, draggedId: a, targetId: b } });
+    const stackId = (await getState(ts.deskUrl, ts.token, deskId)).state.stacks[0].id;
+
+    const r = await ts.mcpClient.callTool({ name: 'staple_stack', arguments: { deskId, stackId } });
+    expect(r.isError).toBeFalsy();
+    expect((await getState(ts.deskUrl, ts.token, deskId)).state.stacks[0].stapled).toBe(true);
+
+    const r2 = await ts.mcpClient.callTool({ name: 'unstaple_stack', arguments: { deskId, stackId } });
+    expect(r2.isError).toBeFalsy();
+    expect((await getState(ts.deskUrl, ts.token, deskId)).state.stacks[0].stapled).toBe(false);
+  });
+
+  it('clip_objects/remove_clip: Klammer-Gruppe entsteht und lässt sich lösen', async () => {
+    const deskId = await ts.createDesk('Klammer-Desk');
+    const a = await ts.addDoc(deskId, 'A.pdf');
+    const b = await ts.addDoc(deskId, 'B.pdf');
+    const r = await ts.mcpClient.callTool({ name: 'clip_objects', arguments: { deskId, aId: a, bId: b } });
+    expect(r.isError).toBeFalsy();
+    const s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s.state.clips).toHaveLength(1);
+    const clipId = s.state.clips![0].id;
+    await ts.mcpClient.callTool({ name: 'remove_clip', arguments: { deskId, clipId } });
+    const s2 = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s2.state.clips).toHaveLength(0);
+  });
+
+  it('trash_object/restore_trash: Objekt landet im Korb und lässt sich zurückholen', async () => {
+    const deskId = await ts.createDesk('Korb-Desk');
+    const docId = await ts.addDoc(deskId, 'A.pdf');
+    const r = await ts.mcpClient.callTool({ name: 'trash_object', arguments: { deskId, objectId: docId } });
+    expect(r.isError).toBeFalsy();
+    let s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s.state.trash).toHaveLength(1);
+    expect(s.state.docs).toHaveLength(0);
+    const trashId = s.state.trash![0].id;
+
+    const r2 = await ts.mcpClient.callTool({ name: 'restore_trash', arguments: { deskId, trashId } });
+    expect(r2.isError).toBeFalsy();
+    s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s.state.trash).toHaveLength(0);
+    expect(s.state.docs).toHaveLength(1);
+  });
+
+  it('set_note_done: hakt einen To-do-Zettel ab und wieder auf', async () => {
+    const deskId = await ts.createDesk('Todo-Desk');
+    const note = JSON.parse(textOf(await ts.mcpClient.callTool({
+      name: 'add_note', arguments: { deskId, kind: 'todo', text: 'Frist prüfen', x: 0, y: 0 },
+    })));
+    const r = await ts.mcpClient.callTool({ name: 'set_note_done', arguments: { deskId, noteId: note.id, done: true } });
+    expect(r.isError).toBeFalsy();
+    let s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s.state.notes![0].done).toBe(true);
+    await ts.mcpClient.callTool({ name: 'set_note_done', arguments: { deskId, noteId: note.id, done: false } });
+    s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s.state.notes![0].done).toBe(false);
+  });
+
+  it('add_note: kind "rechtsfrage" wird akzeptiert', async () => {
+    const deskId = await ts.createDesk('Rechtsfrage-Desk');
+    const r = await ts.mcpClient.callTool({
+      name: 'add_note', arguments: { deskId, kind: 'rechtsfrage', text: 'Verjährt das?', x: 0, y: 0 },
+    });
+    expect(r.isError).toBeFalsy();
+    const s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s.state.notes![0].kind).toBe('rechtsfrage');
+  });
+
+  it('add_note: kind "eigen" mit customLabel wird deanonymisiert durchgereicht', async () => {
+    const deskId = await ts.createDesk('Eigen-Desk');
+    await ts.addDoc(deskId, 'Rechnung Max Mustermann.pdf');
+    await ts.mcpClient.callTool({ name: 'get_desk', arguments: { deskId } }); // füllt Mapping
+    const r = await ts.mcpClient.callTool({
+      name: 'add_note',
+      arguments: { deskId, kind: 'eigen', text: 'Sonderfall', customLabel: '[[Person-TEST1]]', x: 0, y: 0 },
+    });
+    expect(r.isError).toBeFalsy();
+    const s = await getState(ts.deskUrl, ts.token, deskId);
+    expect(s.state.notes![0].customLabel).toBe('Max Mustermann');
+  });
+
+  it('add_note: kind "eigen" ohne customLabel schlägt fehl', async () => {
+    const deskId = await ts.createDesk('Eigen-Fehler-Desk');
+    const r = await ts.mcpClient.callTool({
+      name: 'add_note', arguments: { deskId, kind: 'eigen', text: 'Sonderfall', x: 0, y: 0 },
+    });
+    expect(r.isError).toBe(true);
+  });
+});
