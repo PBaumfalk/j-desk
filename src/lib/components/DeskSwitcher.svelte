@@ -1,10 +1,11 @@
 <script lang="ts">
   import {
-    deskBackground, DESK_MATERIALS, DESK_THEME_IDS,
-    type DeskMaterial, type DeskThemeId,
+    deskBackground, DEFAULT_BACKGROUND, DESK_MATERIALS, DESK_THEME_IDS,
+    type DeskBackground, type DeskMaterial, type DeskThemeId,
   } from '@digital-desktop/core';
   import { desktop } from '../store.svelte';
   import { MATERIAL_LABELS, THEME_LABELS, themeSwatch } from '../deskThemes';
+  import { ui } from '../ui.svelte';
 
   let open = $state(false);
   let mode = $state<'liste' | 'neu' | 'umbenennen' | 'gestaltung'>('liste');
@@ -13,6 +14,8 @@
 
   const aktiv = $derived(desktop.desks.find((d) => d.id === desktop.deskId));
   const hintergrund = $derived(deskBackground(desktop.state));
+  /** Wirksames Erscheinungsbild: lokale Regler-Vorschau vor dem gespeicherten Zustand. */
+  const wirksam = $derived(ui.backgroundPreview ?? hintergrund);
   const akten = $derived(desktop.mode === 'jlawyer');
   const gefiltert = $derived(
     suche.trim() === ''
@@ -23,6 +26,7 @@
   function toggle() {
     open = !open;
     mode = 'liste';
+    ui.backgroundPreview = null;
   }
 
   function startNeu() {
@@ -43,13 +47,16 @@
     open = false;
   }
 
-  /** Farbe/Material live umstellen — das Menü bleibt offen, damit man vergleichen kann. */
-  async function waehleFarbe(themeId: DeskThemeId) {
-    await desktop.command('setBackground', { background: { ...hintergrund, themeId } });
+  /** Regler-Vorschau: Tisch folgt sofort, ohne Command (kein Sync-Spam beim Ziehen). */
+  function vorschau(teil: Partial<DeskBackground>) {
+    ui.backgroundPreview = { ...wirksam, ...teil };
   }
 
-  async function waehleMaterial(material: DeskMaterial) {
-    await desktop.command('setBackground', { background: { ...hintergrund, material } });
+  /** Wert übernehmen: Vorschau beenden und als Command speichern (synct beim Loslassen). */
+  async function uebernehmen(teil: Partial<DeskBackground>) {
+    const ziel = { ...wirksam, ...teil };
+    ui.backgroundPreview = null;
+    await desktop.command('setBackground', { background: ziel });
   }
 
   async function loeschen() {
@@ -73,7 +80,8 @@
 <div class="switcher">
   <button class="current" onclick={toggle}>{aktiv?.name ?? '…'} ▾</button>
   {#if open}
-    <div class="backdrop" role="presentation" onpointerdown={(e) => { e.stopPropagation(); open = false; }}></div>
+    <div class="backdrop" role="presentation"
+         onpointerdown={(e) => { e.stopPropagation(); open = false; ui.backgroundPreview = null; }}></div>
     <div class="menu" role="menu" tabindex="-1" onpointerdown={(e) => e.stopPropagation()}>
       {#if mode === 'liste'}
         {#if akten}
@@ -101,20 +109,37 @@
         <div class="abschnitt">Farbe</div>
         <div class="farben">
           {#each DESK_THEME_IDS as themeId (themeId)}
-            <button class="farbe" class:aktiv={themeId === hintergrund.themeId}
+            <button class="farbe" class:aktiv={themeId === wirksam.themeId}
                     style={`background: ${themeSwatch(themeId)}`}
                     title={THEME_LABELS[themeId]} aria-label={THEME_LABELS[themeId]}
-                    aria-pressed={themeId === hintergrund.themeId}
-                    onclick={() => void waehleFarbe(themeId)}></button>
+                    aria-pressed={themeId === wirksam.themeId}
+                    onclick={() => void uebernehmen({ themeId })}></button>
           {/each}
         </div>
         <div class="abschnitt">Material</div>
         {#each DESK_MATERIALS as material (material)}
-          <button class="item" aria-pressed={material === hintergrund.material}
-                  onclick={() => void waehleMaterial(material)}>
-            {material === hintergrund.material ? '✓ ' : ''}{MATERIAL_LABELS[material]}
+          <button class="item" aria-pressed={material === wirksam.material}
+                  onclick={() => void uebernehmen({ material })}>
+            {material === wirksam.material ? '✓ ' : ''}{MATERIAL_LABELS[material]}
           </button>
         {/each}
+        <div class="abschnitt">Helligkeit</div>
+        <input class="regler" type="range" min="0.75" max="1.25" step="0.01" aria-label="Helligkeit"
+               value={wirksam.brightness}
+               oninput={(e) => vorschau({ brightness: Number(e.currentTarget.value) })}
+               onchange={(e) => void uebernehmen({ brightness: Number(e.currentTarget.value) })} />
+        <div class="abschnitt">Struktur</div>
+        <input class="regler" type="range" min="0" max="1" step="0.01" aria-label="Strukturintensität"
+               value={wirksam.textureIntensity}
+               oninput={(e) => vorschau({ textureIntensity: Number(e.currentTarget.value) })}
+               onchange={(e) => void uebernehmen({ textureIntensity: Number(e.currentTarget.value) })} />
+        <label class="haken">
+          <input type="checkbox" checked={wirksam.vignette}
+                 onchange={(e) => void uebernehmen({ vignette: e.currentTarget.checked })} />
+          Randabdunklung
+        </label>
+        <hr />
+        <button class="item" onclick={() => void uebernehmen({ ...DEFAULT_BACKGROUND })}>Zurücksetzen</button>
         <div class="row">
           <button class="item" onclick={() => (mode = 'liste')}>Zurück</button>
         </div>
@@ -151,7 +176,11 @@
   .leer { padding: 8px 10px; font-size: 12px; color: #888; }
   .menu { position: absolute; top: 36px; left: 0; z-index: 9002; min-width: 230px; padding: 4px;
           border-radius: 10px; background: rgba(255, 255, 255, .97); box-shadow: 0 8px 30px rgba(0, 0, 0, .35);
-          display: flex; flex-direction: column; gap: 2px; }
+          display: flex; flex-direction: column; gap: 2px;
+          max-height: calc(100vh - 56px); overflow-y: auto; }
+  /* Regler: volle Menübreite, touch-freundlich; touch-action verhindert Scrollen beim Ziehen. */
+  .regler { width: calc(100% - 20px); margin: 2px 10px 8px; accent-color: #2b5bd7; touch-action: none; }
+  .haken { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
   .item { text-align: left; padding: 7px 10px; border: none; background: none; border-radius: 6px;
           font-size: 13px; cursor: pointer; }
   .item:hover { background: #e8eefc; }

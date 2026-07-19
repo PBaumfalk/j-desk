@@ -31,8 +31,8 @@
   let viewW = $state(0);
   let viewH = $state(0);
 
-  // Erscheinungsbild des Schreibtischs (Farbe/Material) — pro Schreibtisch im Zustand gespeichert.
-  const hintergrund = $derived(deskBackground(desktop.state));
+  // Erscheinungsbild des Schreibtischs (Farbe/Material/Regler) — Regler-Vorschau vor gespeichertem Zustand.
+  const hintergrund = $derived(ui.backgroundPreview ?? deskBackground(desktop.state));
   const hintergrundStil = $derived(deskCss(hintergrund));
 
   // Sichtbarkeits-Culling: Karten weit außerhalb des Fensters verlassen das DOM.

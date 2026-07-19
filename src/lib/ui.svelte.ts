@@ -1,3 +1,5 @@
+import type { DeskBackground } from '@digital-desktop/core';
+
 export interface MenuItem {
   label: string;
   action: () => void;
@@ -19,6 +21,8 @@ export const ui = $state({
   /** Papierkorb: Bildschirm-Rechteck (Drop-Ziel) und geöffnetes Panel. */
   trashRect: null as { x: number; y: number; w: number; h: number } | null,
   trashOpen: false,
+  /** Gestaltung: lokale Regler-Vorschau — wirkt nur auf die Darstellung, bis das Command beim Loslassen gesendet ist. */
+  backgroundPreview: null as DeskBackground | null,
 });
 
 export function showToast(message: string): void {
