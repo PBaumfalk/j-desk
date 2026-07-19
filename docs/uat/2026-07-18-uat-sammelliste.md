@@ -1,7 +1,7 @@
 # UAT-Sammelliste — alle offenen manuellen Tests (Stand 2026-07-18)
 
-Konsolidiert alle „pending user verification"-Punkte. **129 Punkte in drei aktiven Blöcken**
-(A mit 103, C′ mit 12, D mit 14) — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
+Konsolidiert alle „pending user verification"-Punkte. **132 Punkte in drei aktiven Blöcken**
+(A mit 106, C′ mit 12, D mit 14) — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
 kann in einer Sitzung durchgetestet werden.
 
 **Empfohlene Reihenfolge:** Block A (aktueller Branch, enthält jetzt auch Zettel A7 und
@@ -15,7 +15,7 @@ MCP-Portierung C′) → Block D (j-lawyer-Modus, braucht deine Instanz).
 
 ---
 
-## Block A — Browser-App (Branch `feature/inline-viewer`, 103 Punkte)
+## Block A — Browser-App (Branch `feature/inline-viewer`, 106 Punkte)
 
 **Setup:**
 
@@ -174,6 +174,12 @@ iPad:
 - [ ] A13.1 Rechtsklick (Mac) bzw. Lang-Druck auf die Kopfzeile (iPad) eines AUFGESCHLAGENEN Dokuments → Kontextmenü mit „Zuklappen" zuoberst; „Verknüpfen…" funktioniert vom Viewer aus UND eine wartende Verknüpfung lässt sich durch Klick auf den Viewer vervollständigen (Schnur ankert am Viewer).
 - [ ] A13.2 Im Viewer auf eine andere Seite blättern, zuklappen → die Karten-Miniatur zeigt die zuletzt gesehene Seite (nicht mehr stur Seite 1); Reload erhält das.
 - [ ] A13.3 Lupe (🔍) über einem aufgeschlagenen Dokument → das Abbild (Kopfzeile + Seite samt Strichen/Stempeln) erscheint vergrößert in der Lupe.
+
+### A14 — Filz-Doppelklick & Karten-Suche (NEU; E2E vorverifiziert)
+
+- [ ] A14.1 Doppelklick (Mac) / Doppeltipp (iPad) auf freie Tischfläche → Notizzettel entsteht genau dort und ist sofort beschreibbar; Doppelklick auf Karten/Zettel/Viewer legt KEINEN neuen an.
+- [ ] A14.2 🔎 im Bedienfeld oder ⌘F → Suchfeld oben; tippen → Live-Treffer (Karten, Stapel, Zettel inkl. Badges); Klick/Enter springt hin, Ziel pulst ~2 s; Escape schließt.
+- [ ] A14.3 Suche bei niedrigem Zoom (weit rausgezoomt) → Sprung hebt den Zoom auf lesbare Stufe an; im Akten-Modus funktioniert die Suche genauso.
 
 ### C′ — MCP auf dem Rework-Strang (ersetzt Block C; 12 Prüfungen, neues Setup)
 
