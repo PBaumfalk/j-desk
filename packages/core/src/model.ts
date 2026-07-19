@@ -105,7 +105,10 @@ export function isValidState(v: unknown): v is DesktopState {
     (s.trash === undefined || Array.isArray(s.trash)) &&
     (s.background === undefined ||
       (!!s.background && typeof s.background === 'object' &&
-        typeof s.background.themeId === 'string' && typeof s.background.material === 'string')) &&
+        typeof s.background.themeId === 'string' && typeof s.background.material === 'string' &&
+        (s.background.brightness === undefined || typeof s.background.brightness === 'number') &&
+        (s.background.textureIntensity === undefined || typeof s.background.textureIntensity === 'number') &&
+        (s.background.vignette === undefined || typeof s.background.vignette === 'boolean'))) &&
     s.docs.every(
       (d) =>
         !!d && typeof d.id === 'string' && typeof d.fileId === 'string' && typeof d.name === 'string',

@@ -122,10 +122,12 @@ const handlers: Record<string, (s: DesktopState, p: Record<string, unknown>) => 
 function backgroundPayload(v: unknown): DeskBackground {
   const b = v as Partial<DeskBackground> | undefined;
   if (!b || typeof b !== 'object') throw new CommandError('Feld "background" fehlt');
-  return {
-    themeId: text(b.themeId, 'background.themeId') as DeskBackground['themeId'],
-    material: text(b.material, 'background.material') as DeskBackground['material'],
-  };
+  const themeId = text(b.themeId, 'background.themeId') as DeskBackground['themeId'];
+  const material = text(b.material, 'background.material') as DeskBackground['material'];
+  const brightness = num(b.brightness, 'background.brightness');
+  const textureIntensity = num(b.textureIntensity, 'background.textureIntensity');
+  if (typeof b.vignette !== 'boolean') throw new CommandError('Feld "background.vignette" muss true oder false sein');
+  return { themeId, material, brightness, textureIntensity, vignette: b.vignette };
 }
 
 function rect(v: unknown): { x: number; y: number; w: number; h: number } {
