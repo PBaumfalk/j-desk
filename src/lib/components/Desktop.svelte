@@ -1,76 +1,272 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { open as openDialog } from '@tauri-apps/plugin-dialog';
-  import { readFile } from '@tauri-apps/plugin-fs';
-  import { getCurrentWebview } from '@tauri-apps/api/webview';
   import {
-    freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes,
-    type Vec2, type Viewport,
+    freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes, panBy, docBox, stackBox, noteBox, cutoutBox, CARD_W,
+    NOTE_KINDS, NOTE_W, NOTE_H, deskBackground, type Box, type NoteKind, type Vec2, type Viewport,
   } from '@digital-desktop/core';
+  import { deskCss, isLight } from '../deskThemes';
+  import { uid } from '../uid';
   import { desktop } from '../store.svelte';
+  import { NOTE_KIND_LABELS } from '../menus';
+  import { clearSession } from '../session';
+  import { revokeFileUrls } from '../fileCache';
   import { ui, showToast } from '../ui.svelte';
   import DocCard from './DocCard.svelte';
   import StackCard from './StackCard.svelte';
+  import NoteCard from './NoteCard.svelte';
+  import CutoutCard from './CutoutCard.svelte';
   import LinkLayer from './LinkLayer.svelte';
   import ContextMenu from './ContextMenu.svelte';
   import DeskSwitcher from './DeskSwitcher.svelte';
+  import DeskControls from './DeskControls.svelte';
+  import TrashCan from './TrashCan.svelte';
+
+  let { onlogout }: { onlogout: () => void } = $props();
 
   let vp = $state<Viewport>({ x: 0, y: 0, scale: 1 });
   let el: HTMLDivElement;
   let panning = $state(false);
   let spaceDown = $state(false);
+  let fileInput: HTMLInputElement;
+  let viewW = $state(0);
+  let viewH = $state(0);
 
+  // Erscheinungsbild des Schreibtischs (Farbe/Material/Regler) — Regler-Vorschau vor gespeichertem Zustand.
+  const hintergrund = $derived(ui.backgroundPreview ?? deskBackground(desktop.state));
+  const hintergrundStil = $derived(deskCss(hintergrund));
+
+  // Sichtbarkeits-Culling: Karten weit außerhalb des Fensters verlassen das DOM.
+  // Der Puffer sorgt dafür, dass beim Schwenken nichts sichtbar „aufpoppt".
+  const CULL_MARGIN = 300;
+  const sichtfenster = $derived.by(() => ({
+    x0: -vp.x / vp.scale - CULL_MARGIN,
+    y0: -vp.y / vp.scale - CULL_MARGIN,
+    x1: (viewW - vp.x) / vp.scale + CULL_MARGIN,
+    y1: (viewH - vp.y) / vp.scale + CULL_MARGIN,
+  }));
+  function imSichtfenster(b: Box): boolean {
+    if (viewW === 0) return true; // vor der ersten Messung nichts verstecken
+    return b.x + b.w >= sichtfenster.x0 && b.x <= sichtfenster.x1
+      && b.y + b.h >= sichtfenster.y0 && b.y <= sichtfenster.y1;
+  }
+
+  // Mausrad zoomt zum Cursor (statt zu schwenken).
   function onWheel(e: WheelEvent) {
     e.preventDefault();
-    if (e.ctrlKey || e.metaKey) {
-      vp = zoomAt(vp, { x: e.clientX, y: e.clientY }, Math.exp(-e.deltaY * 0.01));
-    } else {
-      vp = { ...vp, x: vp.x - e.deltaX, y: vp.y - e.deltaY };
+    vp = zoomAt(vp, { x: e.clientX, y: e.clientY }, Math.exp(-e.deltaY * 0.0015));
+  }
+
+  // Pointer-Verfolgung: Ein Finger/Maus schwenkt, zwei Finger pinchen+schwenken.
+  const pointers = new Map<number, { x: number; y: number }>();
+  let panLast: { x: number; y: number } | null = null;
+  let pinchLast = 0;
+
+  function onPointerDown(e: PointerEvent) {
+    if (e.button !== 0) return;
+    // Erster Finger nur auf freier Fläche; weitere Finger dürfen von Karten kommen
+    // (die Karte reicht sie durch, solange der Desk schon pannt — Pinch-Beitritt).
+    if (e.target !== el && pointers.size === 0) return;
+    el.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    ui.deskPointers = pointers.size;
+    if (pointers.size === 1) { panning = true; panLast = { x: e.clientX, y: e.clientY }; }
+  }
+  // Lupe folgt dem Zeiger (auch ohne gedrückte Taste)
+  const LUPE = 260;
+  let lupePos = $state<{ x: number; y: number } | null>(null);
+  const lupenVp = $derived.by(() => {
+    if (!lupePos) return null;
+    const z = vp.scale * 2.5;
+    const w = screenToWorld(vp, lupePos);
+    return { x: LUPE / 2 - w.x * z, y: LUPE / 2 - w.y * z, scale: z };
+  });
+
+  function onPointerMove(e: PointerEvent) {
+    if (ui.lupe) lupePos = { x: e.clientX, y: e.clientY };
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 1 && panLast) {
+      vp = panBy(vp, e.clientX - panLast.x, e.clientY - panLast.y);
+      panLast = { x: e.clientX, y: e.clientY };
+    } else if (pointers.size === 2) {
+      const p = Array.from(pointers.values());
+      const dist = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+      const mid = { x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 };
+      if (pinchLast) vp = zoomAt(vp, mid, dist / pinchLast);
+      pinchLast = dist;
+      panLast = null;
     }
   }
-  function onPointerDown(e: PointerEvent) {
-    if (e.button !== 0 || e.target !== el) return;
-    panning = true;
-    el.setPointerCapture(e.pointerId);
-  }
-  function onPointerMove(e: PointerEvent) {
-    if (panning) vp = { ...vp, x: vp.x + e.movementX, y: vp.y + e.movementY };
-  }
-  function onPointerUp() {
-    panning = false;
+  function endPointer(e: PointerEvent) {
+    pointers.delete(e.pointerId);
+    ui.deskPointers = pointers.size;
+    if (pointers.size < 2) pinchLast = 0;
+    if (pointers.size === 0) { panning = false; panLast = null; }
+    else if (pointers.size === 1) { const p = Array.from(pointers.values())[0]; panLast = { x: p.x, y: p.y }; }
   }
 
   function fitAll() {
     vp = zoomToFit(allBoxes(desktop.state), { w: el.clientWidth, h: el.clientHeight });
   }
 
-  async function addPdfFromPath(path: string, position: Vec2): Promise<void> {
-    if (!desktop.api) return;
-    const name = path.split('/').pop() ?? 'Dokument.pdf';
+  async function addFile(file: File, position: Vec2): Promise<void> {
+    if (!desktop.api || !desktop.deskId) return;
     try {
-      const fileId = await desktop.api.uploadFile(await readFile(path), name);
-      await desktop.command('addDoc', { fileId, name, position, id: crypto.randomUUID() });
+      if (desktop.mode === 'jlawyer') {
+        // Upload in die Akte; die Karte legt der Server erst nach j-lawyer-Bestätigung an.
+        const result = await desktop.api.uploadToCase(desktop.deskId, new Uint8Array(await file.arrayBuffer()), file.name);
+        desktop.acceptServerState(result);
+        return;
+      }
+      const r = await desktop.api.uploadFile(new Uint8Array(await file.arrayBuffer()), file.name, file.type || undefined);
+      await desktop.command('addDoc', { fileId: r.fileId, name: file.name, position, id: uid(), kind: r.kind });
     } catch (e) {
-      showToast(e instanceof Error ? e.message : `Upload fehlgeschlagen: ${name}`);
+      showToast(e instanceof Error ? e.message : `Upload fehlgeschlagen: ${file.name}`);
     }
   }
 
-  async function addViaDialog(): Promise<void> {
-    const picked = await openDialog({ multiple: true, filters: [{ name: 'PDF', extensions: ['pdf'] }] });
-    if (!picked) return;
+  function onFilesPicked(): void {
+    const files = Array.from(fileInput.files ?? []);
+    fileInput.value = '';
     const center = screenToWorld(vp, { x: el.clientWidth / 2, y: el.clientHeight / 2 });
-    const paths = Array.isArray(picked) ? picked : [picked];
-    for (const [i, p] of paths.entries()) {
-      await addPdfFromPath(p, { x: center.x + i * 28, y: center.y + i * 20 });
-    }
+    // Nebeneinander statt fast deckungsgleich — mehrere Uploads sollen sofort unterscheidbar sein (UAT A1.2).
+    files.forEach((f, i) => void addFile(f, { x: center.x + i * (CARD_W + 24), y: center.y + i * 8 }));
+  }
+
+  function onDragOver(e: DragEvent): void {
+    e.preventDefault();
+  }
+
+  /** Zettel anlegen (am Weltpunkt, sonst Bildschirmmitte) und sofort in den Bearbeiten-Modus gehen. */
+  function zettelAnlegen(kind: NoteKind, customLabel?: string, weltPunkt?: Vec2): void {
+    const mitte = weltPunkt ?? screenToWorld(vp, { x: el.clientWidth / 2, y: el.clientHeight / 2 });
+    const id = uid();
+    void desktop
+      .command('addNote', {
+        kind, text: '', position: { x: mitte.x - NOTE_W / 2, y: mitte.y - NOTE_H / 2 }, id,
+        ...(customLabel !== undefined ? { customLabel } : {}),
+      })
+      .then(() => (ui.editingNoteId = id));
+  }
+
+  /** Doppelklick/Doppeltipp auf freie Tischfläche → Notizzettel an Ort und Stelle (Quickwin F4). */
+  function onDeskDblClick(e: MouseEvent): void {
+    const t = e.target as HTMLElement;
+    if (t.closest('.card, .viewer, .note, .stack, .cutout, .abbild, button, input, textarea, .menu, .panel')) return;
+    zettelAnlegen('notiz', undefined, screenToWorld(vp, { x: e.clientX, y: e.clientY }));
+  }
+
+  // Karten-Suche (Quickwin F5): Suchfeld oben mittig, springt zum Treffer und pulst kurz.
+  let sucheOffen = $state(false);
+  let suchText = $state('');
+  let pulsBox = $state<Box | null>(null);
+  let pulsTimer: ReturnType<typeof setTimeout> | undefined;
+
+  type Treffer = { id: string; art: string; label: string; box: Box };
+  const treffer = $derived.by((): Treffer[] => {
+    const q = suchText.trim().toLowerCase();
+    if (q === '') return [];
+    const s = desktop.state;
+    const alle: Treffer[] = [
+      ...s.docs.map((d) => ({ id: d.id, art: 'Karte', label: d.name, box: docBox(d) })),
+      ...s.stacks.map((st) => ({ id: st.id, art: 'Stapel', label: st.name || `Stapel (${st.docIds.length})`, box: stackBox(st) })),
+      ...(s.notes ?? []).map((n) => ({
+        id: n.id, art: 'Zettel',
+        label: `${n.customLabel ? `[${n.customLabel}] ` : ''}${n.text.trim() || NOTE_KIND_LABELS[n.kind]}`.slice(0, 60),
+        box: noteBox(n),
+      })),
+    ];
+    return alle.filter((t) => t.label.toLowerCase().includes(q)).slice(0, 8);
+  });
+
+  function springe(t: Treffer): void {
+    const cx = t.box.x + t.box.w / 2;
+    const cy = t.box.y + t.box.h / 2;
+    const s = vp.scale < 0.5 ? 0.8 : vp.scale;
+    vp = { scale: s, x: viewW / 2 - cx * s, y: viewH / 2 - cy * s };
+    pulsBox = t.box;
+    clearTimeout(pulsTimer);
+    pulsTimer = setTimeout(() => (pulsBox = null), 2000);
+    schliesseSuche();
+  }
+
+  function schliesseSuche(): void {
+    sucheOffen = false;
+    suchText = '';
+  }
+
+  /** Zettel-Typ wählen (zweispaltig); „Eigener…" fragt das Badge im Menü ab. */
+  function zettelTypAuswahl(x: number, y: number): void {
+    ui.menu = {
+      x, y, columns: 2,
+      items: NOTE_KINDS.map((kind: NoteKind) => ({
+        label: kind === 'eigen' ? 'Eigener…' : NOTE_KIND_LABELS[kind],
+        action: kind === 'eigen'
+          ? () => queueMicrotask(() => {
+              ui.menu = { x, y, items: [], input: { placeholder: 'Bezeichnung (z. B. Zeugenfrage)', onSubmit: (t) => zettelAnlegen('eigen', t), onEscape: () => zettelTypAuswahl(x, y) } };
+            })
+          : () => zettelAnlegen(kind),
+      })),
+    };
+  }
+
+  /** „＋"-Menü: Datei-Upload oder Zettel anlegen. Das Zettel-Untermenü ersetzt den Menüinhalt
+   *  erst, nachdem ContextMenu.svelte den Klick verarbeitet (und ui.menu synchron auf null setzt) —
+   *  daher die Verzögerung auf den nächsten Tick statt einer echten Verschachtelung. */
+  function plusMenu(e: MouseEvent): void {
+    const x = e.clientX;
+    const y = e.clientY;
+    ui.menu = {
+      x, y,
+      items: [
+        { label: 'Datei…', action: () => fileInput.click() },
+        { label: 'Zettel…', action: () => queueMicrotask(() => zettelTypAuswahl(x, y)) },
+      ],
+    };
+  }
+
+  async function abmelden(): Promise<void> {
+    if (!confirm('Wirklich abmelden?')) return; // Nutzerentscheidung UAT A1.9
+    // Server-Invalidierung ist Best-Effort — lokal wird die Sitzung in jedem Fall beendet.
+    await desktop.api?.logout().catch(() => {});
+    clearSession();
+    revokeFileUrls();
+    await desktop.stop();
+    onlogout();
+  }
+
+  function onDrop(e: DragEvent): void {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer?.files ?? []);
+    const world = screenToWorld(vp, { x: e.clientX, y: e.clientY });
+    files.forEach((f, i) => void addFile(f, { x: world.x + i * (CARD_W + 24), y: world.y + i * 8 }));
   }
 
   onMount(() => {
     const down = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault(); // Desk-Suche statt Browser-Suche
+        sucheOffen = true;
+        return;
+      }
       if (e.code === 'Space') spaceDown = true;
       if (e.code === 'Escape') {
         ui.linkingFromId = null;
+        ui.clippingFromId = null;
         ui.menu = null;
+        ui.lupe = false; // Lupe auch per Escape ausschalten (Nutzerwunsch)
+        schliesseSuche();
+      }
+      if (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+        // Ein fokussierter Viewer blättert mit den Pfeilen selbst; Eingabefelder behalten ihre Cursor-Tasten.
+        const a = document.activeElement;
+        if (a instanceof HTMLElement && (a.closest('.viewer') || a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) return;
+        e.preventDefault();
+        const step = 120; // wie das Pfeilpad im Bedienfeld
+        if (e.code === 'ArrowUp') vp = panBy(vp, 0, step);
+        if (e.code === 'ArrowDown') vp = panBy(vp, 0, -step);
+        if (e.code === 'ArrowLeft') vp = panBy(vp, step, 0);
+        if (e.code === 'ArrowRight') vp = panBy(vp, -step, 0);
       }
     };
     const up = (e: KeyboardEvent) => {
@@ -78,46 +274,99 @@
     };
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
-    let unlisten: (() => void) | undefined;
-    getCurrentWebview()
-      .onDragDropEvent((e) => {
-        if (e.payload.type !== 'drop') return;
-        const dpr = window.devicePixelRatio;
-        const world = screenToWorld(vp, { x: e.payload.position.x / dpr, y: e.payload.position.y / dpr });
-        e.payload.paths
-          .filter((p) => p.toLowerCase().endsWith('.pdf'))
-          .forEach((p, i) => void addPdfFromPath(p, { x: world.x + i * 28, y: world.y + i * 20 }));
-      })
-      .then((u) => {
-        unlisten = u;
-      });
     return () => {
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
-      unlisten?.();
     };
   });
 
 </script>
 
-<div class="desk" bind:this={el} class:grabbing={spaceDown || panning}
-     onwheel={onWheel} onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp}>
-  <div class="world" style:transform="translate({vp.x}px, {vp.y}px) scale({vp.scale})">
+<div class="desk" role="application" aria-label="Schreibtisch" bind:this={el} style={hintergrundStil}
+     bind:clientWidth={viewW} bind:clientHeight={viewH} class:grabbing={spaceDown || panning}
+     class:hell={isLight(hintergrund.themeId)}
+     onwheel={onWheel} onpointerdown={onPointerDown} onpointermove={onPointerMove}
+     onpointerup={endPointer} onpointercancel={endPointer} ondblclick={onDeskDblClick}
+     ondragover={onDragOver} ondrop={onDrop}>
+  {#snippet weltInhalt(v: Viewport, inLupe: boolean)}
     <LinkLayer />
-    {#each freeDocs(desktop.state) as doc (doc.id)}
-      <DocCard {doc} {vp} />
+    {#each freeDocs(desktop.state).filter((d) => imSichtfenster(docBox(d))) as doc (doc.id)}
+      <DocCard {doc} vp={v} lupe={inLupe} />
     {/each}
-    {#each desktop.state.stacks as stack (stack.id)}
-      <StackCard {stack} {vp} />
+    {#each desktop.state.stacks.filter((st) => imSichtfenster(stackBox(st))) as stack (stack.id)}
+      <StackCard {stack} vp={v} />
     {/each}
+    {#each (desktop.state.notes ?? []).filter((n) => imSichtfenster(noteBox(n))) as note (note.id)}
+      <NoteCard {note} vp={v} />
+    {/each}
+    {#each (desktop.state.cutouts ?? []).filter((c) => imSichtfenster(cutoutBox(c))) as cutout (cutout.id)}
+      <CutoutCard {cutout} vp={v} />
+    {/each}
+  {/snippet}
+
+  <div class="world" style:transform="translate({vp.x}px, {vp.y}px) scale({vp.scale})">
+    {@render weltInhalt(vp, false)}
+    {#if pulsBox}
+      <div class="puls" style:left="{pulsBox.x - 8}px" style:top="{pulsBox.y - 8}px"
+           style:width="{pulsBox.w + 16}px" style:height="{pulsBox.h + 16}px" aria-hidden="true"></div>
+    {/if}
   </div>
+  {#if ui.lupe && lupePos && lupenVp}
+    <div class="lupe" style={hintergrundStil}
+         style:left="{lupePos.x - LUPE / 2}px" style:top="{lupePos.y - LUPE / 2}px"
+         style:width="{LUPE}px" style:height="{LUPE}px" aria-hidden="true">
+      <div class="lupenwelt" style:transform="translate({lupenVp.x}px, {lupenVp.y}px) scale({lupenVp.scale})">
+        {@render weltInhalt(lupenVp, true)}
+      </div>
+    </div>
+  {/if}
   <DeskSwitcher />
+  <DeskControls
+    onzoom={(f) => (vp = zoomAt(vp, { x: el.clientWidth / 2, y: el.clientHeight / 2 }, f))}
+    onpan={(dx, dy) => (vp = panBy(vp, dx, dy))}
+    onfit={fitAll}
+    onsuche={() => (sucheOffen = true)}
+  />
+  {#if sucheOffen}
+    <div class="suche-panel" role="search">
+      <!-- svelte-ignore a11y_autofocus -- das Suchfeld ist der einzige Zweck des Panels -->
+      <input autofocus class="suche-feld" placeholder="Karte, Stapel oder Zettel suchen…"
+             bind:value={suchText} aria-label="Auf dem Schreibtisch suchen"
+             onkeydown={(e) => {
+               e.stopPropagation();
+               if (e.key === 'Escape') schliesseSuche();
+               if (e.key === 'Enter' && treffer.length > 0) springe(treffer[0]);
+             }} />
+      {#if suchText.trim() !== ''}
+        <div class="suche-liste">
+          {#each treffer as t (t.id)}
+            <button class="treffer" onclick={() => springe(t)}>
+              <span class="art">{t.art}</span><span class="name">{t.label}</span>
+            </button>
+          {:else}
+            <div class="keine">Keine Treffer</div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  {/if}
+  <TrashCan />
   <div class="toolbar">
-    <button onclick={() => void addViaDialog()} title="PDF hinzufügen">＋ PDF</button>
-    <button onclick={fitAll}>Übersicht</button>
+    <input
+      bind:this={fileInput}
+      type="file"
+      multiple
+      hidden
+      onchange={onFilesPicked}
+    />
+    <button onclick={plusMenu} title="Hinzufügen">＋</button>
+    <button onclick={() => void abmelden()} title="Abmelden">Abmelden</button>
   </div>
   {#if ui.linkingFromId}
     <div class="hint">Verknüpfen: Ziel anklicken (Esc bricht ab)</div>
+  {/if}
+  {#if ui.clippingFromId}
+    <div class="hint">Anklammern: Ziel anklicken (Esc bricht ab)</div>
   {/if}
   {#if desktop.status === 'offline' || desktop.status === 'connecting'}
     <div class="banner">
@@ -132,10 +381,46 @@
 </div>
 
 <style>
-  .desk { position: fixed; inset: 0; overflow: hidden;
+  .desk { position: fixed; inset: 0; overflow: hidden; touch-action: none;
           background: radial-gradient(1200px 800px at 40% 30%, #3a5c4e, #27423a 70%, #1d332d); }
   .desk.grabbing { cursor: grabbing; }
+  /* Helle Tischflächen: Papier setzt sich per Kontur + kräftigerem Schlagschatten ab (Vision). */
+  .desk.hell :global(:is(.card, .stack, .cutout)) {
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, .22), 0 8px 22px rgba(0, 0, 0, .4);
+  }
+  /* Tafel-Text: auf hellen Tischflächen schwarze statt weißer Filzstift-Tinte (Nutzerwunsch). */
+  .desk.hell :global(.note.kind-tafel .text),
+  .desk.hell :global(.note.kind-tafel textarea) {
+    color: #26241d;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, .45);
+  }
+  .desk.hell :global(.note.kind-tafel textarea) { outline-color: rgba(38, 36, 29, .45); }
   .world { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+  /* Such-Treffer: pulsierender Umriss in Weltkoordinaten (keine Änderungen an den Karten nötig). */
+  .puls { position: absolute; border: 3px solid rgba(242, 226, 184, .95); border-radius: 12px;
+          pointer-events: none; z-index: 99997; animation: pulsieren 1s ease-in-out infinite;
+          box-shadow: 0 0 24px rgba(242, 226, 184, .55); }
+  @keyframes pulsieren { 50% { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) { .puls { animation: none; } }
+  .suche-panel { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 9600;
+                 width: min(420px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 6px;
+                 background: rgba(20, 32, 28, .95); border-radius: 12px; padding: 10px;
+                 box-shadow: 0 10px 30px rgba(0, 0, 0, .45); }
+  .suche-feld { border: 1px solid rgba(242, 226, 184, .3); border-radius: 8px; padding: 8px 10px;
+                background: rgba(255, 255, 255, .08); color: #ece5d4; font: inherit; font-size: 14px; }
+  .suche-feld::placeholder { color: rgba(236, 229, 212, .55); }
+  .suche-liste { display: flex; flex-direction: column; gap: 2px; max-height: 40vh; overflow-y: auto; }
+  .treffer { display: flex; gap: 8px; align-items: baseline; text-align: left; border: none;
+             background: none; color: #ece5d4; padding: 7px 8px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+  .treffer:hover { background: rgba(242, 226, 184, .15); }
+  .treffer .art { flex: none; font-size: 10px; text-transform: uppercase; letter-spacing: .05em;
+                  background: rgba(242, 226, 184, .18); border-radius: 5px; padding: 2px 6px; }
+  .treffer .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .keine { padding: 8px; font-size: 12px; color: rgba(236, 229, 212, .6); }
+  .lupe { position: fixed; z-index: 9500; border-radius: 50%; overflow: hidden; pointer-events: none;
+          border: 3px solid rgba(242, 226, 184, .85); box-shadow: 0 10px 34px rgba(0, 0, 0, .5), inset 0 0 20px rgba(0, 0, 0, .15);
+          background: radial-gradient(1200px 800px at 40% 30%, #3a5c4e, #27423a 70%, #1d332d); }
+  .lupenwelt { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
   .toolbar { position: fixed; top: 12px; right: 12px; display: flex; gap: 8px; z-index: 9000; }
   .toolbar button { font-size: 13px; padding: 6px 12px; border-radius: 8px; border: none;
                     background: rgba(255, 255, 255, .92); cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }

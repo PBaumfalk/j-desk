@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { emptyState } from './model';
 import { addDoc, moveDoc, bringToFront, rotationFor } from './documents';
+import { applyCommand } from './commands';
 
 const pos = { x: 10, y: 20 };
 
@@ -22,6 +23,19 @@ describe('addDoc', () => {
     let s = addDoc(emptyState(), 'file-a', 'a.pdf', pos, 'id-a');
     s = addDoc(s, 'file-a', 'nochmal.pdf', { x: 0, y: 0 }, 'id-b');
     expect(s.docs).toHaveLength(1);
+  });
+
+  it('addDoc übernimmt die Datei-Art; ungültige Art wirft', () => {
+    const s = addDoc(emptyState(), 'f1', 'foto.jpg', { x: 0, y: 0 }, 'd1', 'image');
+    expect(s.docs[0].kind).toBe('image');
+    const ohne = addDoc(emptyState(), 'f2', 'a.pdf', { x: 0, y: 0 }, 'd2');
+    expect(ohne.docs[0].kind).toBeUndefined(); // fehlend = pdf (Alt-State-Semantik)
+    expect(() => addDoc(emptyState(), 'f3', 'x', { x: 0, y: 0 }, 'd3', 'exe' as never)).toThrow('Datei-Art');
+  });
+
+  it('addDoc-Command reicht kind durch', () => {
+    const s = applyCommand(emptyState(), { type: 'addDoc', payload: { fileId: 'f1', name: 'foto.jpg', position: { x: 0, y: 0 }, id: 'd1', kind: 'image' } });
+    expect(s.docs[0].kind).toBe('image');
   });
 });
 

@@ -1,5 +1,4 @@
-import { fetch } from '@tauri-apps/plugin-http';
-import type { Command, DesktopState } from '@digital-desktop/core';
+import type { Command, DesktopState, FileKind } from '@digital-desktop/core';
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {
@@ -19,10 +18,7 @@ export interface DeskState {
 }
 
 export class ApiClient {
-  constructor(
-    public baseUrl: string,
-    public token: string | null = null,
-  ) {}
+  constructor(public baseUrl = '', public token: string | null = null) {}
 
   private authHeaders(): Record<string, string> {
     return this.token ? { authorization: `Bearer ${this.token}` } : {};
@@ -51,7 +47,7 @@ export class ApiClient {
     return (await res.json()) as T;
   }
 
-  status(): Promise<{ needsSetup: boolean }> {
+  status(): Promise<{ needsSetup: boolean; mode?: 'standalone' | 'jlawyer' }> {
     return this.request('GET', '/auth/status');
   }
 
@@ -97,16 +93,39 @@ export class ApiClient {
     return this.request('PUT', `/desks/${deskId}/state`, state);
   }
 
-  async uploadFile(bytes: Uint8Array, name: string): Promise<string> {
+  async uploadFile(bytes: Uint8Array, name: string, mime = 'application/pdf'): Promise<{ fileId: string; kind: FileKind }> {
     const form = new FormData();
-    form.append('file', new Blob([bytes], { type: 'application/pdf' }), name);
+    form.append('file', new Blob([bytes], { type: mime }), name);
     const res = await fetch(`${this.baseUrl}/api/v1/files`, {
       method: 'POST',
       headers: this.authHeaders(),
       body: form,
     });
     if (!res.ok) throw await this.parseError(res);
-    return ((await res.json()) as { fileId: string }).fileId;
+    return (await res.json()) as { fileId: string; kind: FileKind };
+  }
+
+  // ---- j-lawyer-Modus ----
+  getCases(): Promise<{ id: string; fileNumber: string; name: string; reason: string }[]> {
+    return this.request('GET', '/cases');
+  }
+
+  /** Akten-Schreibtisch öffnen — der Server gleicht mit j-lawyer ab. */
+  getCaseDesk(caseId: string): Promise<DeskState> {
+    return this.request('GET', `/cases/${caseId}/desk`);
+  }
+
+  /** Upload in die Akte; die Karte legt der Server erst nach j-lawyer-Bestätigung an. */
+  async uploadToCase(caseId: string, bytes: Uint8Array, name: string): Promise<DeskState> {
+    const form = new FormData();
+    form.append('file', new Blob([bytes], { type: 'application/pdf' }), name);
+    const res = await fetch(`${this.baseUrl}/api/v1/cases/${caseId}/documents`, {
+      method: 'POST',
+      headers: this.authHeaders(),
+      body: form,
+    });
+    if (!res.ok) throw await this.parseError(res);
+    return (await res.json()) as DeskState;
   }
 
   async fetchFile(fileId: string): Promise<Uint8Array> {
@@ -115,7 +134,36 @@ export class ApiClient {
     return new Uint8Array(await res.arrayBuffer());
   }
 
-  wsUrl(deskId: string): string {
-    return `${this.baseUrl.replace(/^http/, 'ws')}/api/v1/desks/${deskId}/ws?token=${this.token ?? ''}`;
+  /**
+   * Vorschau einer Datei: 200 = fertige PDF-Bytes, 202 = Konvertierung läuft noch,
+   * 409 = Konvertierung (endgültig oder vorerst) fehlgeschlagen. Andere Fehler (u. a. 404)
+   * werfen wie gehabt einen ApiError.
+   */
+  async fetchPreview(
+    fileId: string,
+  ): Promise<{ status: 'ready'; bytes: Uint8Array } | { status: 'converting' } | { status: 'error'; message: string }> {
+    const res = await fetch(`${this.baseUrl}/api/v1/files/${fileId}/preview`, { headers: this.authHeaders() });
+    if (res.status === 202) return { status: 'converting' };
+    if (res.status === 409) {
+      let message = `HTTP ${res.status}`;
+      try {
+        message = ((await res.json()) as { error?: string }).error ?? message;
+      } catch {
+        // kein JSON-Body — Statuscode reicht
+      }
+      return { status: 'error', message };
+    }
+    if (!res.ok) throw await this.parseError(res);
+    return { status: 'ready', bytes: new Uint8Array(await res.arrayBuffer()) };
+  }
+
+  /** Kurzlebiges Einmal-Ticket für den WebSocket-Verbindungsaufbau. */
+  wsTicket(): Promise<{ ticket: string }> {
+    return this.request('POST', '/ws-ticket');
+  }
+
+  wsUrl(deskId: string, ticket: string): string {
+    const base = this.baseUrl || location.origin;
+    return `${base.replace(/^http/, 'ws')}/api/v1/desks/${deskId}/ws?ticket=${ticket}`;
   }
 }

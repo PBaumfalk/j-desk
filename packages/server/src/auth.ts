@@ -33,12 +33,36 @@ export async function login(db: Db, username: string, password: string): Promise
     await argon2.verify(await DUMMY_HASH, password).catch(() => false);
     return null;
   }
-  if (!(await argon2.verify(user.password_hash, password))) return null;
+  // verify wirft bei Nicht-argon2-Hashes (z. B. dem extern:jlawyer-Platzhalter) — zählt als falsch
+  const passt = await argon2.verify(user.password_hash, password).catch(() => false);
+  if (!passt) return null;
+  return createSession(db, user.id);
+}
+
+/** Stellt ein Session-Token für einen bereits verifizierten Benutzer aus. */
+export function createSession(db: Db, userId: string): string {
   const token = randomBytes(32).toString('hex');
   db.prepare('INSERT INTO sessions (token, user_id, created_at, last_used_at) VALUES (?, ?, ?, ?)').run(
-    token, user.id, Date.now(), Date.now(),
+    token, userId, Date.now(), Date.now(),
   );
   return token;
+}
+
+/**
+ * Konto für einen extern (j-lawyer) verifizierten Benutzer — wird beim ersten
+ * Login angelegt. Der Passwort-Hash-Platzhalter kann nie ein argon2-Verify
+ * bestehen; lokale Anmeldung mit diesem Konto ist damit ausgeschlossen.
+ */
+export function ensureExternalUser(db: Db, username: string): string {
+  const row = db.prepare('SELECT id FROM users WHERE username = ?').get(username.trim()) as
+    | { id: string }
+    | undefined;
+  if (row) return row.id;
+  const userId = randomUUID();
+  db.prepare('INSERT INTO users (id, username, password_hash, created_at) VALUES (?, ?, ?, ?)').run(
+    userId, username.trim(), 'extern:jlawyer', Date.now(),
+  );
+  return userId;
 }
 
 export function validateToken(db: Db, token: string): { userId: string } | null {
@@ -56,4 +80,75 @@ export function validateToken(db: Db, token: string): { userId: string } | null 
 
 export function logout(db: Db, token: string): void {
   db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+}
+
+export interface WsTickets {
+  issue(userId: string): string;
+  consume(ticket: string): { userId: string } | null;
+}
+
+/**
+ * Kurzlebige Einmal-Tickets für den WebSocket-Verbindungsaufbau: Browser-WebSockets
+ * können keine Header setzen, und das Session-Token soll nicht in Query-Strings
+ * (Logs, Proxies) landen. Tickets leben nur im Speicher — nach einem Neustart
+ * holen sich die Clients beim Reconnect ohnehin ein frisches.
+ */
+export function createWsTickets(ttlMs = 30_000): WsTickets {
+  const tickets = new Map<string, { userId: string; expires: number }>();
+  return {
+    issue(userId) {
+      for (const [t, v] of tickets) if (v.expires < Date.now()) tickets.delete(t);
+      const ticket = randomBytes(32).toString('hex');
+      tickets.set(ticket, { userId, expires: Date.now() + ttlMs });
+      return ticket;
+    },
+    consume(ticket) {
+      const entry = tickets.get(ticket);
+      if (!entry) return null;
+      tickets.delete(ticket); // Einmal-Nutzung
+      return entry.expires < Date.now() ? null : { userId: entry.userId };
+    },
+  };
+}
+
+/** Payload eines Konverter-Tickets. */
+export interface FileTicketPayload {
+  fileId: string;
+  /**
+   * j-lawyer-Modus: der Konverter ruft die Quelle über /convert-source ab — dort muss der
+   * Akteninhalt per getDocumentContent geholt werden, was Zugangsdaten braucht. Wie jlCreds
+   * leben diese ausschließlich im RAM (nie persistiert); das Ticket ist ohnehin einmalig und
+   * läuft nach 60s ab, also kein zusätzliches Leck — akzeptierter Kompromiss statt eines
+   * eigenen serverseitigen Sitzungs-Lookups nur für diesen einen Abruf.
+   */
+  jl?: { docId: string; username: string; password: string };
+}
+
+export interface FileTickets {
+  issue(payload: FileTicketPayload): string;
+  consume(ticket: string): FileTicketPayload | null;
+}
+
+/**
+ * Kurzlebige Einmal-Tickets für den Dokument-Konverter: der externe Konverter holt
+ * sich die Originalbytes per einfachem GET ohne Auth-Header — das Ticket ersetzt hier
+ * die Authentifizierung. Selbes Muster wie createWsTickets, nur TTL 60 s und für
+ * Dateizugriff statt WebSocket-Aufbau.
+ */
+export function createFileTickets(ttlMs = 60_000): FileTickets {
+  const tickets = new Map<string, { payload: FileTicketPayload; expires: number }>();
+  return {
+    issue(payload) {
+      for (const [t, v] of tickets) if (v.expires < Date.now()) tickets.delete(t);
+      const ticket = randomBytes(32).toString('hex');
+      tickets.set(ticket, { payload, expires: Date.now() + ttlMs });
+      return ticket;
+    },
+    consume(ticket) {
+      const entry = tickets.get(ticket);
+      if (!entry) return null;
+      tickets.delete(ticket); // Einmal-Nutzung
+      return entry.expires < Date.now() ? null : entry.payload;
+    },
+  };
 }

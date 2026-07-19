@@ -16,7 +16,10 @@ describe('WebSocket-Broadcast', () => {
     ).json();
     const meta = storeFile(db, dataDir, pdf, 'a.pdf');
 
-    const ws = new WsClient(`ws://127.0.0.1:${port}/api/v1/desks/${desk.id}/ws?token=${token}`);
+    const { ticket } = (
+      await app.inject({ method: 'POST', url: '/api/v1/ws-ticket', headers: authHeaders })
+    ).json();
+    const ws = new WsClient(`ws://127.0.0.1:${port}/api/v1/desks/${desk.id}/ws?ticket=${ticket}`);
     await new Promise((resolve, reject) => {
       ws.on('open', resolve);
       ws.on('error', reject);
@@ -38,7 +41,7 @@ describe('WebSocket-Broadcast', () => {
     await app.close();
   });
 
-  it('WS ohne gültiges Token wird abgewiesen', async () => {
+  it('WS ohne gültiges Ticket wird abgewiesen', async () => {
     const { app, authHeaders } = await createTestApp();
     await app.listen({ port: 0 });
     const { port } = app.server.address() as { port: number };
@@ -46,13 +49,63 @@ describe('WebSocket-Broadcast', () => {
       await app.inject({ method: 'POST', url: '/api/v1/desks', headers: authHeaders, payload: { name: 'D' } })
     ).json();
 
-    const ws = new WsClient(`ws://127.0.0.1:${port}/api/v1/desks/${desk.id}/ws?token=falsch`);
+    const ws = new WsClient(`ws://127.0.0.1:${port}/api/v1/desks/${desk.id}/ws?ticket=falsch`);
     const failed = await new Promise<boolean>((resolve) => {
       ws.on('open', () => resolve(false));
       ws.on('error', () => resolve(true));
       ws.on('unexpected-response', () => resolve(true));
     });
     expect(failed).toBe(true);
+    await app.close();
+  });
+
+  it('das Session-Token in der Query wird für den WS NICHT mehr akzeptiert', async () => {
+    const { app, token, authHeaders } = await createTestApp();
+    await app.listen({ port: 0 });
+    const { port } = app.server.address() as { port: number };
+    const desk = (
+      await app.inject({ method: 'POST', url: '/api/v1/desks', headers: authHeaders, payload: { name: 'D' } })
+    ).json();
+
+    const ws = new WsClient(`ws://127.0.0.1:${port}/api/v1/desks/${desk.id}/ws?token=${token}`);
+    const failed = await new Promise<boolean>((resolve) => {
+      ws.on('open', () => resolve(false));
+      ws.on('error', () => resolve(true));
+      ws.on('unexpected-response', () => resolve(true));
+    });
+    expect(failed).toBe(true);
+    await app.close();
+  });
+
+  it('ein Ticket ist nur einmal verwendbar', async () => {
+    const { app, authHeaders } = await createTestApp();
+    await app.listen({ port: 0 });
+    const { port } = app.server.address() as { port: number };
+    const desk = (
+      await app.inject({ method: 'POST', url: '/api/v1/desks', headers: authHeaders, payload: { name: 'D' } })
+    ).json();
+    const { ticket } = (
+      await app.inject({ method: 'POST', url: '/api/v1/ws-ticket', headers: authHeaders })
+    ).json();
+
+    const first = new WsClient(`ws://127.0.0.1:${port}/api/v1/desks/${desk.id}/ws?ticket=${ticket}`);
+    await new Promise((resolve, reject) => { first.on('open', resolve); first.on('error', reject); });
+
+    const second = new WsClient(`ws://127.0.0.1:${port}/api/v1/desks/${desk.id}/ws?ticket=${ticket}`);
+    const failed = await new Promise<boolean>((resolve) => {
+      second.on('open', () => resolve(false));
+      second.on('error', () => resolve(true));
+      second.on('unexpected-response', () => resolve(true));
+    });
+    expect(failed).toBe(true);
+    first.close();
+    await app.close();
+  });
+
+  it('ws-ticket-Endpoint verlangt Anmeldung', async () => {
+    const { app } = await createTestApp();
+    const res = await app.inject({ method: 'POST', url: '/api/v1/ws-ticket' });
+    expect(res.statusCode).toBe(401);
     await app.close();
   });
 });

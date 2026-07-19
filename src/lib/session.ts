@@ -1,20 +1,15 @@
-import { BaseDirectory, exists, readTextFile, remove, writeTextFile } from '@tauri-apps/plugin-fs';
-
 export interface Session {
-  serverUrl: string;
   token: string;
   lastDeskId?: string;
 }
 
-const FILE = 'session.json';
-const base = { baseDir: BaseDirectory.AppData };
+const KEY = 'digital-desktop.session';
 
 export function parseSession(json: string): Session | null {
   try {
     const v = JSON.parse(json) as Session | null;
-    if (!v || typeof v.serverUrl !== 'string' || typeof v.token !== 'string') return null;
+    if (!v || typeof v.token !== 'string') return null;
     return {
-      serverUrl: v.serverUrl,
       token: v.token,
       ...(typeof v.lastDeskId === 'string' ? { lastDeskId: v.lastDeskId } : {}),
     };
@@ -23,25 +18,33 @@ export function parseSession(json: string): Session | null {
   }
 }
 
-export async function loadSession(): Promise<Session | null> {
+export function loadSession(): Session | null {
   try {
-    if (await exists(FILE, base)) return parseSession(await readTextFile(FILE, base));
+    const raw = localStorage.getItem(KEY);
+    return raw ? parseSession(raw) : null;
   } catch {
-    // wie nicht vorhanden behandeln
+    return null; // z. B. localStorage gesperrt — wie nicht vorhanden behandeln
   }
-  return null;
 }
 
-export async function saveSession(session: Session): Promise<void> {
-  await writeTextFile(FILE, JSON.stringify(session), base);
+export function saveSession(session: Session): void {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(session));
+  } catch {
+    // Speichern ist Komfort — Anmeldung funktioniert auch ohne
+  }
 }
 
-export async function clearSession(): Promise<void> {
-  await remove(FILE, base).catch(() => {});
+export function clearSession(): void {
+  try {
+    localStorage.removeItem(KEY);
+  } catch {
+    // bereits weg
+  }
 }
 
-/** Merkt sich den zuletzt aktiven Schreibtisch (pro Gerät). */
-export async function saveLastDeskId(deskId: string): Promise<void> {
-  const session = await loadSession();
-  if (session) await saveSession({ ...session, lastDeskId: deskId });
+/** Merkt sich den zuletzt aktiven Schreibtisch (pro Browser). */
+export function saveLastDeskId(deskId: string): void {
+  const session = loadSession();
+  if (session) saveSession({ ...session, lastDeskId: deskId });
 }

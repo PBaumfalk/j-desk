@@ -26,7 +26,7 @@ describe('Desk-CRUD', () => {
 
   it('neuer Schreibtisch startet leer mit rev 0', () => {
     const desk = createDesk(db, 'u1', 'Neu');
-    expect(getDeskState(db, desk.id)).toEqual({ rev: 0, state: { docs: [], links: [], stacks: [] } });
+    expect(getDeskState(db, desk.id)).toEqual({ rev: 0, state: { docs: [], links: [], stacks: [], strokes: [], notes: [], cutouts: [], marks: [], stamps: [], flags: [], clips: [], trash: [] } });
     expect(getDeskState(db, 'gibtsnicht')).toBeNull();
   });
 });
@@ -50,6 +50,21 @@ describe('applyDeskCommand', () => {
     expect(() => applyDeskCommand(db, desk.id, { type: 'kaputt', payload: {} })).toThrow(CommandError);
     expect(getDeskState(db, desk.id)!.rev).toBe(0);
     expect(() => applyDeskCommand(db, 'gibtsnicht', { type: 'moveDoc', payload: {} })).toThrow(DeskNotFoundError);
+  });
+});
+
+describe('deskStore reicht Viewer-Commands durch', () => {
+  it('expandDoc/setDocPage/resizeDoc landen im gespeicherten Zustand', () => {
+    const desk = createDesk(db, 'u1', 'Neu');
+    applyDeskCommand(db, desk.id, {
+      type: 'addDoc',
+      payload: { fileId: 'f', name: 'a.pdf', position: { x: 0, y: 0 }, id: 'id-a' },
+    });
+    applyDeskCommand(db, desk.id, { type: 'expandDoc', payload: { id: 'id-a' } });
+    applyDeskCommand(db, desk.id, { type: 'setDocPage', payload: { id: 'id-a', page: 3 } });
+    applyDeskCommand(db, desk.id, { type: 'resizeDoc', payload: { id: 'id-a', size: { w: 800, h: 600 } } });
+    const { state } = getDeskState(db, desk.id)!;
+    expect(state.docs[0]).toMatchObject({ open: true, page: 3, openSize: { w: 800, h: 600 } });
   });
 });
 

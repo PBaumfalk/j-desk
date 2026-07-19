@@ -1,32 +1,64 @@
-import { BaseDirectory, exists, mkdir, readFile, writeFile } from '@tauri-apps/plugin-fs';
 import * as pdfjs from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { Doc } from '@digital-desktop/core';
 import type { ApiClient } from './api';
+import { THUMB_STORE, idbGet, idbPut } from './idb';
+import { PreviewError, fetchPreviewBytes } from './previewPoll';
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
-const base = { baseDir: BaseDirectory.AppData };
-const cachePath = (fileId: string) => `thumbnails/${fileId}.png`;
 const urls = new Map<string, string>();
 
-function remember(fileId: string, bytes: Uint8Array): string {
-  const url = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
-  urls.set(fileId, url);
+function remember(key: string, bytes: Uint8Array, mime = 'image/png'): string {
+  const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+  urls.set(key, url);
   return url;
 }
 
-/** Object-URL der Miniatur der ersten Seite (PNG-Cache pro fileId); null, wenn nicht renderbar. */
-export async function getThumbnail(api: ApiClient, doc: Doc): Promise<string | null> {
-  const cached = urls.get(doc.fileId);
+/** Leitet den Bild-MIME-Typ aus der Dateiendung ab (der Server liefert keinen MIME-Typ beim Abruf). */
+export function imageMime(name: string): string {
+  const ext = name.split('.').pop()?.toLowerCase();
+  if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+  if (ext === 'gif') return 'image/gif';
+  if (ext === 'webp') return 'image/webp';
+  return 'image/png';
+}
+
+/**
+ * Object-URL der Miniatur; null, wenn nicht renderbar. Bilddateien (`doc.kind === 'image'`)
+ * nehmen einen Kurzweg — Bytes direkt als Bild-URL, kein pdfjs (das würde an Bilddaten scheitern).
+ * `source: 'preview'` lädt bei PDFs die konvertierte Vorschau-PDF (mit Poll) statt der Originaldatei.
+ * Bei Konvertierungsfehlern/Zeitüberschreitung wirft diese Funktion `PreviewError` weiter, damit der
+ * Aufrufer die Servermeldung anzeigen kann; andere Fehler (defekt/nicht ladbar) liefern still `null`.
+ */
+export async function getThumbnail(api: ApiClient, doc: Doc, source: 'original' | 'preview' = 'original'): Promise<string | null> {
+  if (doc.kind === 'image') {
+    const key = `image:${doc.fileId}`;
+    const cached = urls.get(key);
+    if (cached) return cached;
+    const mime = imageMime(doc.name);
+    try {
+      const stored = await idbGet(THUMB_STORE, key).catch(() => null);
+      if (stored) return remember(key, stored, mime);
+      const bytes = await api.fetchFile(doc.fileId);
+      await idbPut(THUMB_STORE, key, bytes).catch(() => {});
+      return remember(key, bytes, mime);
+    } catch {
+      return null;
+    }
+  }
+  // Zuletzt aufgeschlagene Seite (doc.page) statt stur Seite 1 — Wunsch A2.8.
+  const seite = doc.pageOnly ?? doc.page ?? 1;
+  const base = seite === 1 ? doc.fileId : `${doc.fileId}:${seite}`;
+  const key = source === 'preview' ? `preview:${base}` : base;
+  const cached = urls.get(key);
   if (cached) return cached;
   try {
-    if (await exists(cachePath(doc.fileId), base)) {
-      return remember(doc.fileId, await readFile(cachePath(doc.fileId), base));
-    }
-    const data = await api.fetchFile(doc.fileId);
+    const stored = await idbGet(THUMB_STORE, key).catch(() => null);
+    if (stored) return remember(key, stored);
+    const data = source === 'preview' ? await fetchPreviewBytes(api, doc.fileId) : await api.fetchFile(doc.fileId);
     const pdf = await pdfjs.getDocument({ data }).promise;
-    const page = await pdf.getPage(1);
+    const page = await pdf.getPage(Math.min(seite, pdf.numPages));
     const scale = 360 / page.getViewport({ scale: 1 }).width;
     const viewport = page.getViewport({ scale });
     const canvas = document.createElement('canvas');
@@ -37,10 +69,10 @@ export async function getThumbnail(api: ApiClient, doc: Doc): Promise<string | n
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob fehlgeschlagen'))), 'image/png'),
     );
     const bytes = new Uint8Array(await blob.arrayBuffer());
-    await mkdir('thumbnails', { ...base, recursive: true }).catch(() => {});
-    await writeFile(cachePath(doc.fileId), bytes, base).catch(() => {});
-    return remember(doc.fileId, bytes);
-  } catch {
+    await idbPut(THUMB_STORE, key, bytes).catch(() => {});
+    return remember(key, bytes);
+  } catch (e) {
+    if (e instanceof PreviewError) throw e;
     return null; // defekt oder (noch) nicht ladbar → generisches Symbol
   }
 }

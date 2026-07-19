@@ -1,4 +1,3 @@
-import WebSocket from '@tauri-apps/plugin-websocket';
 import { applyCommand, emptyState, type Command, type DesktopState } from '@digital-desktop/core';
 import type { ApiClient, DeskInfo } from './api';
 import { saveLastDeskId } from './session';
@@ -7,14 +6,22 @@ import { showToast } from './ui.svelte';
 let state = $state<DesktopState>(emptyState());
 let status = $state<'connecting' | 'online' | 'offline' | 'loggedOut'>('loggedOut');
 let desks = $state<DeskInfo[]>([]);
+let mode = $state<'standalone' | 'jlawyer'>('standalone');
 let wsGeneration = 0;
 let rev = 0;
 let api: ApiClient | null = null;
-let deskId: string | null = null;
-let ws: Awaited<ReturnType<typeof WebSocket.connect>> | null = null;
+let deskId = $state<string | null>(null);
+let ws: WebSocket | null = null;
 let reconnectDelay = 1000;
 let stopped = false;
 let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Passende Meldung, wenn eine Aktion mangels Verbindung nicht ausgeführt wird. */
+function offlineMeldung(): string {
+  return status === 'connecting'
+    ? 'Verbindung wird aufgebaut — gleich erneut versuchen'
+    : 'Offline — Aktion nicht möglich';
+}
 
 export const desktop = {
   get state(): DesktopState {
@@ -32,16 +39,31 @@ export const desktop = {
   get desks(): DeskInfo[] {
     return desks;
   },
+  /** 'jlawyer': Akten statt eigener Schreibtische; Verwaltung liegt in j-lawyer. */
+  get mode() {
+    return mode;
+  },
 
-  /** Nach erfolgreichem Login: Schreibtische laden, letzten (oder ersten) öffnen. */
+  /** Nach erfolgreichem Login: Schreibtische (bzw. Akten) laden, letzten (oder ersten) öffnen. */
   async start(client: ApiClient, lastDeskId?: string): Promise<void> {
     clearTimeout(reconnectTimer);
     reconnectTimer = undefined;
     api = client;
     stopped = false;
     status = 'connecting';
-    desks = await client.listDesks();
-    if (desks.length === 0) desks = [await client.createDesk('Schreibtisch 1')];
+    mode = (await client.status()).mode === 'jlawyer' ? 'jlawyer' : 'standalone';
+    if (mode === 'jlawyer') {
+      const cases = await client.getCases();
+      desks = cases.map((c) => ({
+        id: c.id,
+        name: [c.fileNumber, c.name, c.reason && `(${c.reason})`].filter(Boolean).join(' '),
+        ownerId: '',
+      }));
+      if (desks.length === 0) throw new Error('Keine Akten in j-lawyer sichtbar');
+    } else {
+      desks = await client.listDesks();
+      if (desks.length === 0) desks = [await client.createDesk('Schreibtisch 1')];
+    }
     const target = desks.find((d) => d.id === lastDeskId) ?? desks[0];
     await loadDesk(target.id);
   },
@@ -51,10 +73,18 @@ export const desktop = {
     state = fn(state);
   },
 
+  /** Server-Antwort mit rev+state übernehmen (z. B. nach Akten-Upload). */
+  acceptServerState(result: { rev: number; state: DesktopState }): void {
+    if (result.rev >= rev) {
+      rev = result.rev;
+      state = result.state;
+    }
+  },
+
   /** Optimistisch lokal anwenden, dann ans Backend; die Server-Antwort ist maßgeblich. */
   async command(type: string, payload: Command['payload']): Promise<void> {
     if (status !== 'online') {
-      showToast('Offline — Aktion nicht möglich');
+      showToast(offlineMeldung());
       return;
     }
     if (!api || !deskId) return;
@@ -76,11 +106,12 @@ export const desktop = {
     }
   },
 
-  /** Kompletten Zustand vom Server holen (nach Reconnect oder Fehler). */
+  /** Kompletten Zustand vom Server holen (nach Reconnect oder Fehler); im
+      j-lawyer-Modus läuft dabei zugleich der Akten-Abgleich. */
   async refresh(): Promise<void> {
     if (stopped) return;
     if (!api || !deskId) return;
-    const result = await api.getState(deskId);
+    const result = mode === 'jlawyer' ? await api.getCaseDesk(deskId) : await api.getState(deskId);
     if (result.rev >= rev) {
       rev = result.rev;
       state = result.state;
@@ -90,11 +121,11 @@ export const desktop = {
   async switchDesk(id: string): Promise<void> {
     if (!api || id === deskId) return;
     if (status !== 'online') {
-      showToast('Offline — Aktion nicht möglich');
+      showToast(offlineMeldung());
       return;
     }
     status = 'connecting';
-    await closeWs();
+    closeWs();
     try {
       await loadDesk(id);
     } catch (e) {
@@ -106,7 +137,7 @@ export const desktop = {
   async createDesk(name: string): Promise<void> {
     if (!api) return;
     if (status !== 'online') {
-      showToast('Offline — Aktion nicht möglich');
+      showToast(offlineMeldung());
       return;
     }
     try {
@@ -121,7 +152,7 @@ export const desktop = {
   async renameDesk(id: string, name: string): Promise<void> {
     if (!api) return;
     if (status !== 'online') {
-      showToast('Offline — Aktion nicht möglich');
+      showToast(offlineMeldung());
       return;
     }
     try {
@@ -135,7 +166,7 @@ export const desktop = {
   async deleteDesk(id: string): Promise<void> {
     if (!api) return;
     if (status !== 'online') {
-      showToast('Offline — Aktion nicht möglich');
+      showToast(offlineMeldung());
       return;
     }
     try {
@@ -144,7 +175,7 @@ export const desktop = {
       if (id === deskId) {
         if (desks.length === 0) desks = [await api.createDesk('Schreibtisch 1')];
         status = 'connecting';
-        await closeWs();
+        closeWs();
         try {
           await loadDesk(desks[0].id);
         } catch (e) {
@@ -162,65 +193,85 @@ export const desktop = {
     reconnectTimer = undefined;
     stopped = true;
     status = 'loggedOut';
-    await ws?.disconnect().catch(() => {});
+    ws?.close();
     ws = null;
   },
 };
 
-/** Lädt Zustand + rev des Schreibtischs und verbindet den WebSocket. */
+/** Lädt Zustand + rev des Schreibtischs (bzw. der Akte) und verbindet den WebSocket. */
 async function loadDesk(id: string): Promise<void> {
   if (!api) return;
   deskId = id;
-  const result = await api.getState(id);
+  const result = mode === 'jlawyer' ? await api.getCaseDesk(id) : await api.getState(id);
   rev = result.rev; // Zähler gehört zum neuen Schreibtisch — nicht vergleichen
   state = result.state;
-  await saveLastDeskId(id).catch(() => {});
-  await connectWs();
+  saveLastDeskId(id);
+  connectWs();
 }
 
 /** Trennt den aktuellen Socket und invalidiert dessen Listener (Generationswechsel). */
-async function closeWs(): Promise<void> {
+function closeWs(): void {
   wsGeneration++;
   clearTimeout(reconnectTimer);
   reconnectTimer = undefined;
   const socket = ws;
   ws = null;
-  await socket?.disconnect().catch(() => {});
+  socket?.close();
 }
 
-async function connectWs(): Promise<void> {
+function connectWs(): void {
   if (!api || !deskId || stopped) return;
   const generation = ++wsGeneration;
+  void (async () => {
+    let ticket: string;
+    try {
+      ticket = (await api!.wsTicket()).ticket;
+    } catch {
+      if (generation === wsGeneration) onDisconnected();
+      return;
+    }
+    if (generation !== wsGeneration || stopped || !api || !deskId) return;
+    openSocket(generation, api.wsUrl(deskId, ticket));
+  })();
+}
+
+function openSocket(generation: number, url: string): void {
+  let socket: WebSocket;
   try {
-    const socket = await WebSocket.connect(api.wsUrl(deskId));
+    socket = new WebSocket(url);
+  } catch {
+    onDisconnected();
+    return;
+  }
+  socket.onopen = () => {
     if (generation !== wsGeneration) {
       // Während des Verbindens wurde gewechselt/geschlossen — diesen Socket verwerfen.
-      await socket.disconnect().catch(() => {});
+      socket.close();
       return;
     }
     ws = socket;
     reconnectDelay = 1000;
     status = 'online';
-    ws.addListener((msg) => {
-      if (generation !== wsGeneration) return;
-      // Bei abruptem Abriss liefert das Plugin statt eines Close-Frames einen Fehler-String.
-      if (typeof msg === 'string') {
-        onDisconnected();
-        return;
-      }
-      if (msg.type === 'Text') {
-        const data = JSON.parse(msg.data as string) as { rev: number; state: DesktopState };
-        if (data.rev >= rev) {
-          rev = data.rev;
-          state = data.state;
-        }
-      } else if (msg.type === 'Close') {
-        onDisconnected();
-      }
-    });
-  } catch {
+  };
+  socket.onmessage = (ev) => {
+    if (generation !== wsGeneration) return;
+    let data: { rev: number; state: DesktopState };
+    try {
+      data = JSON.parse(ev.data as string) as { rev: number; state: DesktopState };
+    } catch {
+      return; // fehlerhafte Nachricht verwerfen — der nächste Broadcast bringt den vollen Zustand
+    }
+    if (typeof data?.rev !== 'number' || !data.state) return;
+    if (data.rev >= rev) {
+      rev = data.rev;
+      state = data.state;
+    }
+  };
+  socket.onclose = () => {
+    // Der native WebSocket feuert onclose auch nach onerror und nach fehlgeschlagenem
+    // Verbindungsaufbau — ein einziger Einstiegspunkt für die Reconnect-Logik.
     if (generation === wsGeneration) onDisconnected();
-  }
+  };
 }
 
 function onDisconnected(): void {

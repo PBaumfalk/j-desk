@@ -37,8 +37,22 @@ export function openDb(path: string): Db {
       sha256 TEXT NOT NULL UNIQUE,
       original_name TEXT NOT NULL,
       size INTEGER NOT NULL,
-      created_at INTEGER NOT NULL
+      created_at INTEGER NOT NULL,
+      kind TEXT NOT NULL DEFAULT 'pdf'
     );
   `);
+  migrate(db);
   return db;
+}
+
+/** Schema-Migrationen für Bestands-Datenbanken (neue DBs erhalten das Zielschema bereits über CREATE TABLE oben). */
+function migrate(db: Db): void {
+  const version = db.pragma('user_version', { simple: true }) as number;
+  if (version < 1) {
+    const cols = db.prepare('PRAGMA table_info(files)').all() as { name: string }[];
+    if (!cols.some((c) => c.name === 'kind')) {
+      db.exec("ALTER TABLE files ADD COLUMN kind TEXT NOT NULL DEFAULT 'pdf'");
+    }
+    db.pragma('user_version = 1');
+  }
 }

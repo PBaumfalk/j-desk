@@ -26,6 +26,13 @@ export function createDesk(db: Db, ownerId: string, name: string): DeskInfo {
   return { id, name, ownerId };
 }
 
+/** Desk mit vorgegebener ID (j-lawyer-Akten-ID) — legt ihn beim ersten Öffnen an. */
+export function ensureDesk(db: Db, id: string, ownerId: string, name: string): void {
+  db.prepare(
+    'INSERT OR IGNORE INTO desks (id, name, owner_id, state, rev, created_at) VALUES (?, ?, ?, ?, 0, ?)',
+  ).run(id, name, ownerId, JSON.stringify(emptyState()), Date.now());
+}
+
 export function listDesks(db: Db): DeskInfo[] {
   return db
     .prepare('SELECT id, name, owner_id AS ownerId FROM desks ORDER BY created_at')

@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    CARD_W, CARD_H, findDoc, findStack, stackOf, setLinkNote, type Vec2,
+    CARD_W, CARD_H, cutoutBox, docBox, findCutout, findDoc, findNote, findStack, noteBox, stackOf, setLinkNote, type Vec2,
   } from '@digital-desktop/core';
   import { debounce } from '../debounce';
   import { desktop } from '../store.svelte';
@@ -12,13 +12,26 @@
   let openLinkId = $state<string | null>(null);
   const openLink = $derived(desktop.state.links.find((l) => l.id === openLinkId) ?? null);
 
-  /** Linien-Endpunkt: Kartenmitte; liegt das Dokument in einem Stapel, endet die Linie am Stapel. */
+  /** Linien-Endpunkt: Kartenmitte (bei aufgeschlagenen Karten die Viewer-Mitte);
+      liegt das Dokument in einem Stapel, endet die Linie am Stapel. */
   function endpoint(id: string): Vec2 | null {
     const s = desktop.state;
     const stack = findStack(s, id) ?? stackOf(s, id);
     if (stack) return { x: stack.position.x + (CARD_W + 24) / 2, y: stack.position.y + (CARD_H + 24) / 2 };
+    const n = findNote(s, id);
+    if (n) {
+      const nb = noteBox(n);
+      return { x: nb.x + nb.w / 2, y: nb.y + nb.h / 2 };
+    }
+    const c = findCutout(s, id);
+    if (c) {
+      const cb = cutoutBox(c);
+      return { x: cb.x + cb.w / 2, y: cb.y + cb.h / 2 };
+    }
     const d = findDoc(s, id);
-    return d ? { x: d.position.x + CARD_W / 2, y: d.position.y + CARD_H / 2 } : null;
+    if (!d) return null;
+    const b = docBox(d);
+    return { x: b.x + b.w / 2, y: b.y + b.h / 2 };
   }
 
   function curve(a: Vec2, b: Vec2): string {
@@ -36,7 +49,8 @@
     {@const a = endpoint(link.fromId)}
     {@const b = endpoint(link.toId)}
     {#if a && b}
-      <path d={curve(a, b)} class="hit" onpointerdown={(e) => { e.stopPropagation(); openLinkId = link.id; }} />
+      <path d={curve(a, b)} class="hit" role="button" tabindex="-1" aria-label="Verknüpfung öffnen"
+            onpointerdown={(e) => { e.stopPropagation(); openLinkId = link.id; }} />
       <path d={curve(a, b)} class="line" />
       {#if link.note}
         <text x={(a.x + b.x) / 2} y={(a.y + b.y) / 2 + 28} text-anchor="middle" class="note">{link.note}</text>
@@ -49,7 +63,7 @@
   {@const a = endpoint(openLink.fromId)}
   {@const b = endpoint(openLink.toId)}
   {#if a && b}
-    <div class="popover" style:left="{(a.x + b.x) / 2}px" style:top="{(a.y + b.y) / 2}px"
+    <div class="popover" role="dialog" tabindex="-1" aria-label="Verknüpfungsnotiz" style:left="{(a.x + b.x) / 2}px" style:top="{(a.y + b.y) / 2}px"
          onpointerdown={(e) => e.stopPropagation()}>
       <textarea placeholder="Notiz zur Verknüpfung…" value={openLink.note}
         oninput={(e) => {
