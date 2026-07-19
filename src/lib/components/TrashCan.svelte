@@ -74,27 +74,32 @@
 {/if}
 
 <style>
-  /* Tisch-Stil wie DeskControls: dunkles Panel, Creme-Symbole. */
+  /* Papierkorb im Glass-Design wie DeskControls. */
   .korb { position: fixed; right: 16px; bottom: 16px; z-index: 9000; }
-  .eimer { position: relative; width: 52px; height: 52px; border: none; border-radius: 12px; cursor: pointer;
-           background: rgba(20, 32, 28, .88); color: #f2e2b8; font-size: 24px;
-           box-shadow: 0 4px 14px rgba(0, 0, 0, .35); }
+  .eimer { position: relative; width: 52px; height: 52px; border-radius: 12px; cursor: pointer;
+           border: 1px solid var(--glass-border);
+           background: var(--glass-card-bg); color: var(--glass-text); font-size: 24px;
+           backdrop-filter: var(--glass-blur-card); -webkit-backdrop-filter: var(--glass-blur-card);
+           box-shadow: var(--glass-shadow); }
+  .eimer:hover { background: var(--glass-elevated-bg); }
   .badge { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; border-radius: 10px;
-           background: #c0392b; color: #fff; font-size: 11px; font-weight: 700; line-height: 20px; padding: 0 4px; }
+           background: var(--brand-red); color: #fff; font-size: 11px; font-weight: 700; line-height: 20px; padding: 0 4px; }
   .panel { position: fixed; right: 16px; bottom: 76px; z-index: 9400; width: 320px; max-height: 50vh; overflow: auto;
-           background: rgba(20, 32, 28, .96); color: #ece5d4; border-radius: 12px; padding: 10px;
-           box-shadow: 0 10px 30px rgba(0, 0, 0, .45); font-size: 12px; }
-  .leer { padding: 10px; opacity: .8; }
+           background: var(--glass-panel-bg); color: var(--glass-text);
+           border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px;
+           backdrop-filter: var(--glass-blur-panel); -webkit-backdrop-filter: var(--glass-blur-panel);
+           box-shadow: var(--glass-shadow-lg); font-size: 12px; }
+  .leer { padding: 10px; color: var(--glass-text-secondary); }
   ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   li { display: grid; grid-template-columns: auto 1fr auto auto auto; gap: 8px; align-items: center;
-       background: rgba(255, 255, 255, .06); border-radius: 8px; padding: 6px 8px; }
-  .art { opacity: .7; }
+       background: var(--glass-hover); border-radius: 8px; padding: 6px 8px; }
+  .art { color: var(--glass-text-secondary); }
   .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .wann { opacity: .6; font-variant-numeric: tabular-nums; }
-  li button, .leeren { border: none; border-radius: 6px; background: rgba(242, 226, 184, .15); color: #f2e2b8;
+  .wann { color: var(--glass-text-secondary); font-variant-numeric: tabular-nums; }
+  li button, .leeren { border: none; border-radius: 6px; background: var(--glass-active); color: var(--glass-text);
                        cursor: pointer; font-size: 11px; padding: 4px 8px; }
-  li button:hover, .leeren:hover { background: rgba(242, 226, 184, .28); }
-  li button.schreddern { background: rgba(192, 57, 43, .35); }
-  li button.schreddern:hover { background: rgba(192, 57, 43, .55); }
+  li button:hover, .leeren:hover { background: var(--brand-blue-soft); }
+  li button.schreddern { background: var(--brand-red-soft); color: var(--brand-red); }
+  li button.schreddern:hover { background: rgba(238, 24, 30, .28); }
   .leeren { margin-top: 8px; width: 100%; }
 </style>
