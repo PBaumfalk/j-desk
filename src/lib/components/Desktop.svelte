@@ -404,28 +404,35 @@
   @media (prefers-reduced-motion: reduce) { .puls { animation: none; } }
   .suche-panel { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 9600;
                  width: min(420px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 6px;
-                 background: rgba(20, 32, 28, .95); border-radius: 12px; padding: 10px;
-                 box-shadow: 0 10px 30px rgba(0, 0, 0, .45); }
-  .suche-feld { border: 1px solid rgba(242, 226, 184, .3); border-radius: 8px; padding: 8px 10px;
-                background: rgba(255, 255, 255, .08); color: #ece5d4; font: inherit; font-size: 14px; }
-  .suche-feld::placeholder { color: rgba(236, 229, 212, .55); }
+                 background: var(--glass-panel-bg); border: 1px solid var(--glass-border);
+                 backdrop-filter: var(--glass-blur-panel); -webkit-backdrop-filter: var(--glass-blur-panel);
+                 border-radius: 12px; padding: 10px; box-shadow: var(--glass-shadow-lg); }
+  .suche-feld { border: 1px solid var(--glass-separator); border-radius: 8px; padding: 8px 10px;
+                background: var(--glass-input-bg); color: var(--glass-text); font: inherit; font-size: 14px; }
+  .suche-feld::placeholder { color: var(--glass-text-secondary); }
+  .suche-feld:focus-visible { outline: 2px solid var(--brand-blue); outline-offset: 0; }
   .suche-liste { display: flex; flex-direction: column; gap: 2px; max-height: 40vh; overflow-y: auto; }
   .treffer { display: flex; gap: 8px; align-items: baseline; text-align: left; border: none;
-             background: none; color: #ece5d4; padding: 7px 8px; border-radius: 8px; cursor: pointer; font-size: 13px; }
-  .treffer:hover { background: rgba(242, 226, 184, .15); }
+             background: none; color: var(--glass-text); padding: 7px 8px; border-radius: 8px;
+             cursor: pointer; font-size: 13px; }
+  .treffer:hover { background: var(--glass-hover); }
   .treffer .art { flex: none; font-size: 10px; text-transform: uppercase; letter-spacing: .05em;
-                  background: rgba(242, 226, 184, .18); border-radius: 5px; padding: 2px 6px; }
+                  background: var(--brand-blue-soft); border-radius: 5px; padding: 2px 6px; }
   .treffer .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .keine { padding: 8px; font-size: 12px; color: rgba(236, 229, 212, .6); }
+  .keine { padding: 8px; font-size: 12px; color: var(--glass-text-secondary); }
   .lupe { position: fixed; z-index: 9500; border-radius: 50%; overflow: hidden; pointer-events: none;
           border: 3px solid rgba(242, 226, 184, .85); box-shadow: 0 10px 34px rgba(0, 0, 0, .5), inset 0 0 20px rgba(0, 0, 0, .15);
           background: radial-gradient(1200px 800px at 40% 30%, #3a5c4e, #27423a 70%, #1d332d); }
   .lupenwelt { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
   .toolbar { position: fixed; top: 12px; right: 12px; display: flex; gap: 8px; z-index: 9000; }
-  .toolbar button { font-size: 13px; padding: 6px 12px; border-radius: 8px; border: none;
-                    background: rgba(255, 255, 255, .92); cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
+  .toolbar button { font-size: 13px; padding: 6px 12px; border-radius: 8px;
+                    border: 1px solid var(--glass-border);
+                    background: var(--glass-card-bg); color: var(--glass-text);
+                    backdrop-filter: var(--glass-blur-card); -webkit-backdrop-filter: var(--glass-blur-card);
+                    cursor: pointer; box-shadow: var(--glass-shadow); }
+  .toolbar button:hover { background: var(--glass-elevated-bg); }
   .hint { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); padding: 6px 14px;
-          border-radius: 999px; background: rgba(20, 40, 90, .85); color: #fff; font-size: 13px; z-index: 9999; }
+          border-radius: 999px; background: rgba(8, 31, 57, .88); color: #fff; font-size: 13px; z-index: 9999; }
   .banner { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); padding: 6px 14px;
             border-radius: 999px; background: rgba(140, 60, 20, .9); color: #fff; font-size: 13px; z-index: 99000; }
   .blocker { position: fixed; inset: 0; z-index: 98000; cursor: wait; }

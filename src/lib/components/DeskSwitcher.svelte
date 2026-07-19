@@ -174,30 +174,40 @@
 
 <style>
   .switcher { position: fixed; top: 12px; left: 12px; z-index: 9000; }
-  .current { font-size: 13px; padding: 6px 12px; border-radius: 8px; border: none;
-             background: rgba(255, 255, 255, .92); cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
+  .current { font-size: 13px; padding: 6px 12px; border-radius: 8px;
+             border: 1px solid var(--glass-border);
+             background: var(--glass-card-bg); color: var(--glass-text);
+             backdrop-filter: var(--glass-blur-card); -webkit-backdrop-filter: var(--glass-blur-card);
+             cursor: pointer; box-shadow: var(--glass-shadow); }
+  .current:hover { background: var(--glass-elevated-bg); }
   .backdrop { position: fixed; inset: 0; z-index: 9001; }
-  .suche { margin: 2px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 7px; font: inherit; font-size: 13px; }
+  .suche { margin: 2px; padding: 6px 8px; border: 1px solid var(--glass-separator); border-radius: 7px;
+           background: var(--glass-input-bg); color: var(--glass-text); font: inherit; font-size: 13px; }
   .items { max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; }
-  .leer { padding: 8px 10px; font-size: 12px; color: #888; }
+  .leer { padding: 8px 10px; font-size: 12px; color: var(--glass-text-secondary); }
   .menu { position: absolute; top: 36px; left: 0; z-index: 9002; min-width: 230px; padding: 4px;
-          border-radius: 10px; background: rgba(255, 255, 255, .97); box-shadow: 0 8px 30px rgba(0, 0, 0, .35);
+          border-radius: 10px; background: var(--glass-elevated-bg); color: var(--glass-text);
+          border: 1px solid var(--glass-border);
+          backdrop-filter: var(--glass-blur-elevated); -webkit-backdrop-filter: var(--glass-blur-elevated);
+          box-shadow: var(--glass-shadow-lg);
           display: flex; flex-direction: column; gap: 2px;
           max-height: calc(100vh - 56px); overflow-y: auto; }
   /* Regler: volle Menübreite, touch-freundlich; touch-action verhindert Scrollen beim Ziehen. */
-  .regler { width: calc(100% - 20px); margin: 2px 10px 8px; accent-color: #2b5bd7; touch-action: none; }
+  .regler { width: calc(100% - 20px); margin: 2px 10px 8px; accent-color: var(--brand-blue); touch-action: none; }
   .haken { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
   .item { text-align: left; padding: 7px 10px; border: none; background: none; border-radius: 6px;
-          font-size: 13px; cursor: pointer; }
-  .item:hover { background: #e8eefc; }
-  .item.gefahr { color: #b02a2a; }
-  hr { border: none; border-top: 1px solid #e5e5e5; margin: 4px 0; }
-  .abschnitt { padding: 6px 10px 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #888; }
+          font-size: 13px; color: inherit; cursor: pointer; }
+  .item:hover { background: var(--glass-hover); }
+  .item.gefahr { color: var(--brand-red); }
+  hr { border: none; border-top: 1px solid var(--glass-separator); margin: 4px 0; }
+  .abschnitt { padding: 6px 10px 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+               color: var(--glass-text-secondary); }
   .farben { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 4px 10px 6px; }
-  .farbe { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(0, 0, 0, .15);
+  .farbe { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--glass-separator);
            cursor: pointer; padding: 0; }
   .farbe:hover { transform: scale(1.08); }
-  .farbe.aktiv { border-color: #2b5bd7; box-shadow: 0 0 0 2px rgba(43, 91, 215, .35); }
-  input { margin: 6px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; font: inherit; font-size: 13px; }
+  .farbe.aktiv { border-color: var(--brand-blue); box-shadow: 0 0 0 2px var(--glass-active); }
+  input { margin: 6px; padding: 6px 8px; border: 1px solid var(--glass-separator); border-radius: 6px;
+          background: var(--glass-input-bg); color: var(--glass-text); font: inherit; font-size: 13px; }
   .row { display: flex; justify-content: flex-end; gap: 4px; padding: 0 6px 6px; }
 </style>
