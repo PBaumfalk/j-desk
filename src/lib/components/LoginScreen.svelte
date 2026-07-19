@@ -41,9 +41,10 @@
   }
 </script>
 
-<div class="wrap">
-  <form class="card" onsubmit={(e) => { e.preventDefault(); void submit(); }}>
-    <h1>Digital Desktop</h1>
+<div class="wrap bg-mesh">
+  <form class="card glass-elevated" onsubmit={(e) => { e.preventDefault(); void submit(); }}>
+    <img class="logo" src="/j-desk-icon-256.png" alt="" width="72" height="72" />
+    <h1>J-Desk</h1>
     {#if needsSetup}<p class="hint">Ersteinrichtung: Lege das erste Konto an (Passwort min. 8 Zeichen).</p>{/if}
     <label>Benutzername <input bind:value={username} autocomplete="username" /></label>
     <label>Passwort <input type="password" bind:value={password} autocomplete="current-password" /></label>
@@ -55,16 +56,20 @@
 </div>
 
 <style>
-  .wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-          background: radial-gradient(1200px 800px at 40% 30%, #3a5c4e, #27423a 70%, #1d332d); }
-  .card { display: flex; flex-direction: column; gap: 12px; width: 320px; padding: 28px;
-          border-radius: 14px; background: rgba(255, 255, 255, .96); box-shadow: 0 12px 40px rgba(0, 0, 0, .4); }
-  h1 { margin: 0 0 4px; font-size: 20px; }
-  label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
-  input { padding: 7px 9px; border: 1px solid #ccc; border-radius: 7px; font: inherit; }
-  .hint { margin: 0; font-size: 12px; color: #2c5aa0; }
-  .error { margin: 0; font-size: 12px; color: #b02a2a; }
-  button { padding: 8px; border: none; border-radius: 8px; background: #2c5aa0; color: #fff;
+  .wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .card { display: flex; flex-direction: column; gap: 12px; width: 320px; padding: 32px 28px;
+          border-radius: 18px; }
+  .logo { align-self: center; margin-bottom: 2px; }
+  h1 { margin: 0 0 4px; font-size: 22px; text-align: center; color: var(--brand-navy);
+       letter-spacing: -0.01em; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--glass-text); }
+  input { padding: 8px 10px; border: 1px solid var(--glass-separator); border-radius: 8px;
+          background: rgba(255, 255, 255, .7); font: inherit; }
+  input:focus-visible { outline: 2px solid var(--brand-blue); outline-offset: 0; }
+  .hint { margin: 0; font-size: 12px; color: var(--brand-blue); }
+  .error { margin: 0; font-size: 12px; color: var(--brand-red); }
+  button { padding: 9px; border: none; border-radius: 9px; background: var(--brand-navy); color: #fff;
            font-size: 14px; cursor: pointer; }
+  button:hover:enabled { background: var(--brand-navy-hover); }
   button:disabled { opacity: .5; cursor: default; }
 </style>
