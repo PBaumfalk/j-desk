@@ -1,7 +1,7 @@
 # UAT-Sammelliste — alle offenen manuellen Tests (Stand 2026-07-18)
 
-Konsolidiert alle „pending user verification"-Punkte. **118 Punkte in drei aktiven Blöcken**
-(A mit 95, C′ mit 9, D mit 14) — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
+Konsolidiert alle „pending user verification"-Punkte. **126 Punkte in drei aktiven Blöcken**
+(A mit 100, C′ mit 12, D mit 14) — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
 kann in einer Sitzung durchgetestet werden.
 
 **Empfohlene Reihenfolge:** Block A (aktueller Branch, enthält jetzt auch Zettel A7 und
@@ -15,7 +15,7 @@ MCP-Portierung C′) → Block D (j-lawyer-Modus, braucht deine Instanz).
 
 ---
 
-## Block A — Browser-App (Branch `feature/inline-viewer`, 95 Punkte)
+## Block A — Browser-App (Branch `feature/inline-viewer`, 100 Punkte)
 
 **Setup:**
 
@@ -161,7 +161,15 @@ iPad:
 - [ ] A11.6 Helles Thema (Altweiß/Elfenbein): Papiere setzen sich per Kontur/Schatten ab; Reload erhält alle Einstellungen; „Zurücksetzen" stellt Dunkelgrün/Filz/Standardregler wieder her.
 - [ ] A11.7 j-lawyer-Modus: Gestaltung einer Akte ändern → zweiter Nutzer sieht sie live (kanzlei-weit geteilt, gewollt); iPad: Regler und Haken per Finger bedienbar, Ziehen am Regler scrollt das Menü nicht.
 
-### C′ — MCP auf dem Rework-Strang (ersetzt Block C; 9 Prüfungen, neues Setup)
+### A12 — Quickwin-Runde: Gedankenobjekte komplett & Schredder (NEU)
+
+- [ ] A12.1 „＋ Zettel": Typwahl ist zweispaltig mit 12 Typen; die 6 neuen Farben/Badges (Behauptung sand, Beweisziel petrol, Idee rosa, To-do grau, Argument türkis, Rechtsfrage violett) gefallen?
+- [ ] A12.2 „Eigener…": Bezeichnung eingeben (z. B. „Zeugenfrage") → Zettel trägt das eigene Badge; Reload erhält es.
+- [ ] A12.3 To-do: Abhak-Kreis anklicken/antippen → Haken, Text durchgestrichen, Zettel gedimmt; Zweitfenster folgt live; erneuter Klick hebt es auf; Abhaken löst kein Ziehen/Bearbeiten aus.
+- [ ] A12.4 Korb-Panel: „Schreddern…" bei einem Eintrag → Bestätigungsdialog, Eintrag verschwindet endgültig (kein Wiederherstellen); andere Einträge bleiben.
+- [ ] A12.5 j-lawyer-Modus: Schreddern-Dialog erklärt den Abgleich (Dokument kommt als frische Karte zurück); Verhalten stimmt.
+
+### C′ — MCP auf dem Rework-Strang (ersetzt Block C; 12 Prüfungen, neues Setup)
 
 **Setup:** anymize-Key in `.env.local`; ZDR im anymize-Account AUS — **alles auf `feature/inline-viewer`:**
 
@@ -181,6 +189,9 @@ npm run mcp                                 # Terminal 2
 - [ ] C′.7 **Zettel via KI (NEU):** „Lege einen Notizzettel ‚Frist prüfen' an" → `add_note`-Zettel erscheint in der UI in Klartext; „Welche Zettel liegen auf dem Tisch?" → `get_desk` nennt sie (anonymisiert in der KI-Antwort, `deanonymize` liefert Klartext).
 - [ ] C′.8 **Zettel ändern/entfernen (NEU):** Text per KI ändern → UI folgt live; Zettel per KI entfernen → seine Schnüre verschwinden mit.
 - [ ] C′.9 **Enthefter & Schnüre via KI (NEU):** „Löse Seite 2 von Dokument X heraus" → `extract_page` legt die Seitenkarte neben das Original (nicht destruktiv); „Verbinde den Zettel mit der Karte" → `link_documents` zieht die Schnur, in der UI sichtbar.
+- [ ] C′.10 **Werkzeugkasten lesen (NEU):** „Was liegt auf dem Tisch?" → Antwort nennt Stempel, Fahnen, Konvolute, Klammern und Korb-Inhalt (Freitexte anonymisiert; `deanonymize` liefert Klartext).
+- [ ] C′.11 **Werkzeugkasten schreiben (NEU):** „Stemple EINGANG auf Seite 1 von X", „setze eine rote Fahne auf Seite 3", „hefte den Stapel" → alles erscheint live in der UI; Stempel sitzt oben rechts und trägt das Tagesdatum.
+- [ ] C′.12 **Reversibel & Grenzen (NEU):** „Lege X in den Papierkorb" + „hole es zurück" funktionieren; „leere den Papierkorb" wird von der KI mangels Tool NICHT ausgeführt.
 
 ---
 
