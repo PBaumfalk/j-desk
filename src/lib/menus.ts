@@ -90,6 +90,24 @@ export function showDocMenu(e: MouseEvent, doc: Doc): void {
   showDocMenuAt(e.clientX, e.clientY, doc);
 }
 
+/** Kontextmenü am AUFGESCHLAGENEN Dokument (Wunsch A3.4): wie das Karten-Menü,
+    nur „Zuklappen" statt „Aufschlagen". */
+export function showViewerMenuAt(x: number, y: number, doc: Doc): void {
+  ui.menu = {
+    x, y,
+    items: [
+      { label: 'Zuklappen', action: () => void desktop.command('collapseDoc', { id: doc.id }) },
+      { label: 'In neuem Tab öffnen', action: () => void openDoc(doc) },
+      { label: 'Mit allen Verknüpften öffnen', action: () => openWithLinked(doc.id) },
+      { label: 'Verknüpfen…', action: () => { ui.linkingFromId = doc.id; } },
+      { label: 'Kopieren', action: () => void desktop.command('copyObject', { id: doc.id }) },
+      { label: 'Herunterladen…', action: () => void downloadDoc(doc) },
+      ...befestigungsEintraege(doc.id),
+      papierkorbEintrag(doc.id),
+    ],
+  };
+}
+
 export function showStackMenuAt(x: number, y: number, stack: Stack): void {
   const basis: MenuItem[] = stack.stapled
     ? [

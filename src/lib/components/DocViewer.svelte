@@ -4,7 +4,8 @@
   import { debounce } from '../debounce';
   import { clientToBase } from '../inkMath';
   import { desktop } from '../store.svelte';
-  import { showToast } from '../ui.svelte';
+  import { ui, showToast } from '../ui.svelte';
+  import { showViewerMenuAt } from '../menus';
   import PageRenderer from './PageRenderer.svelte';
   import ImagePage from './ImagePage.svelte';
   import InkOverlay, { type InkTool } from './InkOverlay.svelte';
@@ -169,18 +170,61 @@
 
   let dragging = false, moved = false;
   let headLast = { x: 0, y: 0 };
+  /** Wartende Verknüpfung/Klammer zum offenen Viewer vervollständigen (Wunsch A5.5). */
+  function verbindungAngenommen(): boolean {
+    if (ui.linkingFromId && ui.linkingFromId !== doc.id) {
+      const from = ui.linkingFromId;
+      ui.linkingFromId = null;
+      void desktop.command('addLink', { fromId: from, toId: doc.id, id: uid() });
+      return true;
+    }
+    if (ui.linkingFromId === doc.id) { ui.linkingFromId = null; return true; }
+    if (ui.clippingFromId && ui.clippingFromId !== doc.id) {
+      const from = ui.clippingFromId;
+      ui.clippingFromId = null;
+      desktop.command('addClip', { aId: from, bId: doc.id, id: uid() })
+        .catch((err) => showToast(err instanceof Error ? err.message : 'Anklammern fehlgeschlagen'));
+      return true;
+    }
+    if (ui.clippingFromId === doc.id) { ui.clippingFromId = null; return true; }
+    return false;
+  }
+
+  let pressTimer: ReturnType<typeof setTimeout> | undefined;
   function onHeaderPointerDown(e: PointerEvent) {
     if ((e.target as HTMLElement).closest('button')) return; // Klicks auf ‹ › ✕ nicht als Drag verschlucken
-    if (doc.taped) return;
     if (e.button !== 0) return;
     e.stopPropagation();
+    if (verbindungAngenommen()) return;
+    if (doc.taped) {
+      // Festgeklebt: kein Drag — aber das Lang-Druck-Menü bleibt erreichbar (Muster Karten/A9.8)
+      clearTimeout(pressTimer);
+      pressTimer = undefined;
+      headLast = { x: e.clientX, y: e.clientY };
+      if (e.pointerType !== 'mouse') {
+        pressTimer = setTimeout(() => { showViewerMenuAt(headLast.x + 16, headLast.y + 12, doc); }, 500);
+      }
+      return;
+    }
     dragging = true; moved = false;
     headLast = { x: e.clientX, y: e.clientY };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     void desktop.command('bringToFront', { id: doc.id });
+    clearTimeout(pressTimer);
+    pressTimer = undefined;
+    if (e.pointerType !== 'mouse') {
+      // Lang-Druck auf die Kopfzeile öffnet das Kontextmenü (Muster DocCard, Wunsch A3.4)
+      pressTimer = setTimeout(() => { dragging = false; showViewerMenuAt(headLast.x + 16, headLast.y + 12, doc); }, 500);
+    }
   }
   function onHeaderPointerMove(e: PointerEvent) {
     if (!dragging) return;
+    if (pressTimer) {
+      // Lang-Druck toleriert leichtes Zittern; echte Bewegung bricht ihn ab und zieht.
+      if (Math.hypot(e.clientX - headLast.x, e.clientY - headLast.y) <= 8) return;
+      clearTimeout(pressTimer);
+      pressTimer = undefined;
+    }
     moved = true;
     const dx = (e.clientX - headLast.x) / vp.scale;
     const dy = (e.clientY - headLast.y) / vp.scale;
@@ -188,6 +232,8 @@
     desktop.applyLocal((s) => moveDoc(s, doc.id, { x: doc.position.x + dx, y: doc.position.y + dy }));
   }
   function onHeaderPointerUp() {
+    clearTimeout(pressTimer);
+    pressTimer = undefined;
     if (!dragging) return;
     dragging = false;
     if (moved) void desktop.command('moveDoc', { id: doc.id, position: { x: doc.position.x, y: doc.position.y } });
@@ -221,7 +267,11 @@
 
   // Wischen zum Blättern (horizontal) — bei aktivem Zeichenwerkzeug deaktiviert
   let swipeX = 0, swiping = false;
-  function onBodyPointerDown(e: PointerEvent) { if (inkTool) return; if (e.pointerType === 'touch') { swiping = true; swipeX = e.clientX; } }
+  function onBodyPointerDown(e: PointerEvent) {
+    if (verbindungAngenommen()) { e.stopPropagation(); return; }
+    if (inkTool) return;
+    if (e.pointerType === 'touch') { swiping = true; swipeX = e.clientX; }
+  }
   function onBodyPointerUp(e: PointerEvent) {
     if (!swiping) return; swiping = false;
     const dx = e.clientX - swipeX;
@@ -258,7 +308,8 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -- der Viewer ist bewusst fokussierbar: Pfeiltasten blättern -->
 <div class="viewer" class:licht={lichttisch} role="group" aria-label={doc.name} bind:this={wrapEl} tabindex="0"
      style:left="{doc.position.x}px" style:top="{doc.position.y}px" style:z-index={doc.zIndex}
-     style:width="{size.w}px" style:height="{size.h}px">
+     style:width="{size.w}px" style:height="{size.h}px"
+     oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showViewerMenuAt(e.clientX, e.clientY, doc); }}>
   <div class="head" role="toolbar" tabindex="-1" aria-label="Dokumentleiste" onpointerdown={onHeaderPointerDown} onpointermove={onHeaderPointerMove} onpointerup={onHeaderPointerUp} onpointercancel={onHeaderPointerUp}>
     <span class="title">{doc.name}</span>
     <span class="tools">
