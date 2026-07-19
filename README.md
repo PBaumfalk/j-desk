@@ -1,4 +1,4 @@
-# Digital Desktop
+# J-Desk
 
 Ein grafischer Schreibtisch für PDF-Dateien: Karten frei anordnen, verknüpfen, stapeln —
 als Web-App im Browser, ausgeliefert von einem Server im Netzwerk (Node + SQLite).
