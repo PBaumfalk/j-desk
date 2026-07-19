@@ -13,7 +13,7 @@ import { addStamp, removeStamp, type Stamp } from './stamps';
 import { addFlag, removeFlag, type Flag } from './flags';
 import { addClip, removeClip } from './clips';
 import { setTaped } from './tape';
-import { trashObject, restoreObject, emptyTrash } from './trash';
+import { trashObject, restoreObject, emptyTrash, shredTrashItem } from './trash';
 import { copyObject } from './copy';
 import { setBackground, type DeskBackground } from './background';
 
@@ -119,6 +119,7 @@ const handlers: Record<string, (s: DesktopState, p: Record<string, unknown>) => 
   resizeStack: (s, p) => wrap(() => resizeStack(s, id(p.id, 'id'), size(p.size, 'size'))),
   trashObject: (s, p) => wrap(() => trashObject(s, id(p.id, 'id'), text(p.trashedAt, 'trashedAt'), optId(p.trashId))),
   restoreObject: (s, p) => wrap(() => restoreObject(s, id(p.trashId, 'trashId'))),
+  shredTrashItem: (s, p) => wrap(() => shredTrashItem(s, id(p.trashId, 'trashId'))),
   emptyTrash: (s) => emptyTrash(s),
   copyObject: (s, p) => wrap(() => copyObject(s, id(p.id, 'id'))),
   setBackground: (s, p) => wrap(() => setBackground(s, backgroundPayload(p.background))),

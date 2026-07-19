@@ -9,11 +9,15 @@ import { addStamp } from './stamps';
 import { addFlag, FLAG_COLORS } from './flags';
 import { stackDocs, stapleStack } from './stacks';
 import { addClip } from './clips';
-import { trashObject, restoreObject, emptyTrash, trashedFileIds } from './trash';
+import { trashObject, restoreObject, emptyTrash, trashedFileIds, shredTrashItem } from './trash';
 import { copyObject } from './copy';
 import { applyCommand } from './commands';
 
 const T = '2026-07-18T12:00:00.000Z';
+
+function mitDoc() {
+  return addDoc(emptyState(), 'f1', 'a.pdf', { x: 0, y: 0 }, 'd1');
+}
 
 function voll() {
   let s = addDoc(emptyState(), 'f1', 'a.pdf', { x: 0, y: 0 }, 'd1');
@@ -107,5 +111,23 @@ describe('trash', () => {
     expect(s.docs).toHaveLength(1);
     expect(applyCommand(s, { type: 'emptyTrash' }).trash).toEqual([]);
     expect(() => applyCommand(s, { type: 'trashObject', payload: { id: 'd1' } })).toThrow(); // trashedAt fehlt
+  });
+
+  describe('shredTrashItem', () => {
+    it('entfernt genau einen Eintrag endgültig — Wiederherstellen danach unmöglich', () => {
+      let s = trashObject(mitDoc(), 'd1', '2026-07-19T10:00:00Z', 't1');
+      s = addNote(s, 'notiz', 'bleibt', { x: 0, y: 0 }, 'n1');
+      s = trashObject(s, 'n1', '2026-07-19T10:01:00Z', 't2');
+      const nach = shredTrashItem(s, 't1');
+      expect((nach.trash ?? []).map((t) => t.id)).toEqual(['t2']);
+      expect(() => restoreObject(nach, 't1')).toThrow('nicht gefunden');
+    });
+
+    it('unbekannte trashId wird abgewiesen; Command-Weg funktioniert', () => {
+      expect(() => shredTrashItem(emptyState(), 'nix')).toThrow('nicht gefunden');
+      const s = trashObject(mitDoc(), 'd1', '2026-07-19T10:00:00Z', 't1');
+      const nach = applyCommand(s, { type: 'shredTrashItem', payload: { trashId: 't1' } });
+      expect(nach.trash ?? []).toEqual([]);
+    });
   });
 });

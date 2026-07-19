@@ -103,6 +103,12 @@ export function emptyTrash(s: DesktopState): DesktopState {
   return { ...s, trash: [] };
 }
 
+/** Schredder: entfernt genau einen Korb-Eintrag endgültig (kein Wiederherstellen mehr). */
+export function shredTrashItem(s: DesktopState, trashId: string): DesktopState {
+  if (!(s.trash ?? []).some((t) => t.id === trashId)) throw new Error(`Korb-Eintrag "${trashId}" nicht gefunden`);
+  return { ...s, trash: (s.trash ?? []).filter((t) => t.id !== trashId) };
+}
+
 /** fileIds aller Dokumente im Korb — der j-lawyer-Abgleich behandelt sie als vorhanden. */
 export function trashedFileIds(s: DesktopState): string[] {
   return (s.trash ?? []).flatMap((t) => t.payload.docs.map((d) => d.fileId));
