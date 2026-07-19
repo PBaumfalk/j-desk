@@ -183,7 +183,7 @@ iPad:
 
 ### A15 — Tafel-Text (NEU; E2E vorverifiziert)
 
-- [ ] A15.1 „＋ → Zettel… → Tafel-Text" → weiße Filzstift-Schrift direkt auf dem Filz (kein Papier); beschreib-, verschieb-, verknüpf- und suchbar wie ein Zettel; auf hellen Tischflächen (Altweiß/Elfenbein) noch lesbar? Optik gefällt?
+- [ ] A15.1 „＋ → Zettel… → Tafel-Text" → weiße Filzstift-Schrift direkt auf dem Filz (kein Papier); beschreib-, verschieb-, verknüpf- und suchbar wie ein Zettel; auf hellen Tischflächen (Altweiß/Elfenbein) wechselt die Schrift automatisch auf Schwarz. Optik gefällt?
 
 ### C′ — MCP auf dem Rework-Strang (ersetzt Block C; 12 Prüfungen, neues Setup)
 
