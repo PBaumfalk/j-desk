@@ -47,7 +47,8 @@ export async function getThumbnail(api: ApiClient, doc: Doc, source: 'original' 
       return null;
     }
   }
-  const seite = doc.pageOnly ?? 1;
+  // Zuletzt aufgeschlagene Seite (doc.page) statt stur Seite 1 — Wunsch A2.8.
+  const seite = doc.pageOnly ?? doc.page ?? 1;
   const base = seite === 1 ? doc.fileId : `${doc.fileId}:${seite}`;
   const key = source === 'preview' ? `preview:${base}` : base;
   const cached = urls.get(key);

@@ -11,8 +11,9 @@
   import { PreviewError } from '../previewPoll';
   import { moveGroupLocal, commitGroupMove, groupOf } from '../groupDrag';
   import DocViewer from './DocViewer.svelte';
+  import ViewerAbbild from './ViewerAbbild.svelte';
 
-  let { doc, vp }: { doc: Doc; vp: Viewport } = $props();
+  let { doc, vp, lupe = false }: { doc: Doc; vp: Viewport; lupe?: boolean } = $props();
 
   const kind = $derived(doc.kind ?? 'pdf');
   const dateiEndung = $derived(
@@ -27,6 +28,7 @@
 
   $effect(() => {
     doc.fileId;
+    doc.page; // Miniatur folgt der zuletzt aufgeschlagenen Seite (A2.8)
     const k = kind;
     if (!desktop.api) return;
     if (k === 'image') {
@@ -51,7 +53,7 @@
       void getThumbnail(desktop.api, doc).then((t) => (thumb = t));
     }
   });
-  const kartenStempel = $derived(stampsFor(desktop.state, doc.id, doc.pageOnly ?? 1));
+  const kartenStempel = $derived(stampsFor(desktop.state, doc.id, doc.pageOnly ?? doc.page ?? 1));
   const kartenFahnen = $derived(flagsFor(desktop.state, doc.id));
   const taped = $derived(doc.taped === true);
   const geklammert = $derived(clipOf(desktop.state, doc.id) !== undefined);
@@ -148,7 +150,12 @@
 </script>
 
 {#if doc.open}
-  <DocViewer {doc} {vp} />
+  {#if lupe}
+    <!-- In der Lupe: statisches Abbild statt des interaktiven Viewers (keine doppelten Effekte) -->
+    <ViewerAbbild {doc} />
+  {:else}
+    <DocViewer {doc} {vp} />
+  {/if}
 {:else}
   <div class="card" role="button" tabindex="-1" aria-label={doc.name}
        style:left="{doc.position.x}px" style:top="{doc.position.y}px"

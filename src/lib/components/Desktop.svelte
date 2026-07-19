@@ -237,8 +237,8 @@
      ondragover={onDragOver} ondrop={onDrop}>
   {#snippet weltInhalt(v: Viewport, inLupe: boolean)}
     <LinkLayer />
-    {#each freeDocs(desktop.state).filter((d) => imSichtfenster(docBox(d)) && (!inLupe || !d.open)) as doc (doc.id)}
-      <DocCard {doc} vp={v} />
+    {#each freeDocs(desktop.state).filter((d) => imSichtfenster(docBox(d))) as doc (doc.id)}
+      <DocCard {doc} vp={v} lupe={inLupe} />
     {/each}
     {#each desktop.state.stacks.filter((st) => imSichtfenster(stackBox(st))) as stack (stack.id)}
       <StackCard {stack} vp={v} />
