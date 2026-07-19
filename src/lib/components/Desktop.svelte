@@ -156,7 +156,7 @@
         label: kind === 'eigen' ? 'Eigener…' : NOTE_KIND_LABELS[kind],
         action: kind === 'eigen'
           ? () => queueMicrotask(() => {
-              ui.menu = { x, y, items: [], input: { placeholder: 'Bezeichnung (z. B. Zeugenfrage)', onSubmit: (t) => zettelAnlegen('eigen', t) } };
+              ui.menu = { x, y, items: [], input: { placeholder: 'Bezeichnung (z. B. Zeugenfrage)', onSubmit: (t) => zettelAnlegen('eigen', t), onEscape: () => zettelTypAuswahl(x, y) } };
             })
           : () => zettelAnlegen(kind),
       })),

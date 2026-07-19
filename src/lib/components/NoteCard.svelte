@@ -107,7 +107,7 @@
   }
 </script>
 
-<div class="note kind-{note.kind}" class:erledigt={note.done === true} role="button" tabindex="-1" aria-label={NOTE_KIND_LABELS[note.kind]}
+<div class="note kind-{note.kind}" class:erledigt={note.done === true} role="button" tabindex="-1" aria-label={note.kind === 'eigen' ? (note.customLabel ?? 'Eigener') : NOTE_KIND_LABELS[note.kind]}
      style:left="{note.position.x}px" style:top="{note.position.y}px"
      style:z-index={note.zIndex} style:transform="rotate({rotationFor(note.id)}deg)"
      style:width="{NOTE_W}px" style:height="{NOTE_H}px"
@@ -163,7 +163,8 @@
            background: rgba(255, 255, 255, .5); cursor: pointer; padding: 0; font-size: 12px;
            line-height: 1; color: #1d3557; flex: none; }
   .badge { align-self: flex-start; font-size: 10px; font-weight: 700; text-transform: uppercase;
-           letter-spacing: .05em; color: rgba(0, 0, 0, .55); margin-bottom: 4px; }
+           letter-spacing: .05em; color: rgba(0, 0, 0, .55); margin-bottom: 4px;
+           max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .text { flex: 1; font-size: 13px; line-height: 1.35; overflow: hidden; white-space: pre-wrap;
           overflow-wrap: break-word; color: #2a2a20; }
   textarea { flex: 1; border: none; background: transparent; resize: none; font: inherit;

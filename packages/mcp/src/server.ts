@@ -71,7 +71,7 @@ export function buildMcpServer(deps: McpDeps): McpServer {
     let i = 0;
     const name = anon[i++];
     const docs = s.state.docs.map((d) => ({ id: d.id, name: anon[i++], position: d.position, kind: d.kind ?? 'pdf', ...(d.taped ? { taped: true } : {}) }));
-    const stacks = s.state.stacks.map((st) => ({ id: st.id, name: anon[i++], docIds: st.docIds, position: st.position, stapled: st.stapled === true }));
+    const stacks = s.state.stacks.map((st) => ({ id: st.id, name: anon[i++], docIds: st.docIds, position: st.position, stapled: st.stapled === true, ...(st.taped ? { taped: true } : {}) }));
     const links = s.state.links.map((l) => ({ id: l.id, fromId: l.fromId, toId: l.toId, note: anon[i++] }));
     const noteTexte = notesRoh.map(() => anon[i++]);
     const stamps = stampsRoh.map((st) => ({ id: st.id, docId: st.docId, page: st.page, text: anon[i++], color: st.color, ...(st.date ? { date: st.date } : {}) }));
@@ -83,7 +83,7 @@ export function buildMcpServer(deps: McpDeps): McpServer {
       ...(n.kind === 'todo' ? { done: n.done === true } : {}),
       ...(n.taped ? { taped: true } : {}),
     }));
-    const cutouts = (s.state.cutouts ?? []).map((c) => ({ id: c.id, page: c.page, position: c.position }));
+    const cutouts = (s.state.cutouts ?? []).map((c) => ({ id: c.id, page: c.page, position: c.position, ...(c.taped ? { taped: true } : {}) }));
     const flags = (s.state.flags ?? []).map((f) => ({ id: f.id, docId: f.docId, page: f.page, color: f.color }));
     const markCounts: Record<string, { tippex: number; redact: number }> = {};
     for (const m of s.state.marks ?? []) {

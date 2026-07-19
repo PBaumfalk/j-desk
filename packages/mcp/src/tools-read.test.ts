@@ -161,6 +161,7 @@ describe('Task 5: MCP liest den Werkzeugkasten', () => {
     });
     const stackId = nachStapel.state.stacks[0].id;
     await sendCommand(ts.deskUrl, ts.token, deskId, { type: 'stapleStack', payload: { stackId } });
+    await sendCommand(ts.deskUrl, ts.token, deskId, { type: 'tapeObject', payload: { id: stackId } });
     await sendCommand(ts.deskUrl, ts.token, deskId, { type: 'addClip', payload: { aId: docA, bId: docC } });
     await sendCommand(ts.deskUrl, ts.token, deskId, {
       type: 'addNote',
@@ -193,6 +194,7 @@ describe('Task 5: MCP liest den Werkzeugkasten', () => {
 
     const stapelStack = body.stacks.find((st: { id: string }) => st.id === stackId);
     expect(stapelStack.stapled).toBe(true);
+    expect(stapelStack.taped).toBe(true);
 
     expect(body.trash[0].name).toContain('[[Person-TEST1]]');
     expect(body.trash[0].name).not.toContain('Max Mustermann'); // anonymisiert

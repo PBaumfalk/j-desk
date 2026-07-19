@@ -27,7 +27,7 @@ export interface Note {
 export const NOTE_W = 170;
 export const NOTE_H = 130;
 
-export function maxZ(s: DesktopState): number {
+function maxZ(s: DesktopState): number {
   return Math.max(
     0,
     ...s.docs.map((d) => d.zIndex),
@@ -37,7 +37,7 @@ export function maxZ(s: DesktopState): number {
   );
 }
 
-export function mapNote(s: DesktopState, id: string, fn: (n: Note) => Note): DesktopState {
+function mapNote(s: DesktopState, id: string, fn: (n: Note) => Note): DesktopState {
   const notes = s.notes ?? [];
   if (!notes.some((n) => n.id === id)) throw new Error(`Notizzettel "${id}" nicht gefunden`);
   return { ...s, notes: notes.map((n) => (n.id === id ? fn(n) : n)) };

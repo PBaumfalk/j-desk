@@ -8,6 +8,8 @@ export interface MenuItem {
 export interface MenuInput {
   placeholder: string;
   onSubmit: (text: string) => void;
+  /** Wird gerufen, wenn Escape im Eingabefeld gedrückt wird, statt das Menü nur zu schließen. */
+  onEscape?: () => void;
 }
 
 export const ui = $state({

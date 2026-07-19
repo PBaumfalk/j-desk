@@ -14,7 +14,7 @@
   <div class="menu" class:zweispaltig={ui.menu.columns === 2} role="menu" style:left="{ui.menu.x}px" style:top="{ui.menu.y}px">
     {#if ui.menu.input}
       <!-- svelte-ignore a11y_autofocus -->
-      <input autofocus maxlength="24" placeholder={ui.menu.input.placeholder}
+      <input autofocus maxlength="24" placeholder={ui.menu.input.placeholder} aria-label={ui.menu.input.placeholder}
              onpointerdown={(e) => e.stopPropagation()}
              onkeydown={(e) => {
                e.stopPropagation();
@@ -22,7 +22,11 @@
                  const wert = e.currentTarget.value.trim();
                  if (wert && ui.menu?.input) { ui.menu.input.onSubmit(wert); ui.menu = null; }
                }
-               if (e.key === 'Escape') ui.menu = null;
+               if (e.key === 'Escape') {
+                 const esc = ui.menu?.input?.onEscape;
+                 ui.menu = null;
+                 esc?.();
+               }
              }} />
     {/if}
     {#each ui.menu.items as item (item.label)}
