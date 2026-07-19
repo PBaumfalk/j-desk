@@ -31,13 +31,18 @@
 <style>
   .backdrop { position: fixed; inset: 0; z-index: 9600; }
   .pop { position: absolute; top: 34px; right: 8px; z-index: 9700; display: flex; flex-direction: column; gap: 4px;
-         background: #fff; border-radius: 8px; box-shadow: 0 10px 30px rgba(0, 0, 0, .35); padding: 8px; min-width: 170px; }
+         background: var(--glass-elevated-bg); border: 1px solid var(--glass-border);
+         backdrop-filter: var(--glass-blur-elevated); -webkit-backdrop-filter: var(--glass-blur-elevated);
+         border-radius: 8px; box-shadow: var(--glass-shadow-lg); padding: 8px; min-width: 170px; }
   .pop > button { border: 2px solid #b3261e; color: #b3261e; background: #fff; border-radius: 4px;
                   font-weight: 700; letter-spacing: .08em; font-size: 12px; padding: 4px 8px; cursor: pointer; }
   .pop > button.blau { border-color: #1d4ed8; color: #1d4ed8; }
   .pop > button:hover { background: #f6f7fa; }
   .frei { display: flex; gap: 4px; margin-top: 4px; }
-  .frei input { flex: 1; min-width: 0; font-size: 12px; padding: 4px 6px; border: 1px solid #cdd4df; border-radius: 4px; }
-  .frei button { font-size: 12px; border: none; background: #e7ebf2; border-radius: 4px; cursor: pointer; padding: 4px 8px; }
+  .frei input { flex: 1; min-width: 0; font-size: 12px; padding: 4px 6px;
+                border: 1px solid var(--glass-separator); border-radius: 4px;
+                background: var(--glass-input-bg); color: var(--glass-text); }
+  .frei button { font-size: 12px; border: none; background: var(--glass-active); color: var(--glass-text);
+                 border-radius: 4px; cursor: pointer; padding: 4px 8px; }
   .frei button:disabled { opacity: .4; cursor: default; }
 </style>

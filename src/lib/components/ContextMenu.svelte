@@ -40,11 +40,16 @@
 <style>
   .backdrop { position: fixed; inset: 0; z-index: 99998; }
   .menu { position: fixed; z-index: 99999; min-width: 220px; padding: 4px; border-radius: 10px;
-          background: rgba(255, 255, 255, .97); box-shadow: 0 8px 30px rgba(0, 0, 0, .35);
+          background: var(--glass-elevated-bg); color: var(--glass-text);
+          border: 1px solid var(--glass-border);
+          backdrop-filter: var(--glass-blur-elevated); -webkit-backdrop-filter: var(--glass-blur-elevated);
+          box-shadow: var(--glass-shadow-lg);
           display: flex; flex-direction: column; }
   .menu.zweispaltig { display: grid; grid-template-columns: 1fr 1fr; }
-  .menu input { margin: 4px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; font: inherit; font-size: 13px; grid-column: 1 / -1; }
+  .menu input { margin: 4px; padding: 6px 8px; border: 1px solid var(--glass-separator); border-radius: 6px;
+                background: var(--glass-input-bg); color: var(--glass-text);
+                font: inherit; font-size: 13px; grid-column: 1 / -1; }
   .menu button { text-align: left; padding: 7px 10px; border: none; background: none; border-radius: 6px;
-                 font-size: 13px; cursor: pointer; }
-  .menu button:hover { background: #e8eefc; }
+                 font-size: 13px; color: inherit; cursor: pointer; }
+  .menu button:hover { background: var(--glass-hover); }
 </style>

@@ -284,19 +284,21 @@
   /* CSS 1:1 vom DocViewer übernommen (bewusste Duplikation, Bestandsmuster) — plus .laden für den Ladezustand. */
   .viewer { position: absolute; display: flex; flex-direction: column; background: #fff; border-radius: 6px;
             box-shadow: 0 10px 34px rgba(0, 0, 0, .45); overflow: hidden; touch-action: none; }
-  .viewer:focus { outline: 2px solid #2c5aa0; }
+  .viewer:focus { outline: 2px solid var(--brand-blue); }
   /* Lichttisch: Papier wird durchscheinend, darunterliegende Seiten schimmern durch */
   .viewer.licht { opacity: .58; }
   .viewer.licht .body { background: transparent; }
-  .head { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #f2f4f8;
-          border-bottom: 1px solid #e4e8ef; cursor: grab; user-select: none; }
+  .head { display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+          background: rgba(255, 255, 255, .78);
+          backdrop-filter: var(--glass-blur-card); -webkit-backdrop-filter: var(--glass-blur-card);
+          border-bottom: 1px solid rgba(8, 31, 57, .10); cursor: grab; user-select: none; }
   .title { flex: 1; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pager { display: flex; align-items: center; gap: 6px; }
   .tools { display: flex; align-items: center; gap: 4px; overflow-x: auto; scrollbar-width: none; }
   .tools button { border: none; background: #e7ebf2; border-radius: 5px; cursor: pointer;
           width: 24px; height: 24px; font-size: 13px; line-height: 1;
           display: inline-flex; align-items: center; justify-content: center; }
-  .tools button.on { background: #2c5aa0; color: #fff; }
+  .tools button.on { background: var(--brand-navy); color: #fff; }
   .sep { width: 1px; height: 16px; background: #d3d9e3; margin: 0 2px; flex: none; }
   .marker-chip { width: 12px; height: 12px; border-radius: 3px; background: #ffd166; display: inline-block; }
   .tools button.on .marker-chip { outline: 2px solid #fff; }
