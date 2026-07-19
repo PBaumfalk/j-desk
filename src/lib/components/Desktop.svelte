@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
-    freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes, panBy, docBox, stackBox, noteBox, cutoutBox,
+    freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes, panBy, docBox, stackBox, noteBox, cutoutBox, CARD_W,
     NOTE_KINDS, NOTE_W, NOTE_H, deskBackground, type Box, type NoteKind, type Vec2, type Viewport,
   } from '@digital-desktop/core';
   import { deskCss, isLight } from '../deskThemes';
@@ -129,7 +129,8 @@
     const files = Array.from(fileInput.files ?? []);
     fileInput.value = '';
     const center = screenToWorld(vp, { x: el.clientWidth / 2, y: el.clientHeight / 2 });
-    files.forEach((f, i) => void addFile(f, { x: center.x + i * 28, y: center.y + i * 20 }));
+    // Nebeneinander statt fast deckungsgleich — mehrere Uploads sollen sofort unterscheidbar sein (UAT A1.2).
+    files.forEach((f, i) => void addFile(f, { x: center.x + i * (CARD_W + 24), y: center.y + i * 8 }));
   }
 
   function onDragOver(e: DragEvent): void {
@@ -179,6 +180,7 @@
   }
 
   async function abmelden(): Promise<void> {
+    if (!confirm('Wirklich abmelden?')) return; // Nutzerentscheidung UAT A1.9
     // Server-Invalidierung ist Best-Effort — lokal wird die Sitzung in jedem Fall beendet.
     await desktop.api?.logout().catch(() => {});
     clearSession();
@@ -191,7 +193,7 @@
     e.preventDefault();
     const files = Array.from(e.dataTransfer?.files ?? []);
     const world = screenToWorld(vp, { x: e.clientX, y: e.clientY });
-    files.forEach((f, i) => void addFile(f, { x: world.x + i * 28, y: world.y + i * 20 }));
+    files.forEach((f, i) => void addFile(f, { x: world.x + i * (CARD_W + 24), y: world.y + i * 8 }));
   }
 
   onMount(() => {
