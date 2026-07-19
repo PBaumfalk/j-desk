@@ -1,7 +1,7 @@
 # UAT-Sammelliste — alle offenen manuellen Tests (Stand 2026-07-18)
 
-Konsolidiert alle „pending user verification"-Punkte. **126 Punkte in drei aktiven Blöcken**
-(A mit 100, C′ mit 12, D mit 14) — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
+Konsolidiert alle „pending user verification"-Punkte. **129 Punkte in drei aktiven Blöcken**
+(A mit 103, C′ mit 12, D mit 14) — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
 kann in einer Sitzung durchgetestet werden.
 
 **Empfohlene Reihenfolge:** Block A (aktueller Branch, enthält jetzt auch Zettel A7 und
@@ -15,7 +15,7 @@ MCP-Portierung C′) → Block D (j-lawyer-Modus, braucht deine Instanz).
 
 ---
 
-## Block A — Browser-App (Branch `feature/inline-viewer`, 100 Punkte)
+## Block A — Browser-App (Branch `feature/inline-viewer`, 103 Punkte)
 
 **Setup:**
 
@@ -168,6 +168,12 @@ iPad:
 - [ ] A12.3 To-do: Abhak-Kreis anklicken/antippen → Haken, Text durchgestrichen, Zettel gedimmt; Zweitfenster folgt live; erneuter Klick hebt es auf; Abhaken löst kein Ziehen/Bearbeiten aus.
 - [ ] A12.4 Korb-Panel: „Schreddern…" bei einem Eintrag → Bestätigungsdialog, Eintrag verschwindet endgültig (kein Wiederherstellen); andere Einträge bleiben.
 - [ ] A12.5 j-lawyer-Modus: Schreddern-Dialog erklärt den Abgleich (Dokument kommt als frische Karte zurück); Verhalten stimmt.
+
+### A13 — Wunsch-Runde: Viewer-Kontextmenü, Seiten-Miniatur, Lupe (NEU; E2E vorverifiziert)
+
+- [ ] A13.1 Rechtsklick (Mac) bzw. Lang-Druck auf die Kopfzeile (iPad) eines AUFGESCHLAGENEN Dokuments → Kontextmenü mit „Zuklappen" zuoberst; „Verknüpfen…" funktioniert vom Viewer aus UND eine wartende Verknüpfung lässt sich durch Klick auf den Viewer vervollständigen (Schnur ankert am Viewer).
+- [ ] A13.2 Im Viewer auf eine andere Seite blättern, zuklappen → die Karten-Miniatur zeigt die zuletzt gesehene Seite (nicht mehr stur Seite 1); Reload erhält das.
+- [ ] A13.3 Lupe (🔍) über einem aufgeschlagenen Dokument → das Abbild (Kopfzeile + Seite samt Strichen/Stempeln) erscheint vergrößert in der Lupe.
 
 ### C′ — MCP auf dem Rework-Strang (ersetzt Block C; 12 Prüfungen, neues Setup)
 
