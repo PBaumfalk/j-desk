@@ -2,8 +2,9 @@ import { createInterface } from "node:readline";
 
 function frage(text: string, verdeckt = false): Promise<string> {
   return new Promise((resolve) => {
-    const rl = createInterface({ input: process.stdin, output: process.stderr, terminal: true });
     if (verdeckt) {
+      // KEIN readline-Interface hier: mit terminal:true echot readline jede Taste
+      // auf stderr — genau das machte das Passwort sichtbar (UAT-Befund C′.1).
       process.stderr.write(text);
       const stdin = process.stdin as NodeJS.ReadStream & { setRawMode?: (m: boolean) => void };
       stdin.setRawMode?.(true);
@@ -14,7 +15,7 @@ function frage(text: string, verdeckt = false): Promise<string> {
           stdin.setRawMode?.(false);
           stdin.off("data", onData);
           process.stderr.write("\n");
-          rl.close();
+          stdin.pause();
           resolve(wert);
         } else if (c === "\u0003") {
           stdin.setRawMode?.(false);
@@ -27,6 +28,7 @@ function frage(text: string, verdeckt = false): Promise<string> {
       };
       stdin.on("data", onData);
     } else {
+      const rl = createInterface({ input: process.stdin, output: process.stderr, terminal: true });
       rl.question(text, (antwort) => {
         rl.close();
         resolve(antwort);
