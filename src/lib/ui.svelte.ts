@@ -5,6 +5,11 @@ export interface MenuItem {
   action: () => void;
 }
 
+export interface MenuInput {
+  placeholder: string;
+  onSubmit: (text: string) => void;
+}
+
 export const ui = $state({
   linkingFromId: null as string | null,
   /** Büroklammer: „Anklammern an…" wartet auf das Zielobjekt (Muster linkingFromId). */
@@ -12,7 +17,7 @@ export const ui = $state({
   editingStackId: null as string | null,
   editingNoteId: null as string | null,
   fannedStackId: null as string | null,
-  menu: null as { x: number; y: number; items: MenuItem[] } | null,
+  menu: null as { x: number; y: number; items: MenuItem[]; columns?: number; input?: MenuInput } | null,
   toast: null as string | null,
   /** Aktive Desk-Pointer (Pan/Pinch) — Karten lassen weitere Finger dann zum Desk durch. */
   deskPointers: 0,

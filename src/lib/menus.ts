@@ -10,6 +10,13 @@ export const NOTE_KIND_LABELS: Record<NoteKind, string> = {
   these: 'These',
   angriffspunkt: 'Angriffspunkt',
   risiko: 'Risiko',
+  behauptung: 'Behauptung',
+  beweisziel: 'Beweisziel',
+  idee: 'Idee',
+  todo: 'To-do',
+  argument: 'Argument',
+  rechtsfrage: 'Rechtsfrage',
+  eigen: 'Eigener',
 };
 
 function papierkorbEintrag(objektId: string): MenuItem {

@@ -136,19 +136,29 @@
     e.preventDefault();
   }
 
-  /** Zettel-Typ wählen, dann einen leeren Zettel in der Bildschirmmitte anlegen und bearbeiten. */
+  /** Zettel anlegen (Bildschirmmitte) und sofort in den Bearbeiten-Modus gehen. */
+  function zettelAnlegen(kind: NoteKind, customLabel?: string): void {
+    const center = screenToWorld(vp, { x: el.clientWidth / 2, y: el.clientHeight / 2 });
+    const id = uid();
+    void desktop
+      .command('addNote', {
+        kind, text: '', position: { x: center.x - NOTE_W / 2, y: center.y - NOTE_H / 2 }, id,
+        ...(customLabel !== undefined ? { customLabel } : {}),
+      })
+      .then(() => (ui.editingNoteId = id));
+  }
+
+  /** Zettel-Typ wählen (zweispaltig); „Eigener…" fragt das Badge im Menü ab. */
   function zettelTypAuswahl(x: number, y: number): void {
     ui.menu = {
-      x, y,
+      x, y, columns: 2,
       items: NOTE_KINDS.map((kind: NoteKind) => ({
-        label: NOTE_KIND_LABELS[kind],
-        action: () => {
-          const center = screenToWorld(vp, { x: el.clientWidth / 2, y: el.clientHeight / 2 });
-          const id = uid();
-          void desktop
-            .command('addNote', { kind, text: '', position: { x: center.x - NOTE_W / 2, y: center.y - NOTE_H / 2 }, id })
-            .then(() => (ui.editingNoteId = id));
-        },
+        label: kind === 'eigen' ? 'Eigener…' : NOTE_KIND_LABELS[kind],
+        action: kind === 'eigen'
+          ? () => queueMicrotask(() => {
+              ui.menu = { x, y, items: [], input: { placeholder: 'Bezeichnung (z. B. Zeugenfrage)', onSubmit: (t) => zettelAnlegen('eigen', t) } };
+            })
+          : () => zettelAnlegen(kind),
       })),
     };
   }

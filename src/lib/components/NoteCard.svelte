@@ -107,7 +107,7 @@
   }
 </script>
 
-<div class="note kind-{note.kind}" role="button" tabindex="-1" aria-label={NOTE_KIND_LABELS[note.kind]}
+<div class="note kind-{note.kind}" class:erledigt={note.done === true} role="button" tabindex="-1" aria-label={NOTE_KIND_LABELS[note.kind]}
      style:left="{note.position.x}px" style:top="{note.position.y}px"
      style:z-index={note.zIndex} style:transform="rotate({rotationFor(note.id)}deg)"
      style:width="{NOTE_W}px" style:height="{NOTE_H}px"
@@ -117,7 +117,18 @@
   {#if taped}<div class="tape" aria-hidden="true"></div>{/if}
   {#if geklammert}<div class="klammer" aria-hidden="true">🖇</div>{/if}
   {#if note.kind !== 'notiz'}
-    <div class="badge">{NOTE_KIND_LABELS[note.kind]}</div>
+    <div class="kopf">
+      {#if note.kind === 'todo'}
+        <button class="haken" aria-pressed={note.done === true}
+                aria-label={note.done ? 'Abhaken aufheben' : 'Als erledigt abhaken'}
+                onpointerdown={(e) => e.stopPropagation()}
+                ondblclick={(e) => e.stopPropagation()}
+                onclick={() => void desktop.command('setNoteDone', { id: note.id, done: !(note.done === true) })}>
+          {note.done ? '✓' : ''}
+        </button>
+      {/if}
+      <div class="badge">{note.kind === 'eigen' ? (note.customLabel ?? 'Eigener') : NOTE_KIND_LABELS[note.kind]}</div>
+    </div>
   {/if}
   {#if bearbeiten}
     <textarea bind:this={textEl} value={note.text} placeholder="Gedanken notieren…"
@@ -137,6 +148,20 @@
   .note.kind-these { background: #d3efc9; }
   .note.kind-angriffspunkt { background: #ffd9b0; }
   .note.kind-risiko { background: #ffc4c4; }
+  .note.kind-behauptung { background: #e8d5b5; }
+  .note.kind-beweisziel { background: #b8ded6; }
+  .note.kind-idee { background: #f8cfe0; }
+  .note.kind-todo { background: #e8e8e4; }
+  .note.kind-argument { background: #c5ebe6; }
+  .note.kind-rechtsfrage { background: #ddd0f0; }
+  .note.kind-eigen { background: #f3ecd8; }
+  .note.erledigt { opacity: .65; }
+  .note.erledigt .text { text-decoration: line-through; }
+  .kopf { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .kopf .badge { margin-bottom: 0; }
+  .haken { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid rgba(0, 0, 0, .45);
+           background: rgba(255, 255, 255, .5); cursor: pointer; padding: 0; font-size: 12px;
+           line-height: 1; color: #1d3557; flex: none; }
   .badge { align-self: flex-start; font-size: 10px; font-weight: 700; text-transform: uppercase;
            letter-spacing: .05em; color: rgba(0, 0, 0, .55); margin-bottom: 4px; }
   .text { flex: 1; font-size: 13px; line-height: 1.35; overflow: hidden; white-space: pre-wrap;
