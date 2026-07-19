@@ -207,7 +207,8 @@
           box-shadow: 0 6px 18px rgba(0, 0, 0, .35); cursor: grab; user-select: none; touch-action: none; }
   .body { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden;
           border-radius: 4px 4px 0 0; }
-  img { width: 100%; height: 100%; object-fit: cover; object-position: top; pointer-events: none; }
+  /* contain statt cover: Querformat-Seiten werden vollständig (unbeschnitten) gezeigt (UAT A1.2). */
+  img { width: 100%; height: 100%; object-fit: contain; object-position: center top; background: #fff; pointer-events: none; }
   .fallback { font-weight: 700; color: #b33; font-size: 22px; }
   .fallback.wartend { font-size: 12px; font-weight: 600; color: #666; text-align: center; padding: 0 10px; }
   .fallback.fehler { flex-direction: column; align-items: center; gap: 4px; font-size: 20px; color: #b33; }

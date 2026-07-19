@@ -27,6 +27,23 @@
   const size = $derived(doc.openSize ?? DEFAULT_OPEN_SIZE);
   const pageWidth = $derived(Math.round(size.w - 20));
 
+  // Querformat-Seiten (UAT A2.7): Der Standard-Viewer ist hochformatig — sobald die echte
+  // Seitengröße bekannt ist und der Nutzer die Größe nie angepasst hat, übernimmt der Viewer
+  // einmalig das Seitenformat (Chrom = Kopf + Ränder wird über die Rail-Höhe gemessen).
+  let formatAngepasst = false;
+  $effect(() => {
+    if (formatAngepasst || !baseSize || bodyH <= 0) return;
+    if (baseSize.w <= baseSize.h) { formatAngepasst = true; return; }
+    const unveraendert = !doc.openSize ||
+      (doc.openSize.w === DEFAULT_OPEN_SIZE.w && doc.openSize.h === DEFAULT_OPEN_SIZE.h);
+    formatAngepasst = true;
+    if (!unveraendert) return;
+    const w = 760;
+    const chrom = size.h - bodyH;
+    const seitenH = Math.round((w - 20) * (baseSize.h / baseSize.w));
+    void desktop.command('resizeDoc', { id: doc.id, size: { w, h: seitenH + chrom } });
+  });
+
   // Lichttisch: Viewer wird durchscheinend — Seiten lassen sich zum Vergleich übereinanderlegen
   let lichttisch = $state(false);
 
