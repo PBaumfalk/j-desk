@@ -1,7 +1,7 @@
 # UAT-Sammelliste — alle offenen manuellen Tests (Stand 2026-07-18)
 
-Konsolidiert alle „pending user verification"-Punkte. **132 Punkte in drei aktiven Blöcken**
-(A mit 106, C′ mit 12, D mit 14) — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
+Konsolidiert alle „pending user verification"-Punkte. **133 Punkte in drei aktiven Blöcken**
+(A mit 107, C′ mit 12, D mit 14) — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
 kann in einer Sitzung durchgetestet werden.
 
 **Empfohlene Reihenfolge:** Block A (aktueller Branch, enthält jetzt auch Zettel A7 und
@@ -15,7 +15,7 @@ MCP-Portierung C′) → Block D (j-lawyer-Modus, braucht deine Instanz).
 
 ---
 
-## Block A — Browser-App (Branch `feature/inline-viewer`, 106 Punkte)
+## Block A — Browser-App (Branch `feature/inline-viewer`, 107 Punkte)
 
 **Setup:**
 
@@ -180,6 +180,10 @@ iPad:
 - [ ] A14.1 Doppelklick (Mac) / Doppeltipp (iPad) auf freie Tischfläche → Notizzettel entsteht genau dort und ist sofort beschreibbar; Doppelklick auf Karten/Zettel/Viewer legt KEINEN neuen an.
 - [ ] A14.2 🔎 im Bedienfeld oder ⌘F → Suchfeld oben; tippen → Live-Treffer (Karten, Stapel, Zettel inkl. Badges); Klick/Enter springt hin, Ziel pulst ~2 s; Escape schließt.
 - [ ] A14.3 Suche bei niedrigem Zoom (weit rausgezoomt) → Sprung hebt den Zoom auf lesbare Stufe an; im Akten-Modus funktioniert die Suche genauso.
+
+### A15 — Tafel-Text (NEU; E2E vorverifiziert)
+
+- [ ] A15.1 „＋ → Zettel… → Tafel-Text" → weiße Filzstift-Schrift direkt auf dem Filz (kein Papier); beschreib-, verschieb-, verknüpf- und suchbar wie ein Zettel; auf hellen Tischflächen (Altweiß/Elfenbein) noch lesbar? Optik gefällt?
 
 ### C′ — MCP auf dem Rework-Strang (ersetzt Block C; 12 Prüfungen, neues Setup)
 
