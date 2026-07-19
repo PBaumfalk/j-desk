@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { emptyState } from './model';
-import { addNote, editNote, moveNote, removeNote, NOTE_KINDS, noteBox, type NoteKind } from './notes';
+import { addNote, editNote, moveNote, removeNote, NOTE_KINDS, noteBox, setNoteDone, NOTE_BADGE_MAX, type NoteKind, findNote } from './notes';
 import { addLink } from './links';
 import { removeLinksFor } from './links';
+import { applyCommand } from './commands';
 
 describe('addNote', () => {
   it('legt einen Notizzettel mit Typ, Position und id an', () => {
@@ -14,7 +15,7 @@ describe('addNote', () => {
 
   it('vergibt eine id, wenn keine mitkommt, und kennt alle Gedanken-Typen', () => {
     for (const kind of NOTE_KINDS) {
-      const s = addNote(emptyState(), kind, 'x', { x: 0, y: 0 });
+      const s = addNote(emptyState(), kind, 'x', { x: 0, y: 0 }, undefined, kind === 'eigen' ? 'Badge' : undefined);
       expect(s.notes![0].id).toBeTruthy();
       expect(s.notes![0].kind).toBe(kind);
     }
@@ -65,5 +66,46 @@ describe('noteBox', () => {
     expect(b.y).toBe(8);
     expect(b.w).toBeGreaterThan(0);
     expect(b.h).toBeGreaterThan(0);
+  });
+});
+
+describe('neue Gedankenobjekt-Typen', () => {
+  it('kennt alle 12 Typen inklusive eigen', () => {
+    for (const kind of ['behauptung', 'beweisziel', 'idee', 'todo', 'argument', 'rechtsfrage', 'eigen'] as const) {
+      const s = addNote(emptyState(), kind, 'x', { x: 0, y: 0 }, 'n1', kind === 'eigen' ? 'Zeugenfrage' : undefined);
+      expect(findNote(s, 'n1')?.kind).toBe(kind);
+    }
+  });
+
+  it('eigen verlangt ein Badge (max. 24 Zeichen), andere Typen verbieten es', () => {
+    expect(() => addNote(emptyState(), 'eigen', 'x', { x: 0, y: 0 }, 'n1')).toThrow('Badge');
+    expect(() => addNote(emptyState(), 'eigen', 'x', { x: 0, y: 0 }, 'n1', '  ')).toThrow('Badge');
+    expect(() => addNote(emptyState(), 'eigen', 'x', { x: 0, y: 0 }, 'n1', 'a'.repeat(NOTE_BADGE_MAX + 1))).toThrow('Badge');
+    expect(() => addNote(emptyState(), 'frage', 'x', { x: 0, y: 0 }, 'n1', 'Extra')).toThrow('eigen');
+    const s = addNote(emptyState(), 'eigen', 'x', { x: 0, y: 0 }, 'n1', ' Mandanteninfo ');
+    expect(findNote(s, 'n1')?.customLabel).toBe('Mandanteninfo');
+  });
+
+  it('setNoteDone hakt nur To-dos ab', () => {
+    let s = addNote(emptyState(), 'todo', 'Frist prüfen', { x: 0, y: 0 }, 'n1');
+    s = setNoteDone(s, 'n1', true);
+    expect(findNote(s, 'n1')?.done).toBe(true);
+    s = setNoteDone(s, 'n1', false);
+    expect(findNote(s, 'n1')?.done).toBe(false);
+    const frage = addNote(emptyState(), 'frage', 'x', { x: 0, y: 0 }, 'n2');
+    expect(() => setNoteDone(frage, 'n2', true)).toThrow('To-do');
+    expect(() => setNoteDone(s, 'nix', true)).toThrow('nicht gefunden');
+  });
+
+  it('Commands: addNote mit customLabel, setNoteDone verlangt boolean', () => {
+    const s = applyCommand(emptyState(), {
+      type: 'addNote',
+      payload: { kind: 'eigen', text: '', position: { x: 1, y: 2 }, id: 'n1', customLabel: 'Zeugenfrage' },
+    });
+    expect(findNote(s, 'n1')?.customLabel).toBe('Zeugenfrage');
+    const t = applyCommand(emptyState(), { type: 'addNote', payload: { kind: 'todo', text: '', position: { x: 0, y: 0 }, id: 'n2' } });
+    const done = applyCommand(t, { type: 'setNoteDone', payload: { id: 'n2', done: true } });
+    expect(findNote(done, 'n2')?.done).toBe(true);
+    expect(() => applyCommand(t, { type: 'setNoteDone', payload: { id: 'n2', done: 'ja' } })).toThrow('done');
   });
 });

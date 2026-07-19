@@ -6,7 +6,7 @@ import { removeDoc, removeStack } from './removal';
 import { expandDoc, collapseDoc, setDocPage, resizeDoc, extractPage } from './viewer';
 import { expandStack, collapseStack, setStackPage, resizeStack } from './konvolut';
 import { addStroke, removeStroke, type Stroke, type StrokeTool } from './ink';
-import { addNote, editNote, moveNote, removeNote, type NoteKind } from './notes';
+import { addNote, editNote, moveNote, removeNote, setNoteDone, type NoteKind } from './notes';
 import { addCutout, moveCutout, removeCutout } from './cutouts';
 import { addMark, removeMark, type Mark, type MarkKind } from './marks';
 import { addStamp, removeStamp, type Stamp } from './stamps';
@@ -89,7 +89,12 @@ const handlers: Record<string, (s: DesktopState, p: Record<string, unknown>) => 
   extractPage: (s, p) => wrap(() => extractPage(s, id(p.docId, 'docId'), num(p.page, 'page'), vec(p.position, 'position'), optId(p.id))),
   addStroke: (s, p) => wrap(() => addStroke(s, strokePayload(p.stroke))),
   removeStroke: (s, p) => wrap(() => removeStroke(s, id(p.strokeId, 'strokeId'))),
-  addNote: (s, p) => wrap(() => addNote(s, p.kind as NoteKind, text(p.text, 'text'), vec(p.position, 'position'), optId(p.id))),
+  addNote: (s, p) => wrap(() => addNote(s, p.kind as NoteKind, text(p.text, 'text'), vec(p.position, 'position'), optId(p.id),
+    p.customLabel === undefined ? undefined : text(p.customLabel, 'customLabel'))),
+  setNoteDone: (s, p) => {
+    if (typeof p.done !== 'boolean') throw new CommandError('Feld "done" muss true oder false sein');
+    return wrap(() => setNoteDone(s, id(p.id, 'id'), p.done as boolean));
+  },
   editNote: (s, p) => wrap(() => editNote(s, id(p.id, 'id'), text(p.text, 'text'))),
   moveNote: (s, p) => wrap(() => moveNote(s, id(p.id, 'id'), vec(p.position, 'position'))),
   removeNote: (s, p) => wrap(() => removeNote(s, id(p.id, 'id'))),
