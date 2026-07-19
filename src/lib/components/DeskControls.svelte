@@ -18,7 +18,7 @@
     <button class="fit" onclick={onfit} aria-label="Übersicht">⤢</button>
     <button onclick={() => onzoom(1.25)} aria-label="Vergrößern">＋</button>
     <button class:on={ui.lupe} onclick={() => (ui.lupe = !ui.lupe)} aria-pressed={ui.lupe} aria-label="Lupe" title="Lupe">🔍</button>
-    <button onclick={onsuche} aria-label="Suchen" title="Suchen (⌘F)">🔎</button>
+    <button onclick={onsuche} aria-label="Suchen" title="Suchen (⌘F)">📇</button>
   </div>
 </div>
 
