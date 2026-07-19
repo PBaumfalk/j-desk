@@ -46,28 +46,52 @@ export function buildMcpServer(deps: McpDeps): McpServer {
     return desks.map((d, i) => ({ id: d.id, name: namen[i] }));
   });
 
-  tool(server, 'get_desk', 'Liefert Name, Karten, Stapel und Verknüpfungen eines Schreibtischs (Texte anonymisiert).', { deskId: z.string() }, async (a) => {
+  tool(server, 'get_desk',
+    'Liefert den kompletten Schreibtisch: Karten, Stapel (inkl. Konvolut-Status), Verknüpfungen, Zettel, Ausschnitte, Stempel, Fahnen, Tipp-Ex/Schwärzungs-Zähler, Klammern und Papierkorb (Texte anonymisiert).',
+    { deskId: z.string() }, async (a) => {
     const deskId = String(a.deskId);
     const [desks, s] = await Promise.all([desk.listDesks(base, token), desk.getState(base, token, deskId)]);
     const info = desks.find((d) => d.id === deskId);
     if (!info) throw new Error('Schreibtisch nicht gefunden');
     const notesRoh = s.state.notes ?? [];
+    const stampsRoh = s.state.stamps ?? [];
+    const trashRoh = s.state.trash ?? [];
+    const eigenNotes = notesRoh.filter((n) => n.kind === 'eigen');
     const texte = [
       info.name,
       ...s.state.docs.map((d) => d.name),
       ...s.state.stacks.map((st) => st.name),
       ...s.state.links.map((l) => l.note),
       ...notesRoh.map((n) => n.text),
+      ...stampsRoh.map((st) => st.text),
+      ...trashRoh.map((t) => t.name),
+      ...eigenNotes.map((n) => n.customLabel ?? ''),
     ];
     const anon = await anonymizer.anonNames(texte);
     let i = 0;
     const name = anon[i++];
-    const docs = s.state.docs.map((d) => ({ id: d.id, name: anon[i++], position: d.position, kind: d.kind ?? 'pdf' }));
-    const stacks = s.state.stacks.map((st) => ({ id: st.id, name: anon[i++], docIds: st.docIds, position: st.position }));
+    const docs = s.state.docs.map((d) => ({ id: d.id, name: anon[i++], position: d.position, kind: d.kind ?? 'pdf', ...(d.taped ? { taped: true } : {}) }));
+    const stacks = s.state.stacks.map((st) => ({ id: st.id, name: anon[i++], docIds: st.docIds, position: st.position, stapled: st.stapled === true }));
     const links = s.state.links.map((l) => ({ id: l.id, fromId: l.fromId, toId: l.toId, note: anon[i++] }));
-    const notes = notesRoh.map((n) => ({ id: n.id, kind: n.kind, text: anon[i++], position: n.position }));
+    const noteTexte = notesRoh.map(() => anon[i++]);
+    const stamps = stampsRoh.map((st) => ({ id: st.id, docId: st.docId, page: st.page, text: anon[i++], color: st.color, ...(st.date ? { date: st.date } : {}) }));
+    const trash = trashRoh.map((t) => ({ id: t.id, kind: t.kind, name: anon[i++], trashedAt: t.trashedAt }));
+    const eigenAnon = new Map(eigenNotes.map((n) => [n.id, anon[i++]] as const));
+    const notes = notesRoh.map((n, idx) => ({
+      id: n.id, kind: n.kind, text: noteTexte[idx], position: n.position,
+      ...(n.kind === 'eigen' ? { customLabel: eigenAnon.get(n.id) } : {}),
+      ...(n.kind === 'todo' ? { done: n.done === true } : {}),
+      ...(n.taped ? { taped: true } : {}),
+    }));
     const cutouts = (s.state.cutouts ?? []).map((c) => ({ id: c.id, page: c.page, position: c.position }));
-    return { name, docs, stacks, links, notes, cutouts };
+    const flags = (s.state.flags ?? []).map((f) => ({ id: f.id, docId: f.docId, page: f.page, color: f.color }));
+    const markCounts: Record<string, { tippex: number; redact: number }> = {};
+    for (const m of s.state.marks ?? []) {
+      const eintrag = (markCounts[m.docId] ??= { tippex: 0, redact: 0 });
+      if (m.kind === 'tippex') eintrag.tippex++; else eintrag.redact++;
+    }
+    const clips = (s.state.clips ?? []).map((c) => ({ id: c.id, memberIds: c.memberIds }));
+    return { name, docs, stacks, links, notes, cutouts, stamps, flags, markCounts, clips, trash };
   });
 
   tool(server, 'get_document_text',

@@ -32,12 +32,23 @@ async function request<T>(baseUrl: string, token: string, method: string, path: 
 
 // Rework-Semantik: Desks sind kanzlei-weit geteilt — Eigentümer-Felder entfallen.
 export interface DeskInfo { id: string; name: string; ownerId: string }
-export interface Doc { id: string; fileId: string; name: string; position: { x: number; y: number }; rotation: number; zIndex: number; kind?: FileKind }
+export interface Doc { id: string; fileId: string; name: string; position: { x: number; y: number }; rotation: number; zIndex: number; kind?: FileKind; taped?: boolean }
 export interface Link { id: string; fromId: string; toId: string; note: string }
-export interface Stack { id: string; name: string; docIds: string[]; position: { x: number; y: number }; zIndex: number }
-export interface Note { id: string; kind: string; text: string; position: { x: number; y: number }; zIndex: number }
-export interface Cutout { id: string; fileId: string; page: number; rect: { x: number; y: number; w: number; h: number }; position: { x: number; y: number }; zIndex: number }
-export interface DeskState { rev: number; state: { docs: Doc[]; links: Link[]; stacks: Stack[]; notes?: Note[]; cutouts?: Cutout[] } }
+export interface Stack { id: string; name: string; docIds: string[]; position: { x: number; y: number }; zIndex: number; stapled?: boolean; taped?: boolean }
+export interface Note { id: string; kind: string; text: string; position: { x: number; y: number }; zIndex: number; customLabel?: string; done?: boolean; taped?: boolean }
+export interface Cutout { id: string; fileId: string; page: number; rect: { x: number; y: number; w: number; h: number }; position: { x: number; y: number }; zIndex: number; taped?: boolean }
+export interface Stamp { id: string; docId: string; page: number; text: string; color: string; date?: string }
+export interface Flag { id: string; docId: string; page: number; offset: number; color: string }
+export interface Mark { id: string; docId: string; kind: string }
+export interface Clip { id: string; memberIds: string[] }
+export interface TrashedItem { id: string; kind: string; name: string; trashedAt: string }
+export interface DeskState {
+  rev: number;
+  state: {
+    docs: Doc[]; links: Link[]; stacks: Stack[]; notes?: Note[]; cutouts?: Cutout[];
+    stamps?: Stamp[]; flags?: Flag[]; marks?: Mark[]; clips?: Clip[]; trash?: TrashedItem[];
+  };
+}
 
 export const listDesks = (b: string, t: string) => request<DeskInfo[]>(b, t, 'GET', '/desks');
 export const getState = (b: string, t: string, deskId: string) => request<DeskState>(b, t, 'GET', `/desks/${deskId}/state`);

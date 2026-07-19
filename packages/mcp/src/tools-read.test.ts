@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { startTestSetup, type TestSetup } from './testServer';
+import { sendCommand } from './deskApi';
 
 // Task 9: get_document_text pollt bei kind 'convertible' die Vorschau (Default-Intervall 2 s,
 // Produktions-Wert). Für Tests über MCP_PREVIEW_POLL_INTERVAL_MS drastisch verkürzt.
@@ -127,5 +128,80 @@ describe('Task 9: MCP kind-bewusst', () => {
     const r = await callTool('get_document_text', { deskId, docId });
     expect(r.isError).toBe(true);
     expect(textOf(r)).toContain('-3');
+  });
+});
+
+describe('Task 5: MCP liest den Werkzeugkasten', () => {
+  it('get_desk liefert Stempel, Fahnen, Marks-Zähler, Klammern, Konvolute und Papierkorb (anonymisiert)', async () => {
+    const deskId = await ts.createDesk('Werkzeugkasten-Desk');
+    const docA = await ts.addDoc(deskId, 'DocA.pdf');
+    const docB = await ts.addDoc(deskId, 'DocB.pdf');
+    const docC = await ts.addDoc(deskId, 'DocC.pdf');
+    const docD = await ts.addDoc(deskId, 'Rechnung Max Mustermann.pdf');
+
+    await sendCommand(ts.deskUrl, ts.token, deskId, {
+      type: 'addStamp',
+      payload: { stamp: { docId: docA, page: 1, x: 10, y: 10, angle: 0, text: 'Fristsache Max Mustermann', color: 'red', baseW: 120, baseH: 40 } },
+    });
+    await sendCommand(ts.deskUrl, ts.token, deskId, {
+      type: 'addFlag',
+      payload: { flag: { docId: docA, page: 1, offset: 0.5, color: '#f5c518' } },
+    });
+    await sendCommand(ts.deskUrl, ts.token, deskId, {
+      type: 'addMark',
+      payload: { mark: { docId: docA, page: 1, rect: { x: 0, y: 0, w: 10, h: 10 }, kind: 'tippex' } },
+    });
+    await sendCommand(ts.deskUrl, ts.token, deskId, {
+      type: 'addMark',
+      payload: { mark: { docId: docA, page: 1, rect: { x: 20, y: 20, w: 10, h: 10 }, kind: 'redact' } },
+    });
+    const nachStapel = await sendCommand(ts.deskUrl, ts.token, deskId, {
+      type: 'stackDocs',
+      payload: { draggedId: docB, targetId: docA },
+    });
+    const stackId = nachStapel.state.stacks[0].id;
+    await sendCommand(ts.deskUrl, ts.token, deskId, { type: 'stapleStack', payload: { stackId } });
+    await sendCommand(ts.deskUrl, ts.token, deskId, { type: 'addClip', payload: { aId: docA, bId: docC } });
+    await sendCommand(ts.deskUrl, ts.token, deskId, {
+      type: 'addNote',
+      payload: { kind: 'eigen', text: 'Eigener Zettel', position: { x: 0, y: 0 }, customLabel: 'Max Mustermann' },
+    });
+    const nachTodo = await sendCommand(ts.deskUrl, ts.token, deskId, {
+      type: 'addNote',
+      payload: { kind: 'todo', text: 'Erledigen', position: { x: 0, y: 0 } },
+    });
+    const todoId = nachTodo.state.notes!.find((n) => n.kind === 'todo')!.id;
+    await sendCommand(ts.deskUrl, ts.token, deskId, { type: 'setNoteDone', payload: { id: todoId, done: true } });
+    await sendCommand(ts.deskUrl, ts.token, deskId, {
+      type: 'trashObject',
+      payload: { id: docD, trashedAt: new Date().toISOString() },
+    });
+
+    const r = await callTool('get_desk', { deskId });
+    expect(r.isError).toBeFalsy();
+    const body = JSON.parse(textOf(r));
+
+    expect(body.stamps).toHaveLength(1);
+    expect(body.stamps[0].text).toContain('[[Person-TEST1]]');
+    expect(body.stamps[0].text).not.toContain('Max Mustermann'); // anonymisiert
+
+    expect(body.flags[0]).toMatchObject({ page: expect.any(Number), color: expect.any(String) });
+
+    expect(body.markCounts).toEqual({ [docA]: { tippex: 1, redact: 1 } });
+
+    expect(body.clips[0].memberIds.length).toBeGreaterThan(1);
+
+    const stapelStack = body.stacks.find((st: { id: string }) => st.id === stackId);
+    expect(stapelStack.stapled).toBe(true);
+
+    expect(body.trash[0].name).toContain('[[Person-TEST1]]');
+    expect(body.trash[0].name).not.toContain('Max Mustermann'); // anonymisiert
+
+    const eigenNote = body.notes.find((n: { kind: string }) => n.kind === 'eigen');
+    expect(eigenNote.customLabel).toContain('[[Person-TEST1]]');
+    expect(eigenNote.customLabel).not.toContain('Max Mustermann'); // anonymisiert
+
+    const todoNote = body.notes.find((n: { kind: string }) => n.kind === 'todo');
+    expect(todoNote.done).toBe(true);
   });
 });
