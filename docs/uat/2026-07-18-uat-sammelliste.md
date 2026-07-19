@@ -1,7 +1,7 @@
 # UAT-Sammelliste — alle offenen manuellen Tests (Stand 2026-07-18)
 
-Konsolidiert alle „pending user verification"-Punkte. **111 Punkte in drei aktiven Blöcken**
-(A mit 88, C′ mit 9, D mit 14) — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
+Konsolidiert alle „pending user verification"-Punkte. **118 Punkte in drei aktiven Blöcken**
+(A mit 95, C′ mit 9, D mit 14) — jeder Block hat ein eigenes Setup, innerhalb eines Blocks
 kann in einer Sitzung durchgetestet werden.
 
 **Empfohlene Reihenfolge:** Block A (aktueller Branch, enthält jetzt auch Zettel A7 und
@@ -15,7 +15,7 @@ MCP-Portierung C′) → Block D (j-lawyer-Modus, braucht deine Instanz).
 
 ---
 
-## Block A — Browser-App (Branch `feature/inline-viewer`, 88 Punkte)
+## Block A — Browser-App (Branch `feature/inline-viewer`, 95 Punkte)
 
 **Setup:**
 
@@ -150,6 +150,16 @@ iPad:
 - [ ] A10.8 MCP: „Lies Dokument X" auf einer ODT → Zusammenfassung über die Vorschau (anonymisiert wie PDFs); auf einem Bild → klare Fehlermeldung.
 - [ ] A10.9 Zweitfenster/Reload: kind-abhängige Darstellung überall konsistent (Bild bleibt Bild, other bleibt other; bekannte Grenze: extern geänderte j-lawyer-Dokumente können bis zum Cache-Leeren eine veraltete Vorschau zeigen).
 - [ ] A10.10 **Produktentscheidungen bestätigen:** Bild-Karte als „Polaroid" ok? Generisches Karten-Design ok? Lazy-Konvertierung (erst beim Anschauen) ok?
+
+### A11 — Gestaltungsrunde: Erscheinungsbild des Schreibtischs (NEU)
+
+- [ ] A11.1 DeskSwitcher → „Gestaltung…": Farbe wechseln → Tisch färbt sofort um, Menü bleibt offen; Zweitfenster folgt live.
+- [ ] A11.2 Materialien durchschalten (Glatt/Filz/Leder/Holz/Pergament) → Struktur sichtbar verschieden, Papiere bleiben klar lesbar.
+- [ ] A11.3 Helligkeits-Regler ziehen → Tisch folgt flüssig schon beim Ziehen; erst beim Loslassen übernimmt das Zweitfenster den Wert.
+- [ ] A11.4 Struktur-Regler: 0 = ganz glatt, hoch = deutlich kräftiger; Lesbarkeit bleibt in jeder Stellung.
+- [ ] A11.5 „Randabdunklung" abhaken → gleichmäßige Fläche ohne Lichtzentrum; wieder anhaken → Verlauf zurück.
+- [ ] A11.6 Helles Thema (Altweiß/Elfenbein): Papiere setzen sich per Kontur/Schatten ab; Reload erhält alle Einstellungen; „Zurücksetzen" stellt Dunkelgrün/Filz/Standardregler wieder her.
+- [ ] A11.7 j-lawyer-Modus: Gestaltung einer Akte ändern → zweiter Nutzer sieht sie live (kanzlei-weit geteilt, gewollt); iPad: Regler und Haken per Finger bedienbar, Ziehen am Regler scrollt das Menü nicht.
 
 ### C′ — MCP auf dem Rework-Strang (ersetzt Block C; 9 Prüfungen, neues Setup)
 
