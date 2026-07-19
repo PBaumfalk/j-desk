@@ -314,7 +314,7 @@
           background: linear-gradient(135deg, transparent 50%, #b8c0cc 50%); }
   .schnittflaeche { position: absolute; inset: 0; cursor: crosshair; touch-action: none; }
   .stempelflaeche { position: absolute; inset: 0; cursor: crosshair; touch-action: none; }
-  .schnittrahmen { position: absolute; border: 2px dashed #c0392b; background: rgba(192, 57, 43, .08);
+  .schnittrahmen { position: absolute; border: 2px dashed var(--brand-red); background: var(--brand-red-soft);
                    pointer-events: none; }
   .schnittrahmen.tippex { border-color: #8a94a3; background: rgba(255, 255, 255, .35); }
   .schnittrahmen.redact { border-color: #111; background: rgba(0, 0, 0, .18); }
