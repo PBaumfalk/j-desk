@@ -59,13 +59,19 @@ export class AnymizeClient {
       if (Date.now() > frist) throw new AnymizeError('Anonymisierung dauert zu lange (Timeout)', 'timeout');
       const res = await this.call(`/api/status/${jobId}`, { method: 'GET' });
       if (!res.ok) throw new AnymizeError(`Anonymisierung nicht verfügbar (anymize HTTP ${res.status})`, 'unavailable');
-      const status = await this.json<{ status: string; result?: { text: string; entities_found?: number } }>(res);
+      const status = await this.json<{
+        status: string;
+        result?: { text: string; entities_found?: number };
+        // Reales API-Format (live verifiziert 2026-07-19): Text liegt direkt am Status-Objekt.
+        anonymized_text_raw?: string;
+      }>(res);
       if (status.status === 'failed') throw new AnymizeError('Anonymisierung fehlgeschlagen (anymize-Job failed)', 'failed');
       if (status.status === 'completed') {
-        if (!status.result) {
+        const text = status.result?.text ?? status.anonymized_text_raw;
+        if (text === undefined) {
           throw new AnymizeError('Anonymisierung fehlgeschlagen (anymize-Antwort ohne Ergebnis)', 'failed');
         }
-        result = status.result;
+        result = { text, ...(status.result?.entities_found !== undefined ? { entities_found: status.result.entities_found } : {}) };
         break;
       }
       await schlafe(this.poll);
@@ -78,9 +84,11 @@ export class AnymizeClient {
         'zdr',
       );
     }
-    const body = await this.json<{ hash_pairs: { original: string; hash: string }[] }>(strings);
-    const pairs: HashPair[] = (body.hash_pairs ?? []).map((p) => ({ original: p.original, placeholder: p.hash }));
-    if (pairs.length === 0 && (result.entities_found ?? 0) > 0) {
+    const body = await this.json<{ hash_pairs: { original: string; hash: string; placeholder?: string }[] }>(strings);
+    // Real liefert anymize den vollen Platzhalter ([[person-XYZ]]) im Feld placeholder —
+    // nur damit findet die Deanonymisierung die Vorkommen im Text (hash allein wäre "XYZ").
+    const pairs: HashPair[] = (body.hash_pairs ?? []).map((p) => ({ original: p.original, placeholder: p.placeholder ?? p.hash }));
+    if (pairs.length === 0 && ((result.entities_found ?? 0) > 0 || result.text.includes('[['))) {
       throw new AnymizeError(
         'De-Anonymisierung nicht verfügbar — vermutlich ist Zero Data Retention im anymize-Account aktiv',
         'zdr',
