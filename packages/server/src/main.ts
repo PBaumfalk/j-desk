@@ -30,5 +30,5 @@ const app = await buildApp({
 });
 await app.listen({ port, host: '0.0.0.0' });
 console.log(
-  `Digital-Desktop-Server läuft auf Port ${port} (Daten: ${dataDir}${existsSync(webDir) ? `, Web-App: ${webDir}` : ', ohne Web-App'}${jlawyerUrl ? `, j-lawyer: ${jlawyerUrl}` : ''}${convert ? `, Vorschau-Konverter: ${convert.url}` : ', ohne Vorschau-Konverter'})`,
+  `Digital-Desktop-Server läuft auf Port ${port}${existsSync('/.dockerenv') ? ` (im Container — von außen gilt der beim Start gemappte Port, z. B. -p 4811:${port})` : ''} (Daten: ${dataDir}${existsSync(webDir) ? `, Web-App: ${webDir}` : ', ohne Web-App'}${jlawyerUrl ? `, j-lawyer: ${jlawyerUrl}` : ''}${convert ? `, Vorschau-Konverter: ${convert.url}` : ', ohne Vorschau-Konverter'})`,
 );
