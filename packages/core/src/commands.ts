@@ -15,6 +15,7 @@ import { addClip, removeClip } from './clips';
 import { setTaped } from './tape';
 import { trashObject, restoreObject, emptyTrash } from './trash';
 import { copyObject } from './copy';
+import { setBackground, type DeskBackground } from './background';
 
 export class CommandError extends Error {}
 
@@ -115,7 +116,17 @@ const handlers: Record<string, (s: DesktopState, p: Record<string, unknown>) => 
   restoreObject: (s, p) => wrap(() => restoreObject(s, id(p.trashId, 'trashId'))),
   emptyTrash: (s) => emptyTrash(s),
   copyObject: (s, p) => wrap(() => copyObject(s, id(p.id, 'id'))),
+  setBackground: (s, p) => wrap(() => setBackground(s, backgroundPayload(p.background))),
 };
+
+function backgroundPayload(v: unknown): DeskBackground {
+  const b = v as Partial<DeskBackground> | undefined;
+  if (!b || typeof b !== 'object') throw new CommandError('Feld "background" fehlt');
+  return {
+    themeId: text(b.themeId, 'background.themeId') as DeskBackground['themeId'],
+    material: text(b.material, 'background.material') as DeskBackground['material'],
+  };
+}
 
 function rect(v: unknown): { x: number; y: number; w: number; h: number } {
   const r = v as { x: number; y: number; w: number; h: number } | undefined;

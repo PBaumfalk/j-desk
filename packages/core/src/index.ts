@@ -19,3 +19,4 @@ export * from './tape';
 export * from './uid';
 export * from './trash';
 export * from './copy';
+export * from './background';

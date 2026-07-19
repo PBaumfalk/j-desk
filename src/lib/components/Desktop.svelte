@@ -2,8 +2,9 @@
   import { onMount } from 'svelte';
   import {
     freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes, panBy, docBox, stackBox, noteBox, cutoutBox,
-    NOTE_KINDS, NOTE_W, NOTE_H, type Box, type NoteKind, type Vec2, type Viewport,
+    NOTE_KINDS, NOTE_W, NOTE_H, deskBackground, type Box, type NoteKind, type Vec2, type Viewport,
   } from '@digital-desktop/core';
+  import { deskCss, isLight } from '../deskThemes';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
   import { NOTE_KIND_LABELS } from '../menus';
@@ -29,6 +30,10 @@
   let fileInput: HTMLInputElement;
   let viewW = $state(0);
   let viewH = $state(0);
+
+  // Erscheinungsbild des Schreibtischs (Farbe/Material) — pro Schreibtisch im Zustand gespeichert.
+  const hintergrund = $derived(deskBackground(desktop.state));
+  const hintergrundStil = $derived(deskCss(hintergrund));
 
   // Sichtbarkeits-Culling: Karten weit außerhalb des Fensters verlassen das DOM.
   // Der Puffer sorgt dafür, dass beim Schwenken nichts sichtbar „aufpoppt".
@@ -212,8 +217,9 @@
 
 </script>
 
-<div class="desk" role="application" aria-label="Schreibtisch" bind:this={el}
+<div class="desk" role="application" aria-label="Schreibtisch" bind:this={el} style={hintergrundStil}
      bind:clientWidth={viewW} bind:clientHeight={viewH} class:grabbing={spaceDown || panning}
+     class:hell={isLight(hintergrund.themeId)}
      onwheel={onWheel} onpointerdown={onPointerDown} onpointermove={onPointerMove}
      onpointerup={endPointer} onpointercancel={endPointer}
      ondragover={onDragOver} ondrop={onDrop}>
@@ -237,7 +243,8 @@
     {@render weltInhalt(vp, false)}
   </div>
   {#if ui.lupe && lupePos && lupenVp}
-    <div class="lupe" style:left="{lupePos.x - LUPE / 2}px" style:top="{lupePos.y - LUPE / 2}px"
+    <div class="lupe" style={hintergrundStil}
+         style:left="{lupePos.x - LUPE / 2}px" style:top="{lupePos.y - LUPE / 2}px"
          style:width="{LUPE}px" style:height="{LUPE}px" aria-hidden="true">
       <div class="lupenwelt" style:transform="translate({lupenVp.x}px, {lupenVp.y}px) scale({lupenVp.scale})">
         {@render weltInhalt(lupenVp, true)}
@@ -284,6 +291,10 @@
   .desk { position: fixed; inset: 0; overflow: hidden; touch-action: none;
           background: radial-gradient(1200px 800px at 40% 30%, #3a5c4e, #27423a 70%, #1d332d); }
   .desk.grabbing { cursor: grabbing; }
+  /* Helle Tischflächen: Papier setzt sich per Kontur + kräftigerem Schlagschatten ab (Vision). */
+  .desk.hell :global(:is(.card, .stack, .cutout)) {
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, .22), 0 8px 22px rgba(0, 0, 0, .4);
+  }
   .world { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
   .lupe { position: fixed; z-index: 9500; border-radius: 50%; overflow: hidden; pointer-events: none;
           border: 3px solid rgba(242, 226, 184, .85); box-shadow: 0 10px 34px rgba(0, 0, 0, .5), inset 0 0 20px rgba(0, 0, 0, .15);

@@ -61,6 +61,8 @@ export interface DesktopState {
   clips?: import('./clips').Clip[];
   /** Papierkorb: entfernte Objekte, wiederherstellbar bis geleert; fehlt in älteren Staaten. */
   trash?: import('./trash').TrashedItem[];
+  /** Erscheinungsbild (Farbe/Material) dieses Schreibtischs; fehlt in älteren Staaten (= Standard). */
+  background?: import('./background').DeskBackground;
 }
 
 export const CARD_W = 180;
@@ -101,6 +103,9 @@ export function isValidState(v: unknown): v is DesktopState {
     (s.flags === undefined || Array.isArray(s.flags)) &&
     (s.clips === undefined || Array.isArray(s.clips)) &&
     (s.trash === undefined || Array.isArray(s.trash)) &&
+    (s.background === undefined ||
+      (!!s.background && typeof s.background === 'object' &&
+        typeof s.background.themeId === 'string' && typeof s.background.material === 'string')) &&
     s.docs.every(
       (d) =>
         !!d && typeof d.id === 'string' && typeof d.fileId === 'string' && typeof d.name === 'string',
