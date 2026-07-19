@@ -29,7 +29,7 @@ function happyRoutes(erwarteterPfad: string): Route {
         : json(200, { job_id: 'job_1', status: 'completed', result: { text: 'Hallo [[Person-AB12]]', entities_found: 1 } });
     }
     if (url === 'https://anymize.test/api/status/job_1/strings') {
-      return json(200, { job_id: 'job_1', hash_pairs: [{ original: 'Max Mustermann', hash: '[[Person-AB12]]', prefix_name: 'Person', placeholder: 'Person-AB12' }], total: 1 });
+      return json(200, { job_id: 'job_1', hash_pairs: [{ original: 'Max Mustermann', hash: 'Person-AB12', prefix_name: 'person', placeholder: '[[Person-AB12]]' }], total: 1 });
     }
     return undefined;
   };
