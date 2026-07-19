@@ -1,4 +1,4 @@
-import type { Size, Stroke, Vec2 } from '@digital-desktop/core';
+import type { Size, Stroke, Vec2 } from '@j-desk/core';
 
 /** Overlay-Koordinate (CSS-Pixel relativ zur Seite) → Basisraum der PDF-Seite (scale = 1). */
 export function toBase(p: Vec2, renderedWidth: number, base: Size): Vec2 {

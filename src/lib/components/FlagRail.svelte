@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { flagsFor, type Doc } from '@digital-desktop/core';
+  import { flagsFor, type Doc } from '@j-desk/core';
   import { desktop } from '../store.svelte';
 
   let { doc, height, active, onjump }:

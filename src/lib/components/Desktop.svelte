@@ -3,7 +3,7 @@
   import {
     freeDocs, screenToWorld, zoomAt, zoomToFit, allBoxes, panBy, docBox, stackBox, noteBox, cutoutBox, CARD_W,
     NOTE_KINDS, NOTE_W, NOTE_H, deskBackground, type Box, type NoteKind, type Vec2, type Viewport,
-  } from '@digital-desktop/core';
+  } from '@j-desk/core';
   import { deskCss, isLight } from '../deskThemes';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';

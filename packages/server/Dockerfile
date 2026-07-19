@@ -10,7 +10,7 @@ FROM node:22-slim
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages ./packages
-RUN npm ci --omit=dev --workspace @digital-desktop/server --include-workspace-root=false
+RUN npm ci --omit=dev --workspace @j-desk/server --include-workspace-root=false
 COPY --from=webbuild /app/build ./build
 ENV PORT=4810 DATA_DIR=/data WEB_DIR=/app/build
 VOLUME /data

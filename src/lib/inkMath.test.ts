@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { toBase, toScreen, clientToBase, distPointToSegment, hitStroke } from './inkMath';
-import type { Stroke } from '@digital-desktop/core';
+import type { Stroke } from '@j-desk/core';
 
 const base = { w: 300, h: 400 };
 

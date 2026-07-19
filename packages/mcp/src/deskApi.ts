@@ -5,7 +5,7 @@ export class DeskApiError extends Error {
 }
 
 /** Datei-Art einer Karte (Task 5): bestimmt, wie get_document_text an Text kommt.
-    Lokale Definition statt Abhängigkeit auf @digital-desktop/core — die MCP spricht
+    Lokale Definition statt Abhängigkeit auf @j-desk/core — die MCP spricht
     den Desk-Server ausschließlich über HTTP, ohne Paket-Kopplung. */
 export type FileKind = 'pdf' | 'image' | 'convertible' | 'other';
 

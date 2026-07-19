@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DEFAULT_OPEN_SIZE, type Doc, type Size } from '@digital-desktop/core';
+  import { DEFAULT_OPEN_SIZE, type Doc, type Size } from '@j-desk/core';
   import { desktop } from '../store.svelte';
   import PageRenderer from './PageRenderer.svelte';
   import ImagePage from './ImagePage.svelte';

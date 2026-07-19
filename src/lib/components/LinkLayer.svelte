@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     CARD_W, CARD_H, cutoutBox, docBox, findCutout, findDoc, findNote, findStack, noteBox, stackOf, setLinkNote, type Vec2,
-  } from '@digital-desktop/core';
+  } from '@j-desk/core';
   import { debounce } from '../debounce';
   import { desktop } from '../store.svelte';
 

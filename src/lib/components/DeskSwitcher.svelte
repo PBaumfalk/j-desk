@@ -2,7 +2,7 @@
   import {
     deskBackground, DEFAULT_BACKGROUND, DESK_MATERIALS, DESK_THEME_IDS,
     type DeskBackground,
-  } from '@digital-desktop/core';
+  } from '@j-desk/core';
   import { desktop } from '../store.svelte';
   import { MATERIAL_LABELS, THEME_LABELS, themeSwatch } from '../deskThemes';
   import { ui } from '../ui.svelte';

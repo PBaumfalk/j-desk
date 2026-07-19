@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { marksFor, type MarkKind, type Size } from '@digital-desktop/core';
+  import { marksFor, type MarkKind, type Size } from '@j-desk/core';
   import { desktop } from '../store.svelte';
 
   let { docId, page, base, renderedWidth, active }:

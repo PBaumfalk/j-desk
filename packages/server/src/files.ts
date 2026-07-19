@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { FileKind } from '@digital-desktop/core';
+import type { FileKind } from '@j-desk/core';
 import type { Db } from './db';
 
 export class FileError extends Error {}

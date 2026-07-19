@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { STAMP_PRESETS, STAMP_TEXT_MAX } from '@digital-desktop/core';
+  import { STAMP_PRESETS, STAMP_TEXT_MAX } from '@j-desk/core';
 
   let { onpick, onclose }:
     { onpick: (wahl: { text: string; color: 'red' | 'blue'; withDate?: boolean }) => void; onclose: () => void } = $props();

@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     NOTE_W, NOTE_H, TAFEL_W, TAFEL_H, moveNote, rotationFor, clipOf, type Note, type Viewport,
-  } from '@digital-desktop/core';
+  } from '@j-desk/core';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
   import { ui, showToast, pointerUeberKorb } from '../ui.svelte';

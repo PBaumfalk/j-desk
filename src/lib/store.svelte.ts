@@ -1,4 +1,4 @@
-import { applyCommand, emptyState, type Command, type DesktopState } from '@digital-desktop/core';
+import { applyCommand, emptyState, type Command, type DesktopState } from '@j-desk/core';
 import type { ApiClient, DeskInfo } from './api';
 import { saveLastDeskId } from './session';
 import { showToast } from './ui.svelte';

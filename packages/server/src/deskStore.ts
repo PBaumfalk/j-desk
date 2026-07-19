@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import {
   applyCommand, emptyState, isValidState, type Command, type DesktopState,
-} from '@digital-desktop/core';
+} from '@j-desk/core';
 import type { Db } from './db';
 
 export class DeskNotFoundError extends Error {}

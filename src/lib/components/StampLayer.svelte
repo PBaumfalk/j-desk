@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { stampsFor, type Size } from '@digital-desktop/core';
+  import { stampsFor, type Size } from '@j-desk/core';
   import { desktop } from '../store.svelte';
 
   let { docId, page, base, renderedWidth, active }:

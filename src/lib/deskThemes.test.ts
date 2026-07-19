@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DeskBackground } from '@digital-desktop/core';
+import type { DeskBackground } from '@j-desk/core';
 import { deskCss } from './deskThemes';
 
 const basis: DeskBackground = {

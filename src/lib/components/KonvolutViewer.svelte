@@ -3,7 +3,7 @@
   import {
     konvolutPages, moveStack, setStackPage, uid, DEFAULT_OPEN_SIZE,
     type KonvolutPage, type Size, type Stack, type Viewport,
-  } from '@digital-desktop/core';
+  } from '@j-desk/core';
   import { debounce } from '../debounce';
   import { desktop } from '../store.svelte';
   import { getPageCount } from '../pageCounts';

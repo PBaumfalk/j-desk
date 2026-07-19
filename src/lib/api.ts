@@ -1,4 +1,4 @@
-import type { Command, DesktopState, FileKind } from '@digital-desktop/core';
+import type { Command, DesktopState, FileKind } from '@j-desk/core';
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {

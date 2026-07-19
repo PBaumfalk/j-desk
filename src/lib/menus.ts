@@ -1,4 +1,4 @@
-import { clipOf, collectLinkedDocs, isTaped, type Cutout, type Doc, type Note, type NoteKind, type Stack } from '@digital-desktop/core';
+import { clipOf, collectLinkedDocs, isTaped, type Cutout, type Doc, type Note, type NoteKind, type Stack } from '@j-desk/core';
 import { desktop } from './store.svelte';
 import { ui, showToast, type MenuItem } from './ui.svelte';
 import { getFileUrl } from './fileCache';

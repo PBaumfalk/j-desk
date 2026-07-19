@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { moveDoc, setDocPage, uid, DEFAULT_OPEN_SIZE, FLAG_COLORS, type Doc, type Size, type Viewport } from '@digital-desktop/core';
+  import { moveDoc, setDocPage, uid, DEFAULT_OPEN_SIZE, FLAG_COLORS, type Doc, type Size, type Viewport } from '@j-desk/core';
   import { debounce } from '../debounce';
   import { clientToBase } from '../inkMath';
   import { desktop } from '../store.svelte';

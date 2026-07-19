@@ -1,4 +1,4 @@
-import { clipMembersOf, findDoc, findStack, findNote, findCutout, isTaped, moveDoc, moveStack, moveNote, moveCutout, type DesktopState } from '@digital-desktop/core';
+import { clipMembersOf, findDoc, findStack, findNote, findCutout, isTaped, moveDoc, moveStack, moveNote, moveCutout, type DesktopState } from '@j-desk/core';
 import { desktop } from './store.svelte';
 
 function moveAny(s: DesktopState, id: string, dx: number, dy: number): DesktopState {

@@ -1,6 +1,6 @@
 import * as pdfjs from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import type { Doc } from '@digital-desktop/core';
+import type { Doc } from '@j-desk/core';
 import type { ApiClient } from './api';
 import { THUMB_STORE, idbGet, idbPut } from './idb';
 import { PreviewError, fetchPreviewBytes } from './previewPoll';

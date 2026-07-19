@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { CommandError } from '@digital-desktop/core';
+import { CommandError } from '@j-desk/core';
 import { openDb, type Db } from './db';
 import {
   createDesk, listDesks, renameDesk, deleteDesk, getDeskState,

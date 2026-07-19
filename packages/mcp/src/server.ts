@@ -36,7 +36,7 @@ function tool(server: McpServer, name: string, description: string, schema: z.Zo
 }
 
 export function buildMcpServer(deps: McpDeps): McpServer {
-  const server = new McpServer({ name: 'digital-desktop', version: '0.1.0' });
+  const server = new McpServer({ name: 'j-desk', version: '0.1.0' });
   const { config, anonymizer, token } = deps;
   const base = config.deskServerUrl;
 

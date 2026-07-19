@@ -5,7 +5,7 @@ import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import websocket from '@fastify/websocket';
 import fastifyStatic from '@fastify/static';
-import { CommandError, addDoc, removeDoc, trashedFileIds, type Command, type DesktopState } from '@digital-desktop/core';
+import { CommandError, addDoc, removeDoc, trashedFileIds, type Command, type DesktopState } from '@j-desk/core';
 import type { Db } from './db';
 import {
   needsSetup, createUser, login, logout, validateToken, createWsTickets, createFileTickets,

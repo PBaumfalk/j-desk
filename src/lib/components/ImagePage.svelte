@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Size } from '@digital-desktop/core';
+  import type { Size } from '@j-desk/core';
   import type { ApiClient } from '../api';
   import { getFileUrl } from '../fileCache';
   import { imageMime } from '../thumbnails';

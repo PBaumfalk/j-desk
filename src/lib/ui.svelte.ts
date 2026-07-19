@@ -1,4 +1,4 @@
-import type { DeskBackground } from '@digital-desktop/core';
+import type { DeskBackground } from '@j-desk/core';
 
 export interface MenuItem {
   label: string;

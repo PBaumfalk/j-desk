@@ -1,4 +1,4 @@
-import type { DeskBackground, DeskMaterial, DeskThemeId } from '@digital-desktop/core';
+import type { DeskBackground, DeskMaterial, DeskThemeId } from '@j-desk/core';
 
 export const THEME_LABELS: Record<DeskThemeId, string> = {
   dark_green: 'Dunkelgrün',

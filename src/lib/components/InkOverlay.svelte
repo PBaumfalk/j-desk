@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     strokesFor, uid, type Size, type Stroke, type StrokeTool, type Vec2,
-  } from '@digital-desktop/core';
+  } from '@j-desk/core';
   import { clientToBase, toScreen, hitStroke } from '../inkMath';
   import { desktop } from '../store.svelte';
 

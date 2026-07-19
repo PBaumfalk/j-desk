@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     CARD_W, CARD_H, moveDoc, hitTest, stampsFor, flagsFor, clipOf, type Doc, type Viewport,
-  } from '@digital-desktop/core';
+  } from '@j-desk/core';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
   import { ui, showToast, pointerUeberKorb } from '../ui.svelte';

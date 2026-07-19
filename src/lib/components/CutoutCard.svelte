@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { moveCutout, rotationFor, clipOf, type Cutout, type Viewport } from '@digital-desktop/core';
+  import { moveCutout, rotationFor, clipOf, type Cutout, type Viewport } from '@j-desk/core';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
   import { ui, showToast, pointerUeberKorb } from '../ui.svelte';
