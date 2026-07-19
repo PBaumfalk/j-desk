@@ -26,8 +26,14 @@
   function toggle() {
     open = !open;
     mode = 'liste';
-    ui.backgroundPreview = null;
   }
+
+  // Vorschau ist nur während des Ziehens im Gestaltungs-Modus gültig — jeder
+  // Kontextwechsel (Menü zu, anderer Modus, Tischwechsel, Unmount) verwirft sie.
+  $effect(() => {
+    void open; void mode; void desktop.deskId;
+    return () => { ui.backgroundPreview = null; };
+  });
 
   function startNeu() {
     mode = 'neu';
@@ -81,7 +87,7 @@
   <button class="current" onclick={toggle}>{aktiv?.name ?? '…'} ▾</button>
   {#if open}
     <div class="backdrop" role="presentation"
-         onpointerdown={(e) => { e.stopPropagation(); open = false; ui.backgroundPreview = null; }}></div>
+         onpointerdown={(e) => { e.stopPropagation(); open = false; }}></div>
     <div class="menu" role="menu" tabindex="-1" onpointerdown={(e) => e.stopPropagation()}>
       {#if mode === 'liste'}
         {#if akten}
