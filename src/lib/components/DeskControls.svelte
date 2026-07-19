@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ui } from '../ui.svelte';
 
-  let { onzoom, onpan, onfit }: { onzoom: (f: number) => void; onpan: (dx: number, dy: number) => void; onfit: () => void } = $props();
+  let { onzoom, onpan, onfit, onsuche }: { onzoom: (f: number) => void; onpan: (dx: number, dy: number) => void; onfit: () => void; onsuche: () => void } = $props();
   const STEP = 120;
 </script>
 
@@ -18,6 +18,7 @@
     <button class="fit" onclick={onfit} aria-label="Übersicht">⤢</button>
     <button onclick={() => onzoom(1.25)} aria-label="Vergrößern">＋</button>
     <button class:on={ui.lupe} onclick={() => (ui.lupe = !ui.lupe)} aria-pressed={ui.lupe} aria-label="Lupe" title="Lupe">🔍</button>
+    <button onclick={onsuche} aria-label="Suchen" title="Suchen (⌘F)">🔎</button>
   </div>
 </div>
 

@@ -137,16 +137,62 @@
     e.preventDefault();
   }
 
-  /** Zettel anlegen (Bildschirmmitte) und sofort in den Bearbeiten-Modus gehen. */
-  function zettelAnlegen(kind: NoteKind, customLabel?: string): void {
-    const center = screenToWorld(vp, { x: el.clientWidth / 2, y: el.clientHeight / 2 });
+  /** Zettel anlegen (am Weltpunkt, sonst Bildschirmmitte) und sofort in den Bearbeiten-Modus gehen. */
+  function zettelAnlegen(kind: NoteKind, customLabel?: string, weltPunkt?: Vec2): void {
+    const mitte = weltPunkt ?? screenToWorld(vp, { x: el.clientWidth / 2, y: el.clientHeight / 2 });
     const id = uid();
     void desktop
       .command('addNote', {
-        kind, text: '', position: { x: center.x - NOTE_W / 2, y: center.y - NOTE_H / 2 }, id,
+        kind, text: '', position: { x: mitte.x - NOTE_W / 2, y: mitte.y - NOTE_H / 2 }, id,
         ...(customLabel !== undefined ? { customLabel } : {}),
       })
       .then(() => (ui.editingNoteId = id));
+  }
+
+  /** Doppelklick/Doppeltipp auf freie Tischfläche → Notizzettel an Ort und Stelle (Quickwin F4). */
+  function onDeskDblClick(e: MouseEvent): void {
+    const t = e.target as HTMLElement;
+    if (t.closest('.card, .viewer, .note, .stack, .cutout, .abbild, button, input, textarea, .menu, .panel')) return;
+    zettelAnlegen('notiz', undefined, screenToWorld(vp, { x: e.clientX, y: e.clientY }));
+  }
+
+  // Karten-Suche (Quickwin F5): Suchfeld oben mittig, springt zum Treffer und pulst kurz.
+  let sucheOffen = $state(false);
+  let suchText = $state('');
+  let pulsBox = $state<Box | null>(null);
+  let pulsTimer: ReturnType<typeof setTimeout> | undefined;
+
+  type Treffer = { id: string; art: string; label: string; box: Box };
+  const treffer = $derived.by((): Treffer[] => {
+    const q = suchText.trim().toLowerCase();
+    if (q === '') return [];
+    const s = desktop.state;
+    const alle: Treffer[] = [
+      ...s.docs.map((d) => ({ id: d.id, art: 'Karte', label: d.name, box: docBox(d) })),
+      ...s.stacks.map((st) => ({ id: st.id, art: 'Stapel', label: st.name || `Stapel (${st.docIds.length})`, box: stackBox(st) })),
+      ...(s.notes ?? []).map((n) => ({
+        id: n.id, art: 'Zettel',
+        label: `${n.customLabel ? `[${n.customLabel}] ` : ''}${n.text.trim() || NOTE_KIND_LABELS[n.kind]}`.slice(0, 60),
+        box: noteBox(n),
+      })),
+    ];
+    return alle.filter((t) => t.label.toLowerCase().includes(q)).slice(0, 8);
+  });
+
+  function springe(t: Treffer): void {
+    const cx = t.box.x + t.box.w / 2;
+    const cy = t.box.y + t.box.h / 2;
+    const s = vp.scale < 0.5 ? 0.8 : vp.scale;
+    vp = { scale: s, x: viewW / 2 - cx * s, y: viewH / 2 - cy * s };
+    pulsBox = t.box;
+    clearTimeout(pulsTimer);
+    pulsTimer = setTimeout(() => (pulsBox = null), 2000);
+    schliesseSuche();
+  }
+
+  function schliesseSuche(): void {
+    sucheOffen = false;
+    suchText = '';
   }
 
   /** Zettel-Typ wählen (zweispaltig); „Eigener…" fragt das Badge im Menü ab. */
@@ -198,11 +244,17 @@
 
   onMount(() => {
     const down = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault(); // Desk-Suche statt Browser-Suche
+        sucheOffen = true;
+        return;
+      }
       if (e.code === 'Space') spaceDown = true;
       if (e.code === 'Escape') {
         ui.linkingFromId = null;
         ui.clippingFromId = null;
         ui.menu = null;
+        schliesseSuche();
       }
       if (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
         // Ein fokussierter Viewer blättert mit den Pfeilen selbst; Eingabefelder behalten ihre Cursor-Tasten.
@@ -233,7 +285,7 @@
      bind:clientWidth={viewW} bind:clientHeight={viewH} class:grabbing={spaceDown || panning}
      class:hell={isLight(hintergrund.themeId)}
      onwheel={onWheel} onpointerdown={onPointerDown} onpointermove={onPointerMove}
-     onpointerup={endPointer} onpointercancel={endPointer}
+     onpointerup={endPointer} onpointercancel={endPointer} ondblclick={onDeskDblClick}
      ondragover={onDragOver} ondrop={onDrop}>
   {#snippet weltInhalt(v: Viewport, inLupe: boolean)}
     <LinkLayer />
@@ -253,6 +305,10 @@
 
   <div class="world" style:transform="translate({vp.x}px, {vp.y}px) scale({vp.scale})">
     {@render weltInhalt(vp, false)}
+    {#if pulsBox}
+      <div class="puls" style:left="{pulsBox.x - 8}px" style:top="{pulsBox.y - 8}px"
+           style:width="{pulsBox.w + 16}px" style:height="{pulsBox.h + 16}px" aria-hidden="true"></div>
+    {/if}
   </div>
   {#if ui.lupe && lupePos && lupenVp}
     <div class="lupe" style={hintergrundStil}
@@ -268,7 +324,31 @@
     onzoom={(f) => (vp = zoomAt(vp, { x: el.clientWidth / 2, y: el.clientHeight / 2 }, f))}
     onpan={(dx, dy) => (vp = panBy(vp, dx, dy))}
     onfit={fitAll}
+    onsuche={() => (sucheOffen = true)}
   />
+  {#if sucheOffen}
+    <div class="suche-panel" role="search">
+      <!-- svelte-ignore a11y_autofocus -- das Suchfeld ist der einzige Zweck des Panels -->
+      <input autofocus class="suche-feld" placeholder="Karte, Stapel oder Zettel suchen…"
+             bind:value={suchText} aria-label="Auf dem Schreibtisch suchen"
+             onkeydown={(e) => {
+               e.stopPropagation();
+               if (e.key === 'Escape') schliesseSuche();
+               if (e.key === 'Enter' && treffer.length > 0) springe(treffer[0]);
+             }} />
+      {#if suchText.trim() !== ''}
+        <div class="suche-liste">
+          {#each treffer as t (t.id)}
+            <button class="treffer" onclick={() => springe(t)}>
+              <span class="art">{t.art}</span><span class="name">{t.label}</span>
+            </button>
+          {:else}
+            <div class="keine">Keine Treffer</div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  {/if}
   <TrashCan />
   <div class="toolbar">
     <input
@@ -308,6 +388,27 @@
     box-shadow: 0 0 0 1px rgba(0, 0, 0, .22), 0 8px 22px rgba(0, 0, 0, .4);
   }
   .world { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+  /* Such-Treffer: pulsierender Umriss in Weltkoordinaten (keine Änderungen an den Karten nötig). */
+  .puls { position: absolute; border: 3px solid rgba(242, 226, 184, .95); border-radius: 12px;
+          pointer-events: none; z-index: 99997; animation: pulsieren 1s ease-in-out infinite;
+          box-shadow: 0 0 24px rgba(242, 226, 184, .55); }
+  @keyframes pulsieren { 50% { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) { .puls { animation: none; } }
+  .suche-panel { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 9600;
+                 width: min(420px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 6px;
+                 background: rgba(20, 32, 28, .95); border-radius: 12px; padding: 10px;
+                 box-shadow: 0 10px 30px rgba(0, 0, 0, .45); }
+  .suche-feld { border: 1px solid rgba(242, 226, 184, .3); border-radius: 8px; padding: 8px 10px;
+                background: rgba(255, 255, 255, .08); color: #ece5d4; font: inherit; font-size: 14px; }
+  .suche-feld::placeholder { color: rgba(236, 229, 212, .55); }
+  .suche-liste { display: flex; flex-direction: column; gap: 2px; max-height: 40vh; overflow-y: auto; }
+  .treffer { display: flex; gap: 8px; align-items: baseline; text-align: left; border: none;
+             background: none; color: #ece5d4; padding: 7px 8px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+  .treffer:hover { background: rgba(242, 226, 184, .15); }
+  .treffer .art { flex: none; font-size: 10px; text-transform: uppercase; letter-spacing: .05em;
+                  background: rgba(242, 226, 184, .18); border-radius: 5px; padding: 2px 6px; }
+  .treffer .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .keine { padding: 8px; font-size: 12px; color: rgba(236, 229, 212, .6); }
   .lupe { position: fixed; z-index: 9500; border-radius: 50%; overflow: hidden; pointer-events: none;
           border: 3px solid rgba(242, 226, 184, .85); box-shadow: 0 10px 34px rgba(0, 0, 0, .5), inset 0 0 20px rgba(0, 0, 0, .15);
           background: radial-gradient(1200px 800px at 40% 30%, #3a5c4e, #27423a 70%, #1d332d); }
