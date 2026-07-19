@@ -1,38 +1,24 @@
-import { createInterface } from "node:readline";
+import { createInterface, type Interface } from "node:readline";
+
+// EIN Interface für alle Fragen — mehrere nacheinander erzeugte Interfaces
+// verhaken sich beim stdin-Pausieren (Exit 13, UAT-Befund).
+const rl = createInterface({ input: process.stdin, output: process.stderr, terminal: process.stdin.isTTY === true });
+type MitAusgabe = Interface & { _writeToOutput?: (s: string) => void };
 
 function frage(text: string, verdeckt = false): Promise<string> {
   return new Promise((resolve) => {
     if (verdeckt) {
-      // KEIN readline-Interface hier: mit terminal:true echot readline jede Taste
-      // auf stderr — genau das machte das Passwort sichtbar (UAT-Befund C′.1).
+      // Passwort: Prompt selbst schreiben, dann die readline-Ausgabe stummschalten,
+      // damit die Tasten NICHT echoen (UAT-Befund C′.1: Klartext-Passwort).
       process.stderr.write(text);
-      const stdin = process.stdin as NodeJS.ReadStream & { setRawMode?: (m: boolean) => void };
-      stdin.setRawMode?.(true);
-      let wert = "";
-      const onData = (chunk: Buffer) => {
-        const c = chunk.toString();
-        if (c === "\r" || c === "\n") {
-          stdin.setRawMode?.(false);
-          stdin.off("data", onData);
-          process.stderr.write("\n");
-          stdin.pause();
-          resolve(wert);
-        } else if (c === "\u0003") {
-          stdin.setRawMode?.(false);
-          process.exit(130);
-        } else if (c === "\u007f") {
-          wert = wert.slice(0, -1);
-        } else {
-          wert += c;
-        }
-      };
-      stdin.on("data", onData);
-    } else {
-      const rl = createInterface({ input: process.stdin, output: process.stderr, terminal: true });
-      rl.question(text, (antwort) => {
-        rl.close();
+      (rl as MitAusgabe)._writeToOutput = () => {};
+      rl.question("", (antwort) => {
+        delete (rl as MitAusgabe)._writeToOutput;
+        process.stderr.write("\n");
         resolve(antwort);
       });
+    } else {
+      rl.question(text, resolve);
     }
   });
 }
@@ -40,6 +26,7 @@ function frage(text: string, verdeckt = false): Promise<string> {
 const url = ((await frage("Desk-Server-URL [http://localhost:4810]: ")) || "http://localhost:4810").replace(/\/+$/, "");
 const username = await frage("Benutzername: ");
 const password = await frage("Passwort: ", true);
+rl.close();
 
 try {
   const res = await fetch(`${url}/api/v1/auth/login`, {
