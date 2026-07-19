@@ -74,7 +74,9 @@ function skaliere(hex: string, faktor: number): string {
 
 /** Vollständiger Hintergrund-Stil (Fläche + Materialtextur) für Tischfläche und Lupe. */
 export function deskCss(bg: DeskBackground): string {
-  const [hell, mittel, dunkel] = TONES[bg.themeId].map((t) => skaliere(t, bg.brightness));
+  // Unbekannte Themes (manipulierter State, neuere Server-Version) fallen auf den Standard zurück statt zu crashen.
+  const toene = TONES[bg.themeId] ?? TONES.dark_green;
+  const [hell, mittel, dunkel] = toene.map((t) => skaliere(t, bg.brightness));
   const flaeche = bg.vignette
     ? `radial-gradient(1200px 800px at 40% 30%, ${hell}, ${mittel} 70%, ${dunkel})`
     : `linear-gradient(${mittel}, ${mittel})`;

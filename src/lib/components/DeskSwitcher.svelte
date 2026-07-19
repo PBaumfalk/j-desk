@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     deskBackground, DEFAULT_BACKGROUND, DESK_MATERIALS, DESK_THEME_IDS,
-    type DeskBackground, type DeskMaterial, type DeskThemeId,
+    type DeskBackground,
   } from '@digital-desktop/core';
   import { desktop } from '../store.svelte';
   import { MATERIAL_LABELS, THEME_LABELS, themeSwatch } from '../deskThemes';

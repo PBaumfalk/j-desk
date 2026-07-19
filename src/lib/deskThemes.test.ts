@@ -34,4 +34,9 @@ describe('deskCss', () => {
     expect(css).not.toContain('radial-gradient');
     expect(css).toContain('linear-gradient(#27423a, #27423a)');
   });
+
+  it('unbekanntes Thema fällt auf dark_green zurück statt zu werfen', () => {
+    const css = deskCss({ ...basis, themeId: 'neon_pink' as never });
+    expect(css).toContain('#3a5c4e');
+  });
 });
