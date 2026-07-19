@@ -147,7 +147,7 @@ export function buildMcpServer(deps: McpDeps): McpServer {
 
   tool(server, 'add_note',
     'Legt einen Notizzettel bzw. ein Gedankenobjekt auf den Schreibtisch (Platzhalter im Text werden in Klartext übersetzt).',
-    { deskId: z.string(), kind: z.enum(['notiz', 'frage', 'these', 'angriffspunkt', 'risiko', 'behauptung', 'beweisziel', 'idee', 'todo', 'argument', 'rechtsfrage', 'eigen']),
+    { deskId: z.string(), kind: z.enum(['notiz', 'frage', 'these', 'angriffspunkt', 'risiko', 'behauptung', 'beweisziel', 'idee', 'todo', 'argument', 'rechtsfrage', 'eigen', 'tafel']),
       text: z.string(), x: z.number(), y: z.number(), customLabel: z.string().optional() },
     async (a) => {
       const id = randomUUID();

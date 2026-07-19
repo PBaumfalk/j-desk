@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    NOTE_W, NOTE_H, moveNote, rotationFor, clipOf, type Note, type Viewport,
+    NOTE_W, NOTE_H, TAFEL_W, TAFEL_H, moveNote, rotationFor, clipOf, type Note, type Viewport,
   } from '@digital-desktop/core';
   import { uid } from '../uid';
   import { desktop } from '../store.svelte';
@@ -110,13 +110,13 @@
 <div class="note kind-{note.kind}" class:erledigt={note.done === true} role="button" tabindex="-1" aria-label={note.kind === 'eigen' ? (note.customLabel ?? 'Eigener') : NOTE_KIND_LABELS[note.kind]}
      style:left="{note.position.x}px" style:top="{note.position.y}px"
      style:z-index={note.zIndex} style:transform="rotate({rotationFor(note.id)}deg)"
-     style:width="{NOTE_W}px" style:height="{NOTE_H}px"
+     style:width="{note.kind === 'tafel' ? TAFEL_W : NOTE_W}px" style:height="{note.kind === 'tafel' ? TAFEL_H : NOTE_H}px"
      onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp} onpointercancel={onPointerUp}
      ondblclick={() => (ui.editingNoteId = note.id)}
      oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); showNoteMenu(e, note); }}>
   {#if taped}<div class="tape" aria-hidden="true"></div>{/if}
   {#if geklammert}<div class="klammer" aria-hidden="true">🖇</div>{/if}
-  {#if note.kind !== 'notiz'}
+  {#if note.kind !== 'notiz' && note.kind !== 'tafel'}
     <div class="kopf">
       {#if note.kind === 'todo'}
         <button class="haken" aria-pressed={note.done === true}
@@ -155,6 +155,14 @@
   .note.kind-argument { background: #c5ebe6; }
   .note.kind-rechtsfrage { background: #ddd0f0; }
   .note.kind-eigen { background: #f3ecd8; }
+  /* Tafel-Text: weißer Filzstift direkt auf dem Filz — kein Papier, kein Schatten. */
+  .note.kind-tafel { background: transparent; box-shadow: none; border-radius: 0; }
+  .note.kind-tafel .text, .note.kind-tafel textarea {
+    font-family: 'Marker Felt', 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive;
+    font-size: 26px; line-height: 1.25; color: #f8f6ef;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .55), 0 0 12px rgba(0, 0, 0, .25);
+  }
+  .note.kind-tafel textarea { outline: 2px dashed rgba(248, 246, 239, .5); }
   .note.erledigt { opacity: .65; }
   .note.erledigt .text { text-decoration: line-through; }
   .kopf { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }

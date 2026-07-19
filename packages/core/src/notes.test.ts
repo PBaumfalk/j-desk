@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { emptyState } from './model';
-import { addNote, editNote, moveNote, removeNote, NOTE_KINDS, noteBox, setNoteDone, NOTE_BADGE_MAX, type NoteKind, findNote } from './notes';
+import { addNote, editNote, moveNote, removeNote, NOTE_KINDS, noteBox, setNoteDone, NOTE_BADGE_MAX, NOTE_W, NOTE_H, TAFEL_W, TAFEL_H, type NoteKind, findNote } from './notes';
 import { addLink } from './links';
 import { removeLinksFor } from './links';
 import { applyCommand } from './commands';
@@ -107,5 +107,16 @@ describe('neue Gedankenobjekt-Typen', () => {
     const done = applyCommand(t, { type: 'setNoteDone', payload: { id: 'n2', done: true } });
     expect(findNote(done, 'n2')?.done).toBe(true);
     expect(() => applyCommand(t, { type: 'setNoteDone', payload: { id: 'n2', done: 'ja' } })).toThrow('done');
+  });
+});
+
+describe('Tafel-Text', () => {
+  it('kennt den Typ tafel; noteBox liefert die größere Tafel-Fläche', () => {
+    const s = addNote(emptyState(), 'tafel', 'Beweiskette prüfen!', { x: 10, y: 20 }, 'n1');
+    const n = findNote(s, 'n1')!;
+    expect(n.kind).toBe('tafel');
+    expect(noteBox(n)).toEqual({ x: 10, y: 20, w: TAFEL_W, h: TAFEL_H });
+    const normal = addNote(emptyState(), 'notiz', 'x', { x: 0, y: 0 }, 'n2');
+    expect(noteBox(findNote(normal, 'n2')!)).toEqual({ x: 0, y: 0, w: NOTE_W, h: NOTE_H });
   });
 });

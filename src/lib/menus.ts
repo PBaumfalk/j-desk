@@ -17,6 +17,7 @@ export const NOTE_KIND_LABELS: Record<NoteKind, string> = {
   argument: 'Argument',
   rechtsfrage: 'Rechtsfrage',
   eigen: 'Eigener',
+  tafel: 'Tafel-Text',
 };
 
 function papierkorbEintrag(objektId: string): MenuItem {

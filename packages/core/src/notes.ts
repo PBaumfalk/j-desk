@@ -8,6 +8,7 @@ import { uid } from './uid';
 export const NOTE_KINDS = [
   'notiz', 'frage', 'these', 'angriffspunkt', 'risiko',
   'behauptung', 'beweisziel', 'idee', 'todo', 'argument', 'rechtsfrage', 'eigen',
+  'tafel', // Tafel-Text: weißer Filzstift-Freitext ohne Papier, direkt auf dem Filz
 ] as const;
 export type NoteKind = (typeof NOTE_KINDS)[number];
 
@@ -26,6 +27,9 @@ export interface Note {
 
 export const NOTE_W = 170;
 export const NOTE_H = 130;
+/** Tafel-Texte schreiben größer — eigene Fläche für Treffer-/Anker-/Culling-Geometrie. */
+export const TAFEL_W = 300;
+export const TAFEL_H = 160;
 
 function maxZ(s: DesktopState): number {
   return Math.max(
@@ -94,5 +98,7 @@ export function findNote(s: DesktopState, id: string): Note | undefined {
 }
 
 export function noteBox(n: Note): Box {
-  return { x: n.position.x, y: n.position.y, w: NOTE_W, h: NOTE_H };
+  const w = n.kind === 'tafel' ? TAFEL_W : NOTE_W;
+  const h = n.kind === 'tafel' ? TAFEL_H : NOTE_H;
+  return { x: n.position.x, y: n.position.y, w, h };
 }
