@@ -36,6 +36,14 @@
     void desktop.command('emptyTrash', {});
     ui.trashOpen = false;
   }
+
+  function schreddern(t: { id: string; name: string }) {
+    const jl = desktop.mode === 'jlawyer'
+      ? ' In j-lawyer wird nichts gelöscht — das Dokument käme beim nächsten Abgleich als frische Karte zurück.'
+      : '';
+    if (!confirm(`„${t.name}" endgültig schreddern?${jl}`)) return;
+    desktop.command('shredTrashItem', { trashId: t.id }).catch((e) => showToast(e instanceof Error ? e.message : 'Schreddern fehlgeschlagen'));
+  }
 </script>
 
 <div class="korb" bind:this={el}>
@@ -56,6 +64,7 @@
             <span class="name" title={t.name}>{t.name}</span>
             <span class="wann">{zeit(t.trashedAt)}</span>
             <button onclick={() => wiederherstellen(t.id)}>Wiederherstellen</button>
+            <button class="schreddern" onclick={() => schreddern(t)}>Schreddern…</button>
           </li>
         {/each}
       </ul>
@@ -77,7 +86,7 @@
            box-shadow: 0 10px 30px rgba(0, 0, 0, .45); font-size: 12px; }
   .leer { padding: 10px; opacity: .8; }
   ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-  li { display: grid; grid-template-columns: auto 1fr auto auto; gap: 8px; align-items: center;
+  li { display: grid; grid-template-columns: auto 1fr auto auto auto; gap: 8px; align-items: center;
        background: rgba(255, 255, 255, .06); border-radius: 8px; padding: 6px 8px; }
   .art { opacity: .7; }
   .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -85,5 +94,7 @@
   li button, .leeren { border: none; border-radius: 6px; background: rgba(242, 226, 184, .15); color: #f2e2b8;
                        cursor: pointer; font-size: 11px; padding: 4px 8px; }
   li button:hover, .leeren:hover { background: rgba(242, 226, 184, .28); }
+  li button.schreddern { background: rgba(192, 57, 43, .35); }
+  li button.schreddern:hover { background: rgba(192, 57, 43, .55); }
   .leeren { margin-top: 8px; width: 100%; }
 </style>
