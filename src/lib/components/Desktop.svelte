@@ -254,6 +254,7 @@
         ui.linkingFromId = null;
         ui.clippingFromId = null;
         ui.menu = null;
+        ui.lupe = false; // Lupe auch per Escape ausschalten (Nutzerwunsch)
         schliesseSuche();
       }
       if (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
