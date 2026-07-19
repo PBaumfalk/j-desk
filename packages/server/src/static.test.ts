@@ -65,6 +65,16 @@ describe('statische Auslieferung der Web-App', () => {
     expect(res.statusCode).toBe(400);
   });
 
+  it('liefert auch Dateien aus, die erst nach dem Serverstart entstehen (Rebuild bei laufendem Server)', async () => {
+    // UAT-Befund „weißer Bildschirm": wildcard:false globbte die Dateiliste einmalig beim
+    // Boot — neue Build-Assets bekamen keine Route, der SPA-Fallback lieferte HTML statt JS.
+    mkdirSync(join(dir, 'web', '_app'), { recursive: true });
+    writeFileSync(join(dir, 'web', '_app', 'neu.js'), 'console.log(1);');
+    const res = await app.inject({ method: 'GET', url: '/_app/neu.js' });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('javascript');
+  });
+
   it('funktioniert ohne webDir wie bisher (kein Fallback)', async () => {
     const bare = await buildApp({ db, dataDir: dir });
     const res = await bare.inject({ method: 'GET', url: '/' });

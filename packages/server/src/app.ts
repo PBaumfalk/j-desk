@@ -108,7 +108,10 @@ export async function buildApp({ db, dataDir, webDir, jlawyerUrl, convert, publi
   await app.register(multipart, { limits: { fileSize: 100 * 1024 * 1024 } });
   await app.register(websocket);
   if (webDir) {
-    await app.register(fastifyStatic, { root: webDir, wildcard: false });
+    // wildcard:true löst Dateien zur ANFRAGEZEIT auf (fehlende rufen callNotFound → SPA-Fallback).
+    // wildcard:false globbte die Dateiliste einmalig beim Boot — ein Rebuild bei laufendem
+    // Server machte alle neuen Assets zu 404/HTML (UAT-Befund „weißer Bildschirm").
+    await app.register(fastifyStatic, { root: webDir, wildcard: true });
     // SPA-Fallback: unbekannte GET-Pfade außerhalb der API liefern die App.
     app.setNotFoundHandler((req, reply) => {
       if (req.method === 'GET' && !req.url.startsWith('/api/')) return reply.sendFile('index.html');
