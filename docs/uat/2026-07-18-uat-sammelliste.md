@@ -178,7 +178,7 @@ iPad:
 ### A14 — Filz-Doppelklick & Karten-Suche (NEU; E2E vorverifiziert)
 
 - [ ] A14.1 Doppelklick (Mac) / Doppeltipp (iPad) auf freie Tischfläche → Notizzettel entsteht genau dort und ist sofort beschreibbar; Doppelklick auf Karten/Zettel/Viewer legt KEINEN neuen an.
-- [ ] A14.2 🔎 im Bedienfeld oder ⌘F → Suchfeld oben; tippen → Live-Treffer (Karten, Stapel, Zettel inkl. Badges); Klick/Enter springt hin, Ziel pulst ~2 s; Escape schließt.
+- [ ] A14.2 📇 im Bedienfeld oder ⌘F → Suchfeld oben; tippen → Live-Treffer (Karten, Stapel, Zettel inkl. Badges); Klick/Enter springt hin, Ziel pulst ~2 s; Escape schließt.
 - [ ] A14.3 Suche bei niedrigem Zoom (weit rausgezoomt) → Sprung hebt den Zoom auf lesbare Stufe an; im Akten-Modus funktioniert die Suche genauso.
 
 ### A15 — Tafel-Text (NEU; E2E vorverifiziert)
