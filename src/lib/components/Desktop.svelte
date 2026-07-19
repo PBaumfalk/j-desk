@@ -387,6 +387,13 @@
   .desk.hell :global(:is(.card, .stack, .cutout)) {
     box-shadow: 0 0 0 1px rgba(0, 0, 0, .22), 0 8px 22px rgba(0, 0, 0, .4);
   }
+  /* Tafel-Text: auf hellen Tischflächen schwarze statt weißer Filzstift-Tinte (Nutzerwunsch). */
+  .desk.hell :global(.note.kind-tafel .text),
+  .desk.hell :global(.note.kind-tafel textarea) {
+    color: #26241d;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, .45);
+  }
+  .desk.hell :global(.note.kind-tafel textarea) { outline-color: rgba(38, 36, 29, .45); }
   .world { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
   /* Such-Treffer: pulsierender Umriss in Weltkoordinaten (keine Änderungen an den Karten nötig). */
   .puls { position: absolute; border: 3px solid rgba(242, 226, 184, .95); border-radius: 12px;
