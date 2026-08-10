@@ -31,6 +31,11 @@ J-DESK lässt Zeitangaben deshalb ausdrücklich unsicher sein:
 Die Zeitleiste stellt das entsprechend dar. So sehen Sie auf einen Blick, welcher Teil des
 Ablaufs belastbar ist und welcher nicht — und wo sich ein Beweisangebot lohnt.
 
+![Zeitleiste mit unterschiedlich sicheren Datumsangaben](../bilder/zeitleiste.png)
+
+Im Bild: ein exaktes Datum (12.01.2026), ein streitiges, ein ungefähres (`~01.04.2026`)
+und ein Zeitraum als Balken. Man sieht der Leiste an, worauf man sich stützen kann.
+
 ---
 
 ## Zwei Fassungen vergleichen

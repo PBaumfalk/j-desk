@@ -65,6 +65,11 @@ Die Frage kommt garantiert. Sie ist **ohne SQL** beantwortbar.
 **Rechtsklick auf die betreffende Karte → „Sichtbarkeit prüfen…"** (für Eigentümer des
 Schreibtischs). Wählen Sie die Person aus, und J-DESK zeigt, was sie sieht — **und warum**.
 
+![Sichtbarkeit prüfen](../bilder/sichtbarkeit-pruefen.png)
+
+Solange der Schreibtisch nur Ihnen gehört, gibt es niemanden zu prüfen — dann steht das
+so da. Laden Sie über **„Teilen"** jemanden ein, und die Prüfung wird nutzbar.
+
 Die drei üblichen Ursachen:
 
 1. **In j-lawyer** fehlt die Berechtigung für das Quelldokument. Dann muss sie dort erteilt

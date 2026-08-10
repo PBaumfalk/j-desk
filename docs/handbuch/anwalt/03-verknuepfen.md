@@ -23,6 +23,8 @@ Dann **klicken Sie die Linie an** und legen fest, worin die Beziehung besteht �
 gleich mehr. Sie können außerdem eine Notiz an die Linie schreiben, etwa
 „Anlage K2, Seite 3".
 
+![Das Fenster an einer Verknüpfung](../bilder/verknuepfung-fenster.png)
+
 ![Behauptung, Beleg und Gegenposition](../bilder/schreibtisch-beispiel.png)
 
 ---

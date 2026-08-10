@@ -136,6 +136,12 @@ nichts anfangen. Deshalb: [vor jedem Update sichern](03-betrieb-und-sicherung.md
 J-DESK bringt eine **Systemdiagnose** mit (im Menü erreichbar). Sie zeigt Versionen,
 Verbindungszustände und bekannte Probleme und lässt sich als Paket exportieren.
 
+![Systemdiagnose mit Versionen, Verbindungen, Speicher und Sicherungsstand](../bilder/systemdiagnose.jpg)
+
+Das ist die erste Seite, die Sie bei einer Störungsmeldung aufrufen sollten: Sie beantwortet
+auf einen Blick, ob Server, j-lawyer, Vorschaudienst und Live-Verbindung stehen — und wann
+zuletzt gesichert wurde.
+
 Für eine [Fehlermeldung](https://github.com/PBaumfalk/j-desk/issues) hilfreich:
 
 - Ausgabe von `docker compose ps` und den letzten 50 Protokollzeilen

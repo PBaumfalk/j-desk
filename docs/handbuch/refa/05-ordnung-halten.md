@@ -60,8 +60,16 @@ Die Suche findet **alles auf einmal**:
 - Ihre Notizen, Markierungen, Stempeltexte, Ausschnitte
 - Verknüpfungsarten, wer etwas angelegt hat, Datum
 
+![Suche mit einem Treffer in einem Notizzettel](../bilder/suche.png)
+
 **Das Besondere:** Treffer erscheinen nicht nur als Liste, sondern **leuchten auf dem
 Tisch auf** — Sie sehen sofort, wo in der Akte die Sache steckt.
+
+> **Bekannte Einschränkung (Stand 10.08.2026):** Die Suche findet Dokumente, Notizzettel,
+> Markierungen, Stempel und Ausschnitte — **nicht** aber den Text juristischer Objekte
+> (Behauptungen, Tatsachen, Beweismittel) und nicht Tabellentitel. Wenn Sie eine
+> Behauptung suchen, gehen Sie über die [Auswertung](../anwalt/04-luecken-finden.md) oder
+> die Minikarte. Der Fehler ist gemeldet.
 
 Die Suche zeigt Ihnen nur, was Sie sehen dürfen. Aus Bereichen ohne Ihre Berechtigung gibt
 es keine Treffer.

@@ -25,6 +25,8 @@ J-DESK listet alle Tatsachen und eigenen Behauptungen auf, zu denen **keine Verk
 einem Beweismittel** führt. Das sind genau die Stellen, an denen ein Bestreiten der
 Gegenseite Sie in Beweisnot bringt.
 
+![Auswertung „Tatsachen ohne Beweismittel" mit einem Treffer](../bilder/auswertung.png)
+
 **Was Sie damit tun:**
 - Beweisangebot ergänzen (Zeuge, Urkunde, Sachverständiger)
 - oder die Behauptung fallen lassen
