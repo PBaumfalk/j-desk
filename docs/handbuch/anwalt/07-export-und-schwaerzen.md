@@ -9,21 +9,47 @@ Wenn Sie nur eines von beiden lesen, lesen Sie jenes.
 
 ## Was kann ich exportieren?
 
-| Format | Wofür |
+**Sechs Formate liegen zusammen** hinter **Schreibtisch-Menü → „Übergabe…"**:
+
+| Format in der Oberfläche | Wofür |
 |---|---|
 | **Annotierte PDF-Kopie** | Ein Dokument mit Ihren freigegebenen Markierungen |
-| **Ausgewählte Fundstellen als PDF** | Nur die Stellen, auf die es ankommt |
-| **Anlagenpaket** | K1, K2 … mit Deckblatt und Verzeichnis → [ReFa-Kapitel 3](../refa/03-anlagenpaket.md) |
-| **Schreibtisch-Momentaufnahme** | Wie die Akte gerade aussieht |
+| **Fundstellen-PDF** | Nur die Stellen, auf die es ankommt — mit Seitenausschnitt und Herkunftsnachweis |
+| **Schreibtisch-Snapshot** | Wie die Akte gerade aussieht, mit Verzeichnis der Objekte |
 | **Argumentationsübersicht** | Welche Behauptung worauf gestützt ist |
 | **Beweismittelübersicht** | Was womit bewiesen werden soll |
 | **Aufgabenliste** | Was noch offen ist |
-| **Arbeitsstand als Paket** | Der ganze Schreibtisch, portabel |
 
-Die letzten fünf erreichen Sie über **Schreibtisch-Menü → „Übergabe…"**.
+**So geht's:**
+
+1. **Schreibtisch-Menü → „Übergabe…"**
+2. Format wählen. Bei der annotierten Kopie zusätzlich unter **Umfang** das Dokument
+   auswählen.
+3. Die **Freigabe-Statistik** darunter lesen — dazu gleich mehr.
+4. **Übergabe erzeugen**.
+
+![Der Übergabe-Dialog mit den sechs Formaten, der Dokumentwahl und der Freigabe-Statistik](../bilder/uebergabe-formate.png)
+
+**Zwei weitere Ausgaben liegen woanders:**
+
+| Format | Wo |
+|---|---|
+| **Anlagenpaket** (K1, K2 … mit Deckblatt und Verzeichnis) | Schreibtisch-Menü → „Anlagenpaket…" oder Rechtsklick auf ein Dokument → [ReFa-Kapitel 3](../refa/03-anlagenpaket.md) |
+| **Arbeitsstand als Paket** (der ganze Schreibtisch, portabel) | Schreibtisch-Menü → „Arbeitsstand exportieren…" |
 
 Besonders nützlich bei der **Mandatsübernahme**: Die Argumentationsübersicht sagt einer
 Kollegin in fünf Minuten, was sie sonst aus 400 Seiten erschließen müsste.
+
+### Die Freigabe-Statistik lesen
+
+Vor jeder Erzeugung zeigt der Dialog, was tatsächlich mitgeht:
+
+> **Im Export enthalten: 1 Objekte**
+> Nicht enthalten: 0 intern · 0 mandantensichtbar
+
+Diese Zeile ist Ihre letzte Kontrolle vor dem Erzeugen. Ist die Zahl der enthaltenen
+Objekte kleiner, als Sie erwarten, fehlt eine Freigabe — und umgekehrt: Ist sie größer als
+gedacht, sehen Sie sich an, was da alles mitgeht, **bevor** Sie die Datei verschicken.
 
 ---
 

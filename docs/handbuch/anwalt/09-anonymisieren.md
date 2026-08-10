@@ -33,20 +33,67 @@ werden:
 
 **Faustregel:** Was das Gericht sieht, wird geschwärzt. Was die KI sieht, wird anonymisiert.
 
+**Geschwärzt** sieht so aus — die Stelle ist zu, der Text im Ergebnis gelöscht:
+
+![Ein Aktenvermerk mit zwei geschwärzten Stellen](../bilder/schwaerzung-im-dokument.png)
+
+**Anonymisiert** sieht dagegen so aus — der Satz bleibt lesbar, nur die Person ist ersetzt:
+
+```
+Die Zeugin [[person-4F2A]] hat bestaetigt, dass die Ware am
+15.03.2026 uebergeben wurde.
+```
+
+Die Platzhalter haben die Form `[[Art-Kennung]]`; welche Arten vorkommen, hängt davon ab,
+was der Dienst im Text findet.
+
+Der Unterschied in einem Satz: Beim Schwärzen ist die Aussage weg, beim Anonymisieren
+bleibt sie — nur ohne Namen. Deshalb kann die KI mit anonymisiertem Text arbeiten, mit
+geschwärztem nicht.
+
 Für das Schwärzen siehe [Export und Schwärzen](07-export-und-schwaerzen.md).
 
 ---
 
-## Was wird anonymisiert?
+## Wo drücke ich dafür?
 
-Drei Wege, je nachdem, womit Sie arbeiten:
+**Nirgends — und das ist Absicht.** Die Anonymisierung hat keinen Knopf auf dem
+Schreibtisch. Sie greift dort, wo sie gebraucht wird: an der Schnittstelle, über die eine
+KI Ihre Akte liest.
 
-- **Namen** einzeln — etwa Beteiligte einer Akte
-- **Freitext** — ein Absatz, eine Behauptung, eine Notiz
-- **Dokumenttext** — der ausgelesene Text einer Datei
+Fragt eine KI über diese Schnittstelle nach Ihren Akten, bekommt sie durchgehend
+anonymisierte Inhalte:
 
-Erkannt werden personenbezogene Angaben. Was genau gefunden wird, entscheidet der
-Anonymisierungsdienst; J-DESK übergibt den Text und setzt das Ergebnis ein.
+- die **Namen der Schreibtische**, wenn sie sich einen Überblick verschafft
+- den **Text eines Dokuments**, wenn sie es liest
+- den **Text einer einzelnen Seite**, wenn sie gezielt nachschlägt
+
+Sie können das nicht vergessen und nicht versehentlich überspringen. Erkannt werden
+personenbezogene Angaben; was genau gefunden wird, entscheidet der Anonymisierungsdienst.
+
+> **Grenze:** Sehr lange Texte werden bei rund 100.000 Zeichen abgeschnitten; die KI sieht
+> dann den Hinweis „Text gekürzt". Dateien über 25 MB werden abgelehnt.
+
+---
+
+## Der wichtigste Punkt für die berufsrechtliche Prüfung
+
+Damit Text anonymisiert werden kann, muss er **zuerst zum Anonymisierungsdienst** — anders
+geht es nicht: Der Dienst ist es, der die Namen findet und ersetzt. Bei einem Dokument wird
+dafür die **Datei selbst** übergeben.
+
+Es sind also **zwei** Empfänger im Spiel, nicht einer:
+
+1. der **Anonymisierungsdienst**, der den Klartext sieht
+2. der **KI-Dienst**, der nur noch die Platzhalter sieht
+
+Für eine Prüfung nach § 43e BRAO heißt das: Beide sind zu betrachten. Der Gewinn der
+Anonymisierung liegt darin, dass der KI-Dienst — typischerweise der weiter entfernte und
+weniger vertraglich gebundene — den Klartext nie erhält. Er liegt nicht darin, dass die
+Daten das Haus nicht verlassen.
+
+Welcher Anonymisierungsdienst eingesetzt wird und was vertraglich mit ihm vereinbart ist,
+weiß Ihre Technikbetreuung.
 
 ---
 

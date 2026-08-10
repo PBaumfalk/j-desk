@@ -9,26 +9,56 @@ Modus.
 
 ### Vorbereiten: die Sitzungsmappe
 
-**Schreibtisch-Menü → „Sitzungsmappe…"**
+Stellen Sie vorab zusammen, was Sie im Termin brauchen. Das ist die Arbeit, die man sonst
+am Vorabend mit Haftnotizen macht — nur dass sie nicht verrutscht.
 
-Stellen Sie vorab zusammen, was Sie im Termin brauchen: Dokumente, Fundstellen, offene
-Fragen. Einzelne Karten fügen Sie per **Rechtsklick → „Zur Sitzungsmappe hinzufügen"**
-hinzu.
+**So geht's:**
 
-Das ist die Arbeit, die man sonst am Vorabend mit Haftnotizen macht — nur dass sie nicht
-verrutscht.
+1. **Schreibtisch-Menü → „Sitzungsmappe…"** (hinter dem Aktenzeichen oben links).
+2. Unter **Dokumente** ankreuzen, was mit soll. Jedes angekreuzte Dokument erscheint
+   darunter in der **Agenda** — der Reihenfolge, in der Sie es im Termin brauchen. Mit den
+   Pfeilen ↑ ↓ sortieren, mit **✕ Entfernen** wieder herausnehmen.
+3. Unter **Offene Fragen** notieren, was Sie im Termin klären wollen — mit **+ Frage
+   hinzufügen**.
+4. **Später fortsetzen** speichert die Mappe; **Sitzung starten** schaltet in den
+   Sitzungsmodus.
+
+![Die Sitzungsmappe mit Dokumenten, Agenda, Sprungmarken und einer offenen Frage](../bilder/sitzungsmappe.png)
+
+Einzelne Karten nehmen Sie auch direkt vom Tisch auf: **Rechtsklick → „Zur Sitzungsmappe
+hinzufügen"**.
+
+**Sprungmarken** sind Fahnen an einer bestimmten Seite. Die setzen Sie nicht in diesem
+Fenster, sondern am Tisch: Dokument aufschlagen, **Rechtsklick in die Seite → Anbringen →
+Fahne**, dann die Farbe wählen. In der Sitzungsmappe erscheinen sie danach als
+anspringbare Liste.
 
 ### Im Termin: der Sitzungsmodus
 
-- **Große Bedienziele** und Vollbild
-- **Verschiebe-Sperre** — nichts rutscht versehentlich weg, wenn Sie den Bildschirm berühren
-- **Schnellzugriff und Sprungmarken** auf die vorbereiteten Stellen
-- **Dokumente per Fingertipp nebeneinander**
-- **Sitzungsnotizen**, die als solche erkennbar bleiben
-- **Zwischenspeicherung**, falls das Netz im Saal schwach ist
+Der Sitzungsmodus ersetzt die obere Leiste durch vier große Bedienziele:
+
+![Die Leiste im Sitzungsmodus: Verschiebe-Sperre, Sprungmarken, Sitzungsnotiz, Sitzung beenden](../bilder/sitzungsmodus-leiste.png)
+
+- **🔒 Verschiebe-Sperre** — ein Umschalter. Ist sie an, rutscht nichts weg, wenn Sie den
+  Bildschirm berühren. Die Beschriftung sagt Ihnen, woran Sie sind: *Verschiebe-Sperre
+  aktiv* heißt gesperrt.
+- **🎯 Sprungmarken** — die vorbereiteten Stellen als Liste; ein Tippen führt hin. Sind
+  keine gesetzt, steht das ausdrücklich da.
+- **🎙 + Sitzungsnotiz** — ein großes Textfeld; die Notiz bleibt später als Sitzungsnotiz
+  erkennbar. Hat Ihre Kanzlei das Diktat eingerichtet, steht darunter zusätzlich
+  **🎤 Diktieren**.
+- **✕ Sitzung beenden** — zurück zum normalen Schreibtisch.
+
+Schrift und Schaltflächen sind durchgehend größer als sonst, damit man sie im Stehen und
+im Saallicht trifft. Notizen werden **zwischengespeichert**, wenn das Netz im Saal schwach
+ist, und später nachgereicht.
 
 Der Punkt ist nicht Bequemlichkeit: Wenn das Gericht nach einer Fundstelle fragt, zählt,
 ob Sie sie in fünf Sekunden oder in zwei Minuten auf dem Schirm haben.
+
+> **Stolperstein:** Die Sitzungsmappe gehört zum Schreibtisch, nicht zum Termin. Sie
+> bleibt nach dem Beenden erhalten — praktisch für den Fortsetzungstermin, aber räumen Sie
+> sie auf, bevor Sie mit derselben Akte in einen anderen Termin gehen.
 
 ---
 
@@ -91,7 +121,24 @@ geschieht nur auf Ihre Veranlassung und wird protokolliert — aber es geschieht
 Prüfen Sie vorher, ob der übermittelte Ausschnitt Mandatsgeheimnisse enthält. Falls Ihre
 Kanzlei die Anonymisierungsfunktion eingerichtet hat, ziehen Sie sie in Betracht.
 
-Wartende Freigaben finden Sie über **„KI-Freigaben öffnen"** in der Befehlsliste.
+### Wo sehe ich, was die KI vorschlägt?
+
+**So geht's:** **Schreibtisch-Menü → „🤖 KI-Freigaben…"**. Über die Befehlsliste heißt der
+Eintrag **„KI-Freigaben öffnen"** — derselbe Weg.
+
+Das Fenster heißt in der Oberfläche **KI-Vorschläge** und ist der einzige Ort, an dem
+KI-Ergebnisse in Ihre Akte gelangen:
+
+![Das Fenster „KI-Vorschläge" ohne wartende Freigaben](../bilder/ki-vorschlaege.png)
+
+Steht dort — wie im Bild — **„Die KI hat nichts am Schreibtisch geändert"** und **„Keine
+wartenden KI-Freigaben"**, dann ist auch nichts geschehen. Liegen Vorschläge an, prüfen Sie
+sie einzeln samt Quelle und entscheiden für jeden. **Alle übernehmen** nimmt sie
+gesammelt an; die Zahl daneben sagt, wie viele es sind.
+
+> **Stolperstein:** Der Eintrag ist immer sichtbar, auch wenn Ihre Kanzlei gar keine KI
+> angebunden hat. Ein leeres Fenster heißt also nicht zwingend „die KI hat nichts
+> gefunden" — es kann auch heißen, dass keine KI im Spiel ist.
 
 ---
 
