@@ -24,7 +24,7 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | **Aufgabe anlegen / zuweisen** | [Aufgaben und Fristen](refa/04-aufgaben-und-fristen.md) |
 | **Aufräumen** | [Ordnung halten](refa/05-ordnung-halten.md#der-tisch-ist-ein-chaos--kann-ich-aufräumen-lassen) |
 | **Ausschnitt aus einem Dokument** | [Verknüpfen](anwalt/03-verknuepfen.md#ausschnitte--wenn-nur-ein-absatz-zählt) |
-| **Auswertung** | [Lücken finden](anwalt/04-luecken-finden.md) |
+| **Auswertung** | [Lücken finden](anwalt/04-luecken-finden.md#wie-öffne-ich-die-auswertung) — der Knopf mit der **Waage ⚖** in der *unteren* Leiste |
 
 ## B
 
@@ -62,7 +62,9 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 |---|---|
 | **Festkleben** | [Ordnung halten](refa/05-ordnung-halten.md#was-ist-der-unterschied-zwischen-heften-klammern-und-festkleben) |
 | **Foto hochladen** | [Post und Dokumente](refa/02-post-und-dokumente.md#kann-ich-etwas-mit-dem-handy-fotografieren) |
+| **Fahne (Sprungmarke im Dokument)** | [Termin und KI](anwalt/08-termin-und-ki.md#vorbereiten-die-sitzungsmappe) — Rechtsklick in die Seite → *Anbringen* → *Fahne* |
 | **Freigabe (exportierbar / intern)** | [Vertraulichkeit](anwalt/06-vertraulichkeit.md) · [Anlagenpaket](refa/03-anlagenpaket.md#schritt-1-dokumente-freigeben) |
+| **Freigabe-Statistik (vor dem Export)** | [Export und Schwärzen](anwalt/07-export-und-schwaerzen.md#die-freigabe-statistik-lesen) |
 | **Frist eintragen** | [Aufgaben und Fristen](refa/04-aufgaben-und-fristen.md) — **Achtung:** echte Fristen gehören in j-lawyer |
 | **Fundstelle** | [Verknüpfen](anwalt/03-verknuepfen.md#jede-fundstelle-bleibt-auffindbar) |
 
@@ -89,6 +91,7 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | **j-lawyer, wird dort etwas gelöscht?** | **Nein, nie.** [Wenn etwas fehlt](refa/06-wenn-etwas-fehlt.md) |
 | **K1, K2, K3** | [Anlagen zusammenstellen](refa/03-anlagenpaket.md) |
 | **KI, Künstliche Intelligenz** | [Termin und KI](anwalt/08-termin-und-ki.md#ki) |
+| **KI-Freigaben / KI-Vorschläge** | [Termin und KI](anwalt/08-termin-und-ki.md#wo-sehe-ich-was-die-ki-vorschlägt) — Schreibtisch-Menü → *KI-Freigaben…*; das Fenster heißt *KI-Vorschläge* |
 | **Konvolut** | [Anlagen zusammenstellen](refa/03-anlagenpaket.md) |
 | **Konflikt (zwei bearbeiten gleichzeitig)** | [Wenn etwas fehlt](refa/06-wenn-etwas-fehlt.md#zwei-von-uns-haben-gleichzeitig-gearbeitet) |
 
@@ -107,6 +110,7 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | Sie suchen | Sie finden es hier |
 |---|---|
 | **OCR / gescannte Dokumente durchsuchen** | [Post und Dokumente](refa/02-post-und-dokumente.md#wie-finde-ich-etwas-in-einem-gescannten-dokument) |
+| **Originalstelle, zurück ins Dokument** | [Verknüpfen](anwalt/03-verknuepfen.md#jede-fundstelle-bleibt-auffindbar) — Rechtsklick → *Herkunft* → Knopf *Zur Originalstelle* |
 | **Office-Dateien (Word, Excel) anzeigen** | [Erste Einrichtung](technik/02-erste-einrichtung.md#office-vorschau-freiwillig) |
 | **Papierkorb** | [Wenn etwas fehlt](refa/06-wenn-etwas-fehlt.md#ich-habe-aus-versehen-etwas-gelöscht) |
 | **Passwort** | Ihr **j-lawyer-Passwort**. [Erste Schritte](refa/01-erste-schritte.md#wie-melde-ich-mich-an) |
@@ -124,7 +128,9 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | **Schwärzen / unkenntlich machen** | [Export und Schwärzen](anwalt/07-export-und-schwaerzen.md#wie-schwärze-ich-richtig) — entfernt Text endgültig; zum umkehrbaren Ersetzen siehe *Anonymisieren* |
 | **Sichern / Sicherung / Backup** | [Betrieb und Sicherung](technik/03-betrieb-und-sicherung.md) |
 | **Sichtbarkeit prüfen** | [Benutzer und Rechte](technik/04-benutzer-und-rechte.md#warum-sieht-jemand-etwas-nicht) |
-| **Sitzung / Sitzungsmappe / Verhandlung** | [Termin und KI](anwalt/08-termin-und-ki.md#der-verhandlungstermin) |
+| **Sitzung / Sitzungsmappe / Verhandlung** | [Termin und KI](anwalt/08-termin-und-ki.md#vorbereiten-die-sitzungsmappe) |
+| **Sitzungsmodus (im Termin)** | [Termin und KI](anwalt/08-termin-und-ki.md#im-termin-der-sitzungsmodus) |
+| **Sprungmarke** | → *Fahne* |
 | **Speichern** | **Nicht nötig** — es wird laufend gespeichert |
 | **Stapel** | [Ordnung halten](refa/05-ordnung-halten.md#wie-stapele-ich-dokumente) |
 | **Störung / geht nicht** | [Störungssuche](technik/05-stoerungssuche.md) · [Wenn etwas fehlt](refa/06-wenn-etwas-fehlt.md) |
@@ -136,7 +142,9 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | Sie suchen | Sie finden es hier |
 |---|---|
 | **Tabelle / rechnen** | [Chronologie und Vergleich](anwalt/05-chronologie-und-vergleich.md#rechnen-in-der-akte) |
+| **Übergabe (Export als PDF)** | [Export und Schwärzen](anwalt/07-export-und-schwaerzen.md#was-kann-ich-exportieren) — sechs Formate hinter Schreibtisch-Menü → *Übergabe…* |
 | **Übergabe an j-lawyer** | [Aufgaben und Fristen](refa/04-aufgaben-und-fristen.md#wie-übergebe-ich-eine-aufgabe-an-j-lawyer) |
+| **Verschiebe-Sperre** | [Termin und KI](anwalt/08-termin-und-ki.md#im-termin-der-sitzungsmodus) |
 | **Update / aktualisieren** | [Betrieb und Sicherung](technik/03-betrieb-und-sicherung.md#update) |
 | **Verknüpfen** | [Verknüpfen](anwalt/03-verknuepfen.md) |
 | **Vergleichen (zwei Fassungen)** | [Chronologie und Vergleich](anwalt/05-chronologie-und-vergleich.md#zwei-fassungen-vergleichen) |
