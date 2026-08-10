@@ -13,7 +13,17 @@ Vortrags — und kann Ihnen sagen, wo etwas fehlt. Nicht inhaltlich, sondern str
 Das ist der Unterschied zwischen einem Stapel Papier und einer Akte, mit der man arbeiten
 kann.
 
-Öffnen über **„Auswertung öffnen"** (Befehlsliste oder obere Leiste).
+## Wie öffne ich die Auswertung?
+
+**So geht's:** Der Knopf mit der **Waage ⚖** ganz rechts in der **unteren** Leiste. Über
+die Tastatur geht es mit **⌥⇧A**, und in der Befehlsliste heißt der Eintrag
+**„Auswertung öffnen"**.
+
+![Die untere Leiste; ganz rechts die Waage für die Auswertungen](../bilder/werkzeugleiste.png)
+
+Es öffnet sich ein Fenster mit drei Fragen. Eine davon anklicken — dann wird gerechnet.
+
+![Das Auswertungsfenster mit den drei Abfragen](../bilder/auswertung-abfragen.png)
 
 ---
 
@@ -21,9 +31,9 @@ kann.
 
 Die wichtigste Frage vor jedem Schriftsatz.
 
-J-DESK listet alle Tatsachen und eigenen Behauptungen auf, zu denen **keine Verknüpfung zu
-einem Beweismittel** führt. Das sind genau die Stellen, an denen ein Bestreiten der
-Gegenseite Sie in Beweisnot bringt.
+J-DESK listet alle Karten der Art **Tatsache** auf, an denen **keine Verknüpfung mit der
+Bedeutung „belegt"** zu einem Beweismittel hängt. Das sind genau die Stellen, an denen ein
+Bestreiten der Gegenseite Sie in Beweisnot bringt.
 
 ![Auswertung „Tatsachen ohne Beweismittel" mit einem Treffer](../bilder/auswertung.png)
 
@@ -32,21 +42,40 @@ Gegenseite Sie in Beweisnot bringt.
 - oder die Behauptung fallen lassen
 - oder bewusst entscheiden, dass sie unstreitig bleiben wird — und das vermerken
 
+> **Stolperstein — zwei Dinge, die viele überraschen:**
+> 1. Es zählt **allein die Bedeutung „belegt"**. Eine Verknüpfung „bestätigt" oder
+>    „gehört zu" macht die Tatsache in dieser Auswertung *nicht* belegt.
+> 2. Es zählt nur die Verknüpfung zu einem **juristischen Objekt**, nicht zu einem
+>    Dokument. Wer seine Tatsache direkt mit der Klageschrift verbindet, bleibt in der
+>    Lückenliste stehen. Legen Sie stattdessen ein **Beweismittel** an — oder einen
+>    Ausschnitt der Fundstelle — und verknüpfen Sie damit.
+>
+> Beides ist kein Fehler, sondern der Grund, warum die Liste verlässlich ist: Sie zählt
+> nur, was Sie ausdrücklich als Beleg bezeichnet haben.
+
 ---
 
 ## „Was habe ich noch nicht erwidert?"
 
-J-DESK listet alle **Behauptungen der Gegenseite**, zu denen keine Verknüpfung zu einer
-eigenen Position führt.
+J-DESK listet alle Karten der Art **Behauptung der Gegenseite**, an denen **keine
+widersprechende Verknüpfung** hängt. Hier zählt die ganze rote Familie —
+*widerspricht*, *widerlegt*, *entkräftet*, *streitig*.
 
 Der praktische Wert liegt auf der Hand: Unbestrittener Vortrag der Gegenseite kann als
 zugestanden gelten. Diese Liste ist Ihre Kontrolle, bevor die Frist abläuft.
+
+![Eine Abfrage ohne Treffer](../bilder/auswertung-keine-treffer.png)
+
+> **Stolperstein:** „Keine Treffer" heißt **nicht** „alles in Ordnung". Es heißt: In dem,
+> was Sie erfasst haben, ist keine Lücke. Eine gegnerische Behauptung, die Sie nie als
+> Karte angelegt haben, taucht hier auch nicht auf.
 
 ---
 
 ## „Welche Beweismittel stützen mehrere Tatsachen?"
 
-Zeigt die Beweismittel, an denen mehrere Behauptungen hängen.
+Zeigt die Karten der Art **Beweismittel**, an denen **zwei oder mehr Tatsachen** mit
+„belegt" hängen.
 
 **Warum das wichtig ist:** Fällt ein solches Beweismittel weg — die Zeugin erinnert sich
 nicht, die Urkunde wird bestritten —, brechen mehrere Punkte gleichzeitig weg. Diese
@@ -59,10 +88,20 @@ vorbereitet werden sollte.
 
 ## Wie komme ich von der Antwort zur Stelle?
 
-Jeder Eintrag in der Auswertung ist anklickbar und führt zum Objekt auf dem Tisch. Von
-dort per **Rechtsklick → „Zur Originalstelle"** ins Dokument.
+**Jeder Eintrag in der Liste ist anklickbar.** Ein Klick schließt das Fenster und rückt
+das Objekt auf dem Tisch in den Blick.
 
-Also: von der Lücke zur Fundstelle in zwei Klicks.
+Stammt die Fundstelle aus einem Dokument, geht es von dort weiter über
+**Rechtsklick → „Herkunft" → „Zur Originalstelle"** in die Unterlage hinein.
+
+---
+
+## Wenn die Liste lang wird
+
+Die Trefferliste zeigt **höchstens 30 Einträge** — ohne Hinweis, dass es mehr sein
+könnten. Bei einer großen Akte, die Sie zum ersten Mal auswerten, sollten Sie deshalb
+nicht davon ausgehen, mit dem Abarbeiten der Liste fertig zu sein. Arbeiten Sie die
+Treffer ab und **werten Sie erneut aus**, bis die Liste kürzer wird.
 
 ---
 

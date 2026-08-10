@@ -33,8 +33,9 @@ Vier Dinge, an denen Sie sich orientieren können:
   die Menüs, mit denen Sie arbeiten — *Hinzufügen*, *Ansichten*, *Ebenen*, *Historie*.
 - **In der Mitte** die Arbeitsfläche mit den Karten. Alles darauf lässt sich anfassen und
   verschieben.
-- **Unten** eine kleine Leiste: Pfeile zum Verschieben der Fläche, *Verkleinern* · *Übersicht*
-  · *Vergrößern*, eine Lupe und die Suche (⌘F).
+- **Unten** eine kleine Leiste: Pfeile zum Verschieben der Fläche, *Verkleinern* ·
+  *Übersicht* · *Vergrößern*, eine Lupe, die Suche (⌘F) und die Waage ⚖ für die
+  [Auswertungen](04-luecken-finden.md).
 - **Links unten** die Minikarte: der ganze Schreibtisch im Überblick, wenn er größer wird
   als der Bildschirm. **Rechts unten** der Papierkorb — mit der Zahl dessen, was darin liegt.
 
