@@ -320,14 +320,22 @@ Kleinigkeiten, die den Unterschied machen:
 
 ## 📖 Handbuch
 
-Vollständige Dokumentation, getrennt nach Zielgruppe und für Nicht-Techniker
-verständlich — im **[Handbuch](docs/handbuch/README.md)**:
+Vollständige Dokumentation im **[Handbuch](docs/handbuch/README.md)** — drei Eingänge, je
+nach Rolle, durchgehend in Alltagssprache statt in Programmbegriffen:
 
-| Für Anwältinnen und Anwälte | Für die Technikbetreuung |
-|---|---|
-| [Was ist J-DESK?](docs/handbuch/anwender/was-ist-j-desk.md) | [Installation](docs/handbuch/technik/installation.md) |
-| [Der erste Schreibtisch](docs/handbuch/anwender/erster-schreibtisch.md) | [Betrieb, Sicherung, Update](docs/handbuch/technik/betrieb.md) |
-| [Vertraulichkeit](docs/handbuch/anwender/vertraulichkeit.md) | [Störungssuche](docs/handbuch/technik/stoerungssuche.md) |
+| 👩‍⚖️ [Anwältin / Anwalt](docs/handbuch/anwalt/README.md) | 📁 [Sekretariat / ReFa](docs/handbuch/refa/README.md) | 🔧 [Technik](docs/handbuch/technik/README.md) |
+|---|---|---|
+| [Was ist J-DESK?](docs/handbuch/anwalt/01-was-ist-j-desk.md) | [Erste Schritte](docs/handbuch/refa/01-erste-schritte.md) | [Installation](docs/handbuch/technik/01-installation.md) |
+| [Verknüpfen](docs/handbuch/anwalt/03-verknuepfen.md) | [Post und Dokumente](docs/handbuch/refa/02-post-und-dokumente.md) | [Erste Einrichtung](docs/handbuch/technik/02-erste-einrichtung.md) |
+| [Lücken finden](docs/handbuch/anwalt/04-luecken-finden.md) | [Anlagen zusammenstellen](docs/handbuch/refa/03-anlagenpaket.md) | [Betrieb und Sicherung](docs/handbuch/technik/03-betrieb-und-sicherung.md) |
+| [Vertraulichkeit](docs/handbuch/anwalt/06-vertraulichkeit.md) | [Aufgaben und Fristen](docs/handbuch/refa/04-aufgaben-und-fristen.md) | [Benutzer und Rechte](docs/handbuch/technik/04-benutzer-und-rechte.md) |
+| [Export und Schwärzen](docs/handbuch/anwalt/07-export-und-schwaerzen.md) | [Wenn etwas fehlt](docs/handbuch/refa/06-wenn-etwas-fehlt.md) | [Störungssuche](docs/handbuch/technik/05-stoerungssuche.md) |
+
+Jede Rolle beginnt mit einer **Schnellhilfe** — den 15 häufigsten Fragen als Tabelle. Wer
+nur ein Stichwort im Kopf hat, sucht im
+**[Stichwortverzeichnis A–Z](docs/handbuch/stichwortverzeichnis.md)**; dort steht auch das
+Wort aus dem Kanzleialltag („Konvolut", „K1", „Wiedervorlage", „scannen"), nicht nur das
+aus dem Programm.
 
 ## Installation
 
@@ -349,7 +357,7 @@ Die drei häufigsten Stolpersteine beim Eintragen von `JLAWYER_URL`: Das `/j-law
 Ende gehört dazu; `localhost` funktioniert im Container nicht (dort heißt es
 `host.docker.internal`); und die Portnummer ist die von j-lawyer, nicht die von J-DESK.
 
-Ausführlich: [Handbuch, Installation](docs/handbuch/technik/installation.md).
+Ausführlich: [Handbuch, Installation](docs/handbuch/technik/01-installation.md).
 </details>
 
 <details>

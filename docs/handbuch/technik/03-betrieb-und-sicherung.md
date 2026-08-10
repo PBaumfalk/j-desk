@@ -123,4 +123,4 @@ eigenes Dokument:
 
 ---
 
-**Zurück:** [Installation](installation.md) · **Weiter:** [Störungssuche](stoerungssuche.md)
+**Zurück:** [Installation](01-installation.md) · **Weiter:** [Störungssuche](05-stoerungssuche.md)

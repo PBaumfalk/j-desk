@@ -96,8 +96,8 @@ Behauptung passen könnten. Zwei Dinge dazu, die Sie wissen sollten:
    die Akte, wenn Sie sie übernehmen.
 
 Zur Vertraulichkeit und dazu, was J-DESK tut, damit interne Notizen intern bleiben, lesen Sie
-bitte [Vertraulichkeit](vertraulichkeit.md) — der wichtigste Abschnitt dieses Handbuchs.
+bitte [Vertraulichkeit](06-vertraulichkeit.md) — der wichtigste Abschnitt dieses Handbuchs.
 
 ---
 
-**Weiter:** [Der erste Schreibtisch](erster-schreibtisch.md)
+**Weiter:** [Der erste Schreibtisch](02-erster-schreibtisch.md)

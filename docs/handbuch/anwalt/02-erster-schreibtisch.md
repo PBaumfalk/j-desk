@@ -98,7 +98,7 @@ Rechtsklick auf leere Fläche → Notizzettel. Er liegt frei auf dem Tisch, für
 keinem einzelnen Dokument gehören.
 
 Notizen sind standardmäßig **intern** — sie erscheinen nicht in Exporten. Warum das so ist und
-worauf Sie trotzdem achten sollten, steht in [Vertraulichkeit](vertraulichkeit.md).
+worauf Sie trotzdem achten sollten, steht in [Vertraulichkeit](06-vertraulichkeit.md).
 
 ## Wenn es unübersichtlich wird
 
@@ -118,4 +118,4 @@ gelten soll — statt still eine davon zu verwerfen.
 
 ---
 
-**Zurück:** [Was ist J-DESK?](was-ist-j-desk.md) · **Weiter:** [Vertraulichkeit](vertraulichkeit.md)
+**Zurück:** [Was ist J-DESK?](01-was-ist-j-desk.md) · **Weiter:** [Vertraulichkeit](06-vertraulichkeit.md)

@@ -101,7 +101,7 @@ sudo docker compose up -d
 ## Word- und Excel-Dateien werden nicht angezeigt
 
 Erwartetes Verhalten, wenn die Office-Vorschau nicht eingerichtet ist — die Dateien werden dann
-zum Herunterladen angeboten. Einrichtung siehe [Installation](installation.md).
+zum Herunterladen angeboten. Einrichtung siehe [Installation](01-installation.md).
 
 Ist sie eingerichtet und es klappt trotzdem nicht, ist meist eine der beiden Richtungen gestört:
 
@@ -127,7 +127,7 @@ sudo docker compose up -d
 
 Die Daten bleiben dabei unangetastet — sie liegen im Datenträger, nicht im Abbild. **Ausnahme:**
 Hat die neue Fassung die Datenbank umgestellt, kann eine ältere Fassung damit unter Umständen
-nichts anfangen. Deshalb: [vor jedem Update sichern](betrieb.md).
+nichts anfangen. Deshalb: [vor jedem Update sichern](03-betrieb-und-sicherung.md).
 
 ---
 
@@ -147,4 +147,4 @@ nicht in ein öffentliches Issue.
 
 ---
 
-**Zurück:** [Installation](installation.md) · [Betrieb und Sicherung](betrieb.md)
+**Zurück:** [Installation](01-installation.md) · [Betrieb und Sicherung](03-betrieb-und-sicherung.md)

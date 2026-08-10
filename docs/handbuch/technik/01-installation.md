@@ -173,7 +173,7 @@ gehören Mandatsdaten nicht über fremde Netze.
 - Direktinstallation: unter `/var/lib/j-desk`
 
 Wie Sie sichern und — wichtiger — wie Sie prüfen, dass sich die Sicherung auch zurückspielen
-lässt, steht in [Betrieb und Sicherung](betrieb.md).
+lässt, steht in [Betrieb und Sicherung](03-betrieb-und-sicherung.md).
 
 ### Office-Vorschau nachrüsten
 
@@ -221,4 +221,4 @@ Bitte nur zum Ausprobieren — die Zugangsdaten sind allgemein bekannt.
 
 ---
 
-**Weiter:** [Betrieb und Sicherung](betrieb.md) · [Störungssuche](stoerungssuche.md)
+**Weiter:** [Betrieb und Sicherung](03-betrieb-und-sicherung.md) · [Störungssuche](05-stoerungssuche.md)
