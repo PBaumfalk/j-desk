@@ -1,0 +1,79 @@
+name: Fehler melden
+description: Etwas funktioniert nicht wie erwartet
+labels: ["fehler"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für die Meldung.
+
+        **Sicherheitslücken bitte nicht hier melden**, sondern vertraulich über
+        [SECURITY.md](../blob/main/SECURITY.md).
+
+        **Bitte keine Mandatsdaten einfügen.** Screenshots und Protokollauszüge bitte vorher
+        durchsehen: Aktenzeichen, Namen, Anschriften und Dokumentinhalte gehören nicht in ein
+        öffentliches Issue.
+
+  - type: textarea
+    id: was-passiert
+    attributes:
+      label: Was passiert?
+      description: Beschreiben Sie, was Sie beobachten.
+    validations:
+      required: true
+
+  - type: textarea
+    id: erwartet
+    attributes:
+      label: Was hätten Sie erwartet?
+    validations:
+      required: true
+
+  - type: textarea
+    id: schritte
+    attributes:
+      label: Wie lässt es sich nachvollziehen?
+      description: Schritt für Schritt, vom Start bis zum Fehler.
+      placeholder: |
+        1. Schreibtisch öffnen
+        2. Dokument aufschlagen
+        3. …
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Steht in der Anwendung unter „Systemdiagnose". Falls nicht erreichbar, der Name des Docker-Abbilds.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: betriebsart
+    attributes:
+      label: Betriebsart
+      options:
+        - Mit j-lawyer verbunden
+        - Eigenständig (ohne j-lawyer)
+        - Weiß ich nicht
+    validations:
+      required: true
+
+  - type: dropdown
+    id: rolle
+    attributes:
+      label: Wer meldet?
+      description: Hilft bei der Einordnung — eine Antwort für Anwältinnen und Anwälte sieht anders aus als eine für Administratoren.
+      options:
+        - Anwältin / Anwalt oder Kanzleimitarbeiter
+        - Administrator / Technik
+        - Entwicklung
+    validations:
+      required: true
+
+  - type: textarea
+    id: umgebung
+    attributes:
+      label: Umgebung
+      description: Browser, Betriebssystem des Servers, Installationsweg (Docker oder direkt).

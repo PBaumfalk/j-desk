@@ -1,0 +1,83 @@
+# Baut bei jedem Versions-Tag ein Docker-Abbild und veröffentlicht es in der GitHub
+# Container Registry (ghcr.io). Das ist der Weg, über den Kanzleien J-DESK installieren:
+# sie laden ein fertiges Abbild, sie bauen nichts selbst.
+#
+# Auslösen mit:
+#   git tag v1.0.1 && git push origin v1.0.1
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version, z. B. v1.0.1'
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    name: Abbild bauen und veröffentlichen
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      # Kein Release aus rotem Stand. Ohne diesen Schritt könnte ein Tag auf einem Commit
+      # gesetzt werden, dessen CI nie lief oder fehlschlug.
+      - name: Tests vor der Veröffentlichung
+        run: npx vitest run --retry=1
+
+      - name: QEMU einrichten
+        uses: docker/setup-qemu-action@v3
+
+      - name: Buildx einrichten
+        uses: docker/setup-buildx-action@v3
+
+      - name: An ghcr.io anmelden
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Namen und Marken bestimmen
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # Zwei Architekturen. Grund: die j-lawyer-Abbilder gibt es nur für amd64, weshalb sie auf
+      # ARM-Servern und Apple-Silicon-Rechnern über Emulation laufen — spürbar langsamer und
+      # speicherhungriger. J-DESK soll diese Einschränkung nicht erben, damit eine Kanzlei mit
+      # ARM-Server (oder ein Techniker mit MacBook) das Abbild nativ fährt.
+      - name: Bauen und veröffentlichen
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/server/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -1,0 +1,20 @@
+.DS_Store
+node_modules
+/build
+/.svelte-kit
+packages/core/.svelte-kit/
+packages/server/.svelte-kit/
+/package
+.env
+.env.*
+!.env.example
+!.env.beispiel
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+packages/server/data/
+/test-fixtures/
+# Sprachdatei fürs deutsche OCR (SEARCH-03) — Binärartefakt, ~15 MB, s. packages/server/tessdata/README.md
+packages/server/tessdata/*.traineddata
+
+# Kundeneinstellungen der Installation (enthalten Zugangsdaten)
+install/.env

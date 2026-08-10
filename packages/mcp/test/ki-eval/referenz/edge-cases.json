@@ -1,0 +1,84 @@
+[
+  {
+    "id": "EC-1",
+    "beschreibung": "Bindestrich-Trennung: der Seitentext trennt „Infor-\\nmationen\", das Zitat steht am Stück — Normalisierungsstufe (c) löst die Trennung auf",
+    "tool": "propose_add_note",
+    "argumente": {
+      "kind": "notiz",
+      "text": "Keine Beanstandung der Aufklärung durch den Beklagten Sommer.",
+      "x": 0,
+      "y": 0,
+      "quelle": { "dokumentId": "doc:gutachten", "seite": 1, "zitat": "Informationspflichten des Beklagten Sommer" }
+    },
+    "setup": {
+      "dateien": [{ "key": "gutachten", "name": "Gutachten Aufklärung.pdf" }],
+      "seitenTexte": [
+        { "dateiKey": "gutachten", "seite": 1, "text": "Die Begutachtung ergab zur Frage der Infor-\nmationspflichten des Beklagten Sommer keine Beanstandungen." }
+      ]
+    },
+    "erwartung": { "ausgang": "akzeptieren" }
+  },
+  {
+    "id": "EC-2",
+    "beschreibung": "OCR-verrauschtes Zitat (nur ocr_text, Artefakte ausschließlich in Layout/Whitespace): nach Normalisierung exakter Match — beweist zugleich den OCR-Fallback der Verifikation",
+    "tool": "propose_add_note",
+    "argumente": {
+      "kind": "behauptung",
+      "text": "Der Beklagte Sommer bestreitet die Forderung vollumfänglich.",
+      "x": 0,
+      "y": 0,
+      "quelle": { "dokumentId": "doc:protokoll", "seite": 1, "zitat": "der Beklagte bestreitet die Forderung vollumfänglich" }
+    },
+    "setup": {
+      "dateien": [{ "key": "protokoll", "name": "Sitzungsprotokoll (Scan).pdf" }],
+      "seitenTexte": [
+        { "dateiKey": "protokoll", "seite": 1, "ocr": true, "text": "  Anwesend:   Klägerin Berger,\n  Beklagter   Sommer.\n Der  Beklagte   bestreitet  die\n Forderung   vollumfänglich." }
+      ]
+    },
+    "erwartung": { "ausgang": "akzeptieren" }
+  },
+  {
+    "id": "EC-3",
+    "beschreibung": "Batch-Vorschlag mit zwei Fundstellen, beide auflösbar — über die REST-Grenze, weil der MCP-Vertrag konstruktiv nur EINE quelle je Call trägt (s. harness.ts Modulkommentar)",
+    "tool": "rest:vorschlaege",
+    "argumente": {
+      "art": "addNote",
+      "payload": { "kind": "behauptung", "text": "Werklohnanspruch in Höhe von 12.400 EUR ist durch Vertrag und Klagevortrag doppelt belegt.", "position": { "x": 10, "y": 10 } },
+      "quellen": [
+        { "dokumentId": "doc:vertrag", "seite": 2, "zitat": "Die Vergütung beträgt 12.400 EUR netto" },
+        { "dokumentId": "doc:klageschrift", "seite": 1, "zitat": "restliche Werklohnansprüche" }
+      ],
+      "zusammenfassung": "Notiz (behauptung) mit zwei Fundstellen"
+    },
+    "setup": {
+      "dateien": [
+        { "key": "klageschrift", "name": "Klageschrift Berger ./. Sommer.pdf" },
+        { "key": "vertrag", "name": "Werkvertrag 03.01.2024.pdf" }
+      ],
+      "seitenTexte": [
+        { "dateiKey": "klageschrift", "seite": 1, "text": "Die Klägerin Berger macht gegen den Beklagten Sommer restliche Werklohnansprüche aus dem Werkvertrag vom 03.01.2024 geltend." },
+        { "dateiKey": "vertrag", "seite": 2, "text": "§ 5 Vergütung: Die Vergütung beträgt 12.400 EUR netto, zahlbar innerhalb von 14 Tagen nach Abnahme." }
+      ]
+    },
+    "erwartung": { "ausgang": "akzeptieren" }
+  },
+  {
+    "id": "EC-4",
+    "beschreibung": "Sehr kurzes Zitat mit Mehrfachvorkommen auf derselben Seite — akzeptieren: Mehrdeutigkeit ist in Phase 12 kein Ablehnungsgrund (dokumentierte Regel, quelle.ts findeZitat-Kommentar; Flywheel beobachtet)",
+    "tool": "propose_add_note",
+    "argumente": {
+      "kind": "notiz",
+      "text": "Drei Zahlungseingänge dokumentiert — Mehrfachvorkommen des Kurzzitats ist akzeptabel.",
+      "x": 0,
+      "y": 0,
+      "quelle": { "dokumentId": "doc:kontoauszug", "seite": 1, "zitat": "gezahlt" }
+    },
+    "setup": {
+      "dateien": [{ "key": "kontoauszug", "name": "Kontoauszug Klägerin Berger.pdf" }],
+      "seitenTexte": [
+        { "dateiKey": "kontoauszug", "seite": 1, "text": "05.03.2024: Rate gezahlt. 05.04.2024: Rate gezahlt. 06.05.2024: Rate gezahlt." }
+      ]
+    },
+    "erwartung": { "ausgang": "akzeptieren" }
+  }
+]

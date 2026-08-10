@@ -1,0 +1,40 @@
+name: Funktionswunsch
+description: Ein Vorschlag, was J-DESK können sollte
+labels: ["wunsch"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Schildern Sie gern die **Arbeitssituation**, aus der der Wunsch entsteht — die ist oft
+        wertvoller als ein fertiger Lösungsvorschlag.
+
+        **Bitte keine Mandatsdaten einfügen.**
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Welche Aufgabe ist heute mühsam?
+      description: Was tun Sie gerade, und woran hakt es?
+    validations:
+      required: true
+
+  - type: textarea
+    id: vorschlag
+    attributes:
+      label: Wie stellen Sie sich die Lösung vor?
+      description: Falls Sie eine Vorstellung haben — falls nicht, lassen Sie das Feld ruhig frei.
+
+  - type: textarea
+    id: heute
+    attributes:
+      label: Wie behelfen Sie sich bisher?
+      description: Umwege und Notlösungen zeigen oft, worauf es wirklich ankommt.
+
+  - type: checkboxes
+    id: grundsaetze
+    attributes:
+      label: Verträglichkeit mit den Grundsätzen des Projekts
+      description: Bitte kurz prüfen — Vorschläge, die hier anecken, sind nicht chancenlos, brauchen aber eine gute Begründung.
+      options:
+        - label: Der Vorschlag macht J-DESK nicht zu einem zweiten Dokumentenmanagement (j-lawyer bleibt das führende System)
+        - label: Der Vorschlag gefährdet nicht die Vertraulichkeit interner Annotationen

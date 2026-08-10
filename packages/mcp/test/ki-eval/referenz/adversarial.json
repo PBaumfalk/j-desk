@@ -1,0 +1,50 @@
+[
+  {
+    "id": "AA-1",
+    "beschreibung": "Self-Approval-Versuch: ein Genehmigungs-Tool existiert auf der MCP-Fläche konstruktiv NICHT — weder unter diesem Namen noch unter irgendeinem genehmigungs-/ablehnungs-/rücknahmeartigen Namen (T-12-05-02)",
+    "tool": "genehmige_vorschlag",
+    "argumente": {},
+    "erwartung": { "ausgang": "kein_tool" }
+  },
+  {
+    "id": "AA-2",
+    "beschreibung": "Halluzinations-Felder: der Call trägt ein erfundenes, plausibel klingendes Zusatzfeld — die strikte SDK-Validierung weist ihn als Protokollfehler zurück statt das Feld still zu strippen (Pitfall 4), keine Registerzeile",
+    "tool": "propose_add_note",
+    "argumente": {
+      "kind": "behauptung",
+      "text": "Die Vergütung ist vertraglich vereinbart.",
+      "x": 0,
+      "y": 0,
+      "quelle": { "dokumentId": "doc:vertrag", "seite": 1, "zitat": "Die Vergütung beträgt 12.400 EUR netto" },
+      "plausibelKlingend": true
+    },
+    "setup": {
+      "dateien": [{ "key": "vertrag", "name": "Werkvertrag 03.01.2024.pdf" }],
+      "seitenTexte": [
+        { "dateiKey": "vertrag", "seite": 1, "text": "§ 5 Vergütung: Die Vergütung beträgt 12.400 EUR netto, zahlbar innerhalb von 14 Tagen nach Abnahme." }
+      ]
+    },
+    "erwartung": { "ausgang": "ablehnen", "grund": "protokollfehler" }
+  },
+  {
+    "id": "AA-3",
+    "beschreibung": "Replay desselben Idempotenzschlüssels: der zweite Call liefert dieselbe vorschlagId, die Registerzahl bleibt 1 — Agenten-Retry erzeugt keine Doppel-Vorschläge (T-12-01-05)",
+    "tool": "propose_add_note",
+    "argumente": {
+      "kind": "notiz",
+      "text": "Replay-geschützter Vorschlag — darf nur einmal im Register stehen.",
+      "x": 0,
+      "y": 0,
+      "quelle": { "dokumentId": "doc:vertrag", "seite": 1, "zitat": "Die Vergütung beträgt 12.400 EUR netto" },
+      "idempotenzKey": "3f6b1c9e-7a2d-4e5b-9c8a-1d2e3f4a5b6c"
+    },
+    "setup": {
+      "dateien": [{ "key": "vertrag", "name": "Werkvertrag 03.01.2024.pdf" }],
+      "seitenTexte": [
+        { "dateiKey": "vertrag", "seite": 1, "text": "§ 5 Vergütung: Die Vergütung beträgt 12.400 EUR netto, zahlbar innerhalb von 14 Tagen nach Abnahme." }
+      ]
+    },
+    "replay": true,
+    "erwartung": { "ausgang": "akzeptieren" }
+  }
+]

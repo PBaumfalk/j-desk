@@ -1,0 +1,95 @@
+# J-DESK für den Kanzleibetrieb
+# ==============================
+#
+# Diese Datei und die Datei `.env` daneben sind alles, was Sie brauchen. Starten mit:
+#
+#     docker compose up -d
+#
+# Danach ist J-DESK im Browser erreichbar unter  http://<server-name>:4810
+#
+# Was hier NICHT passiert: J-DESK wird nicht aus dem Quelltext gebaut. Es wird ein fertiges,
+# geprüftes Abbild geladen. Sie brauchen weder Node noch eine Entwicklungsumgebung auf dem Server.
+#
+# Ausführliche Anleitung: docs/handbuch/technik/installation.md
+
+services:
+  j-desk:
+    image: ghcr.io/pbaumfalk/j-desk:${J_DESK_VERSION:-latest}
+    container_name: j-desk
+    restart: unless-stopped
+
+    ports:
+      # Links der Port auf dem Server, rechts der im Container. Wenn 4810 belegt ist,
+      # ändern Sie NUR die linke Zahl, z. B. "8410:4810".
+      - "${J_DESK_PORT:-4810}:4810"
+
+    environment:
+      # ── Anbindung an j-lawyer ────────────────────────────────────────────────
+      # Gesetzt  = Anmeldung läuft über j-lawyer, Akten und Dokumente kommen von dort.
+      # Leer     = J-DESK arbeitet eigenständig mit eigener Benutzerverwaltung.
+      #
+      # Der Pfad "/j-lawyer-io" am Ende gehört dazu. "localhost" funktioniert hier NICHT:
+      # aus Sicht des Containers ist "localhost" der Container selbst, nicht der Server.
+      # Läuft j-lawyer auf demselben Rechner, tragen Sie in der .env
+      #   JLAWYER_URL=http://host.docker.internal:8080/j-lawyer-io
+      # ein und lassen Sie den extra_hosts-Eintrag weiter unten stehen.
+      JLAWYER_URL: ${JLAWYER_URL:-}
+
+      # ── Vorschau für Word- und Office-Dateien (freiwillig) ────────────────────
+      # Nur nötig, wenn Sie den Euro-Office-DocumentServer mitlaufen lassen (Abschnitt unten).
+      # Ohne diese Angaben zeigt J-DESK PDF- und Bilddateien; Office-Dateien werden dann
+      # heruntergeladen statt im Browser angezeigt.
+      EUROOFFICE_URL: ${EUROOFFICE_URL:-}
+      EUROOFFICE_JWT_SECRET: ${EUROOFFICE_JWT_SECRET:-}
+      # Der DocumentServer muss J-DESK seinerseits erreichen können, um die Datei abzuholen.
+      # Deshalb steht hier der Name, unter dem J-DESK im Docker-Netz erreichbar ist —
+      # nicht "localhost".
+      PUBLIC_URL: ${PUBLIC_URL:-http://j-desk:4810}
+
+      # ── Anonymisierung (freiwillig) ───────────────────────────────────────────
+      ANYMIZE_API_KEY: ${ANYMIZE_API_KEY:-}
+
+    volumes:
+      # Hier liegen alle Daten: Datenbank, hochgeladene Dateien, Sicherungen.
+      # DIESES VERZEICHNIS IST IHR DATENBESTAND. Es gehört in die Datensicherung.
+      - j_desk_daten:/data
+
+    # Erlaubt dem Container, Dienste auf dem Server selbst zu erreichen (etwa ein j-lawyer,
+    # das direkt auf dieser Maschine läuft) über den Namen "host.docker.internal".
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4810/api/v1/auth/status').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ══════════════════════════════════════════════════════════════════════════════
+  # Vorschau für Office-Dateien — freiwillig
+  # ══════════════════════════════════════════════════════════════════════════════
+  #
+  # Nur einschalten, wenn Word- und Excel-Dateien direkt im Browser sichtbar sein sollen.
+  #
+  # ACHTUNG, PLATZBEDARF: Dieser Dienst ist ein vollständiger Konvertierungs-Baukasten und
+  # braucht etwa 2 Prozessorkerne und 4 GB Arbeitsspeicher ZUSÄTZLICH. Auf einem knapp
+  # bemessenen Server wird er vom System abgeschossen (Fehlercode 137). Im Zweifel zunächst
+  # weglassen — J-DESK funktioniert ohne ihn vollständig, nur ohne Office-Vorschau.
+  #
+  # Einschalten: Zeilen unten entkommentieren, in der .env EUROOFFICE_URL und
+  # EUROOFFICE_JWT_SECRET setzen, dann `docker compose up -d`.
+  #
+  # eurooffice:
+  #   image: ghcr.io/euro-office/documentserver:latest
+  #   container_name: j-desk-eurooffice
+  #   restart: unless-stopped
+  #   environment:
+  #     JWT_ENABLED: "true"
+  #     # Muss Zeichen für Zeichen mit EUROOFFICE_JWT_SECRET in der .env übereinstimmen.
+  #     JWT_SECRET: ${EUROOFFICE_JWT_SECRET:?Bitte in der .env ein Geheimnis setzen}
+  #   ports:
+  #     - "8082:80"
+
+volumes:
+  j_desk_daten:

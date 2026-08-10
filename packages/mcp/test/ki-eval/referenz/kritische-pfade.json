@@ -1,0 +1,102 @@
+[
+  {
+    "id": "KP-1",
+    "beschreibung": "Fundstelle verknüpfen: Schnur zwischen Klageschrift und Werkvertrag mit wörtlichem Zitat von Seite 2",
+    "tool": "propose_link_documents",
+    "argumente": {
+      "fromId": "doc:klageschrift",
+      "toId": "doc:vertrag",
+      "quelle": { "dokumentId": "doc:vertrag", "seite": 2, "zitat": "Die Vergütung beträgt 12.400 EUR netto" }
+    },
+    "setup": {
+      "dateien": [
+        { "key": "klageschrift", "name": "Klageschrift Berger ./. Sommer.pdf" },
+        { "key": "vertrag", "name": "Werkvertrag 03.01.2024.pdf" }
+      ],
+      "seitenTexte": [
+        { "dateiKey": "klageschrift", "seite": 1, "text": "Die Klägerin Berger macht gegen den Beklagten Sommer restliche Werklohnansprüche aus dem Werkvertrag vom 03.01.2024 geltend." },
+        { "dateiKey": "vertrag", "seite": 1, "text": "§ 1 Vertragsgegenstand: Gegenstand des Vertrags ist die Errichtung der Gartenanlage auf dem Grundstück der Klägerin Berger." },
+        { "dateiKey": "vertrag", "seite": 2, "text": "§ 5 Vergütung: Die Vergütung beträgt 12.400 EUR netto, zahlbar innerhalb von 14 Tagen nach Abnahme des Werkes." }
+      ]
+    },
+    "erwartung": { "ausgang": "akzeptieren" }
+  },
+  {
+    "id": "KP-2",
+    "beschreibung": "Notiz (behauptung) mit tragendem wörtlichen Zitat auf Seite 3",
+    "tool": "propose_add_note",
+    "argumente": {
+      "kind": "behauptung",
+      "text": "Verjährung drei Jahre ab Abnahme — der Anspruch der Klägerin Berger ist nicht verjährt.",
+      "x": 40,
+      "y": 80,
+      "quelle": { "dokumentId": "doc:vertrag", "seite": 3, "zitat": "Verjährungsfrist für Mängelansprüche beträgt drei Jahre" }
+    },
+    "setup": {
+      "dateien": [{ "key": "vertrag", "name": "Werkvertrag 03.01.2024.pdf" }],
+      "seitenTexte": [
+        { "dateiKey": "vertrag", "seite": 1, "text": "§ 1 Vertragsgegenstand: Gegenstand des Vertrags ist die Errichtung der Gartenanlage." },
+        { "dateiKey": "vertrag", "seite": 2, "text": "§ 5 Vergütung: Die Vergütung beträgt 12.400 EUR netto." },
+        { "dateiKey": "vertrag", "seite": 3, "text": "§ 9 Gewährleistung: Die Verjährungsfrist für Mängelansprüche beträgt drei Jahre ab Abnahme des Werkes." }
+      ]
+    },
+    "erwartung": { "ausgang": "akzeptieren" }
+  },
+  {
+    "id": "KP-3",
+    "beschreibung": "Notiz über eine Umbruch-Stelle hinweg: das Zitat spannt den Zeilenumbruch des Satzspiegels",
+    "tool": "propose_add_note",
+    "argumente": {
+      "kind": "behauptung",
+      "text": "Vergleichssumme 7.500 EUR ist fällig zum 15.05.2025 — Frist im Kalender sichern.",
+      "x": 10,
+      "y": 20,
+      "quelle": { "dokumentId": "doc:vergleich", "seite": 1, "zitat": "zur Zahlung der Vergleichssumme in Höhe von 7.500 EUR" }
+    },
+    "setup": {
+      "dateien": [{ "key": "vergleich", "name": "Vergleichsentwurf.pdf" }],
+      "seitenTexte": [
+        { "dateiKey": "vergleich", "seite": 1, "text": "Der Beklagte Sommer verpflichtet sich zur Zahlung der\nVergleichssumme in Höhe von 7.500 EUR an die Klägerin Berger, fällig zum 15.05.2025." }
+      ]
+    },
+    "erwartung": { "ausgang": "akzeptieren" }
+  },
+  {
+    "id": "KP-4",
+    "beschreibung": "extract_page mit wörtlichem Zitat: Seite 2 des Gutachtens als eigene Karte",
+    "tool": "propose_extract_page",
+    "argumente": {
+      "docId": "doc:gutachten",
+      "page": 2,
+      "x": 120,
+      "y": 60,
+      "quelle": { "dokumentId": "doc:gutachten", "seite": 2, "zitat": "undichte Flanschrohr im Keller" }
+    },
+    "setup": {
+      "dateien": [{ "key": "gutachten", "name": "Gutachten Wasserschaden.pdf" }],
+      "seitenTexte": [
+        { "dateiKey": "gutachten", "seite": 1, "text": "Auftrag: Begutachtung des Wasserschadens im Keller des Anwesens der Klägerin Berger." },
+        { "dateiKey": "gutachten", "seite": 2, "text": "Der Gutachter kommt zu dem Ergebnis, dass der Wasserschaden auf das undichte Flanschrohr im Keller zurückzuführen ist." }
+      ]
+    },
+    "erwartung": { "ausgang": "akzeptieren" }
+  },
+  {
+    "id": "KP-5",
+    "beschreibung": "edit_note mit Quelle: bestehender Zettel wird mit belegtem Text ersetzt",
+    "tool": "propose_edit_note",
+    "argumente": {
+      "noteId": "note:streitstand",
+      "text": "Einrede der Verjährung am 21.02.2025 erhoben — Klägerin Berger muss Unterbrechungshandlungen darlegen.",
+      "quelle": { "dokumentId": "doc:schriftsatz", "seite": 1, "zitat": "die Einrede der Verjährung erhoben" }
+    },
+    "setup": {
+      "dateien": [{ "key": "schriftsatz", "name": "Schriftsatz Beklagtenseite 21.02.2025.pdf" }],
+      "seitenTexte": [
+        { "dateiKey": "schriftsatz", "seite": 1, "text": "Mit Schriftsatz vom 21.02.2025 hat die Beklagtenseite die Einrede der Verjährung erhoben." }
+      ],
+      "notizen": [{ "key": "streitstand", "kind": "notiz", "text": "Verjährung prüfen" }]
+    },
+    "erwartung": { "ausgang": "akzeptieren" }
+  }
+]

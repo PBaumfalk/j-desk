@@ -1,0 +1,994 @@
+openapi: 3.1.0
+info:
+  title: J-Desk API
+  version: '2026-07-21'
+  description: >
+    Maschinenlesbare OpenAPI-3.1-Spezifikation der J-Desk-Server-API. Menschlich lesbare
+    Referenz mit ausführlichen Beispielen, Fehlerbeschreibungen und Betriebsmodus-Hinweisen
+    unter [docs/api/](README.md) (siehe insbesondere [rest.md](rest.md),
+    [commands.md](commands.md), [websocket.md](websocket.md), [mcp.md](mcp.md)). Quelle für
+    alle Angaben: `packages/server/src/app.ts`.
+
+
+    Stand: Commit 4c47b3b — bei API-Änderungen mitpflegen.
+servers:
+  - url: http://localhost:4810
+    description: Standard-Port (überschreibbar per PORT-Umgebungsvariable)
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: >
+        `authorization: Bearer <TOKEN>`, ausgestellt von `POST /api/v1/auth/login` bzw.
+        `POST /api/v1/auth/setup`.
+  schemas:
+    Error:
+      type: object
+      description: Einheitliches Fehlerformat aller Routen (deutscher Klartext).
+      required: [error]
+      properties:
+        error:
+          type: string
+    AuthStatus:
+      type: object
+      required: [needsSetup, mode, needsModeChoice]
+      properties:
+        needsSetup:
+          type: boolean
+          description: >
+            Ob im Standalone-Modus noch kein lokales Konto existiert. Im jlawyer-Modus immer
+            false.
+        mode:
+          type: string
+          enum: [standalone, jlawyer]
+        needsModeChoice:
+          type: boolean
+          description: >
+            true, wenn weder ein lokales Konto existiert noch je eine j-lawyer-URL gespeichert
+            wurde — der Login-Screen zeigt dann die Moduswahl.
+    Desk:
+      type: object
+      required: [id, name, ownerId]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        ownerId:
+          type: string
+    DesktopState:
+      type: object
+      description: >
+        Vollständige `DesktopState`-Struktur aus `@j-desk/core` (Docs, Stapel, Zettel,
+        Verknüpfungen, Korb, Hintergrund, …). Absichtlich nicht feldweise modelliert — siehe
+        `packages/core/src/model.ts` für die genaue Form; Feldbeispiele in commands.md.
+        Provenienz: Docs, Links, Stapel, Zettel, Ausschnitte, Striche, Abdeckflächen, Stempel,
+        Fahnen und Klammern tragen optional `createdBy` (string) und `createdAt` (string,
+        ISO-8601-UTC) — vom Server gesetzt, nie vom Client; fehlt bei Bestandsobjekten.
+        Papierkorb-Einträge (`trash[]`) tragen zusätzlich optional `trashedBy` (string). Details
+        in commands.md → Provenienz. Fundstellen-Inhaltsmetadaten (kein Provenienz-Stempel,
+        bei Kopien unverändert übernommen): Ausschnitte tragen zusätzlich optional
+        `textSnapshot` (string, Client-geliefert, serverseitig auf 2000 Zeichen gekappt) und
+        `fileSha256` (string, ausschließlich vom Server gesetzt, nur Standalone-Modus);
+        Abdeckflächen tragen optional nur `textSnapshot`. Details in commands.md →
+        Fundstellen-Provenienz. Objektversionen (dieselben zehn Arten, ohne trash/background):
+        zusätzlich optional `updatedRev` (integer), `updatedAt` (string, ISO-8601-UTC) und
+        `updatedBy` (string) — vom Server nach jedem Command zentral gestempelt, Grundlage der
+        Konflikterkennung über `erwartet` bei `POST /desks/{id}/commands`. Details in
+        commands.md → Objektversionen. jl-Referenzstatus (nur jlawyer-Modus, ausschließlich vom
+        Server-Abgleich `GET /cases/{id}/desk` gepflegt): Docs tragen zusätzlich optional
+        `sourceGone` (boolean, `true` wenn das Quelldokument in j-lawyer nicht mehr existiert
+        — die Karte bleibt liegen, Annotationen unangetastet), `sourceChangeDate` (integer,
+        Unix-Millis — jl-`changeDate` der Quelle zum Zeitpunkt des letzten Abgleichs) und
+        `sourceReplacedAt` (string, ISO-8601-UTC — einmalig beim ersten Erkennen einer
+        geänderten `changeDate` gesetzt, danach stabil bis zur nächsten Änderung). Details in
+        rest.md → GET /cases/:id/desk.
+    DeskStateResponse:
+      type: object
+      description: Antwortform aller Routen, die einen Schreibtisch-Zustand zurückgeben.
+      required: [rev, state]
+      properties:
+        rev:
+          type: integer
+          description: Revisionszähler, erhöht sich bei jeder Änderung um genau eins.
+        state:
+          $ref: '#/components/schemas/DesktopState'
+    CommandRequest:
+      type: object
+      description: >
+        Payload für `POST /api/v1/desks/{id}/commands`. Alle Command-Typen und ihre
+        Payload-Felder stehen in [commands.md](commands.md).
+      required: [type]
+      properties:
+        type:
+          type: string
+          description: Command-Typ, z. B. `moveDoc`, `addNote`, `stackDocs` (vollständige Liste in commands.md).
+        payload:
+          type: object
+          description: >
+            Command-spezifische Felder — siehe commands.md. Bei `emptyTrash` entfällt der
+            Payload vollständig.
+        erwartet:
+          type: object
+          additionalProperties:
+            type: integer
+          description: >
+            Optional. Abbildung Objekt-Id → zuletzt gesehene `updatedRev`, vom Client aus der
+            `payload` abgeleitet (Details in commands.md → Konflikterkennung). Fehlt das Feld,
+            wird die Vorbedingung angenommen.
+    CommandResponse:
+      $ref: '#/components/schemas/DeskStateResponse'
+    Konflikt:
+      type: object
+      description: >
+        Körper der 409-Antwort von `POST /api/v1/desks/{id}/commands`, wenn eine mitgeschickte
+        `erwartet`-Vorbedingung nicht (mehr) zutrifft. Details in commands.md → Konflikterkennung.
+      required: [konflikt]
+      properties:
+        konflikt:
+          type: object
+          required: [objektId, typ, art, von, am]
+          properties:
+            objektId:
+              type: string
+              description: Die Id aus `erwartet`, an der der Konflikt auftrat.
+            typ:
+              type: string
+              description: >
+                Art des Objekts (`docs`, `stacks`, `links`, `strokes`, `notes`, `cutouts`,
+                `marks`, `stamps`, `flags`, `clips`), oder `unbekannt`, wenn das Objekt gar
+                nicht mehr existiert.
+            art:
+              type: string
+              enum: [geaendert, geloescht]
+            von:
+              type: [string, 'null']
+              description: updatedBy des Objekts zum Konfliktzeitpunkt, null bei geloescht.
+            am:
+              type: [string, 'null']
+              description: updatedAt des Objekts zum Konfliktzeitpunkt, null bei geloescht.
+    OkResponse:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+    JLawyerUrlRequest:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          description: Basis-URL der j-lawyer-REST-API (inkl. /j-lawyer-io).
+    JLawyerProbeResult:
+      type: object
+      required: [ok, message]
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+    JLawyerCase:
+      type: object
+      description: Felder aus `RestfulCaseOverviewV1` (packages/server/src/jlawyer.ts).
+      required: [id, fileNumber, name, reason]
+      properties:
+        id:
+          type: string
+        fileNumber:
+          type: string
+        name:
+          type: string
+          description: Rubrum
+        reason:
+          type: string
+          description: '„wegen"'
+    JournalEntry:
+      type: object
+      description: >
+        Ein Eintrag der Journal-Historie eines Schreibtischs (siehe rest.md → GET
+        .../journal). `type` ist entweder ein Command-Typ aus commands.md oder einer der
+        synthetischen Typen `deskCreated`, `stateReplaced`, `caseSync`, `snapshot`. Bei den
+        drei state-tragenden Typen `snapshot`/`stateReplaced`/`caseSync` ist `payload.state`
+        in der Antwort auf `"…"` gekürzt.
+      required: [id, rev, type, actorName, at]
+      properties:
+        id:
+          type: integer
+          description: Fortlaufende, autoinkrementierte Journal-Id — Grundlage der `before`-Pagination.
+        rev:
+          type: integer
+          description: Schreibtisch-Revision nach Anwendung dieses Eintrags.
+        type:
+          type: string
+          description: Command-Typ oder synthetischer Typ (`deskCreated`|`stateReplaced`|`caseSync`|`snapshot`).
+        payload:
+          description: >
+            Command-Payload unverändert, `{ name }` bei `deskCreated`, `{ "state": "…" }` bei
+            den state-tragenden Typen, oder `null` (z. B. bei `emptyTrash`, das keinen Payload hat).
+        actorId:
+          type: [string, 'null']
+          description: users.id des Auslösers; null bei Systemereignissen (Migrations-Snapshot).
+        actorName:
+          type: string
+          description: >
+            Benutzername-Snapshot zum Zeitpunkt des Eintrags, oder Systemkennung ("Migration"
+            bei snapshot). Bei caseSync der auslösende Nutzer — nicht "j-lawyer-Abgleich"; diese
+            Systemkennung steht nur im createdBy der beim Abgleich angelegten Karten.
+        at:
+          type: integer
+          description: Unix-Millisekunden.
+    JournalListResponse:
+      type: object
+      required: [entries]
+      properties:
+        entries:
+          type: array
+          description: Neueste zuerst (absteigend nach id).
+          items:
+            $ref: '#/components/schemas/JournalEntry'
+    FileMeta:
+      type: object
+      description: >
+        Fundstellen-Metadaten einer Datei (`GET /api/v1/files/{id}/meta`). Standalone: alle
+        Felder aus der lokalen `files`-Tabelle. jlawyer: `kind` wird allein anhand der
+        Dateiendung klassifiziert (keine Magic-Bytes verfügbar), `sha256` ist immer null.
+      required: [id, name, kind, sha256]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          enum: [pdf, image, convertible, other]
+        sha256:
+          type: [string, 'null']
+          description: Hex-kodierter SHA-256-Hash; null im jlawyer-Modus (kein Hash verfügbar).
+  responses:
+    ErrorResponse:
+      description: Fehlerantwort
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  parameters:
+    DeskId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Schreibtisch-Id
+    CaseId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: j-lawyer-Akten-Id
+    FileId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Standalone-Datei-Id, oder (jlawyer-Modus) j-lawyer-Dokument-Id
+paths:
+  /api/v1/auth/status:
+    get:
+      operationId: getAuthStatus
+      summary: Betriebsmodus und Ersteinrichtungsstatus
+      description: Öffentlich, damit der Login-Screen weiß, was er anzeigen soll, bevor ein Token existiert.
+      tags: [Auth]
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthStatus'
+  /api/v1/auth/setup:
+    post:
+      operationId: authSetup
+      summary: Legt im Standalone-Modus das erste lokale Benutzerkonto an und meldet es an
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Konto angelegt und angemeldet
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token]
+                properties:
+                  token:
+                    type: string
+        '400':
+          description: Benutzername leer oder Passwort zu kurz (< 8 Zeichen)
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          description: Anmeldung erfolgt mit dem j-lawyer-Konto (jlawyer-Modus) — oder es existiert bereits ein Konto
+          $ref: '#/components/responses/ErrorResponse'
+  /api/v1/auth/login:
+    post:
+      operationId: authLogin
+      summary: Meldet einen Nutzer an und liefert das Sitzungs-Token
+      description: >
+        Im jlawyer-Modus Prüfung gegen j-lawyer statt gegen die lokale Datenbank.
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token]
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Benutzername oder Passwort falsch
+          $ref: '#/components/responses/ErrorResponse'
+        '502':
+          description: j-lawyer nicht erreichbar (nur jlawyer-Modus)
+          $ref: '#/components/responses/ErrorResponse'
+  /api/v1/auth/logout:
+    post:
+      operationId: authLogout
+      summary: Beendet die aktuelle Sitzung
+      tags: [Auth]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponse'
+  /api/v1/setup/jlawyer-test:
+    post:
+      operationId: setupJlawyerTest
+      summary: Testet eine j-lawyer-URL auf Erreichbarkeit, ohne sie zu speichern
+      description: Nur erreichbar, solange der Betriebsmodus noch nicht konfiguriert ist.
+      tags: [Setup]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JLawyerUrlRequest'
+      responses:
+        '200':
+          description: >
+            Ergebnis der Erreichbarkeitsprüfung. Nicht-Erreichbarkeit ist kein HTTP-Fehler —
+            sie kommt als `{ "ok": false, "message": "…" }` mit Status 200 zurück.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JLawyerProbeResult'
+        '400':
+          description: URL fehlt
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          description: Der Betriebsmodus ist bereits konfiguriert
+          $ref: '#/components/responses/ErrorResponse'
+  /api/v1/setup/jlawyer:
+    post:
+      operationId: setupJlawyer
+      summary: Speichert die j-lawyer-URL als Betriebsmodus
+      description: >
+        Löst intern einen Server-Neuaufbau aus (Routen sind modusabhängig registriert). Nur
+        erreichbar, solange der Betriebsmodus noch nicht konfiguriert ist.
+      tags: [Setup]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JLawyerUrlRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponse'
+        '400':
+          description: URL fehlt, oder j-lawyer unter der URL nicht erreichbar (Probe-Nachricht)
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          description: Der Betriebsmodus ist bereits konfiguriert
+          $ref: '#/components/responses/ErrorResponse'
+  /api/v1/cases:
+    get:
+      operationId: listCases
+      summary: Listet die für den angemeldeten Nutzer sichtbaren j-lawyer-Akten
+      description: Existiert nur im jlawyer-Modus. Benötigt Sitzungs-Credentials (nur im RAM des Servers).
+      tags: [j-lawyer]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JLawyerCase'
+        '401':
+          description: Bitte neu anmelden (keine Sitzungs-Credentials mehr im RAM)
+          $ref: '#/components/responses/ErrorResponse'
+        '502':
+          description: j-lawyer nicht erreichbar
+          $ref: '#/components/responses/ErrorResponse'
+  /api/v1/cases/{id}/desk:
+    get:
+      operationId: getCaseDesk
+      summary: Öffnet (und legt bei Bedarf an) den Schreibtisch zu einer Akte und gleicht ihn ab
+      description: >
+        Existiert nur im jlawyer-Modus. Abgleich-Semantik: j-lawyer ist führend, aber Karten
+        sind zäh — neue Dokumente bekommen automatisch eine Karte (außer bereits im
+        Papierkorb), aus j-lawyer verschwundene Dokumente verlieren ihre Karte NICHT mehr,
+        sondern verwaisen nur (`sourceGone: true`, Annotationen bleiben erhalten); siehe
+        DesktopState-Schema und rest.md für die volle Semantik (Umbenennung, Ersatzerkennung
+        über `sourceChangeDate`/`sourceReplacedAt`). Ergebnis wird bei Änderungen zusätzlich
+        per WebSocket gebroadcastet. Schlägt der Abgleich aus einem anderen Grund als einer
+        echten abgelaufenen Sitzung fehl (`JLawyerError.art !== 'auth'`), liefert die Route
+        trotzdem `200` mit dem letzten bekannten Stand plus `syncFehler` — siehe unten; nur
+        eine echte abgelaufene Sitzung (`art: 'auth'`) liefert weiterhin `401`.
+      tags: [j-lawyer]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: >
+            OK. `syncFehler` ist nur gesetzt, wenn der Abgleich mit j-lawyer fehlschlug (jede
+            Fehlerklasse außer einer echten abgelaufenen Sitzung) — der Server liefert dann
+            trotzdem 200 mit dem letzten bekannten Datenbankstand statt eines Fehlers.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/DeskStateResponse'
+                  - type: object
+                    properties:
+                      syncFehler:
+                        type: string
+                        description: >
+                          Deutsche Klartextmeldung (`syncFehlerMeldung` in app.ts):
+                          "j-lawyer ist derzeit nicht erreichbar — Stand vom letzten
+                          Abgleich." (nichtErreichbar) · "Kein Zugriff auf diese Akte."
+                          (verboten, j-lawyer antwortet mit 403) · "j-lawyer meldet einen
+                          Fehler — Stand vom letzten Abgleich." (fehlt/server).
+        '401':
+          description: Bitte neu anmelden (echte abgelaufene Sitzung, art 'auth')
+          $ref: '#/components/responses/ErrorResponse'
+  /api/v1/cases/{id}/documents:
+    post:
+      operationId: uploadCaseDocument
+      summary: Lädt eine Datei als neues Dokument in die j-lawyer-Akte hoch
+      description: >
+        Existiert nur im jlawyer-Modus. Legt danach — nicht vorher — die zugehörige Karte auf
+        dem Schreibtisch an; Ergebnis wird per WebSocket gebroadcastet.
+      tags: [j-lawyer]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: >
+            Antwortform entspricht `POST /api/v1/desks/{id}/commands` (intern wird ein addDoc-
+            Command auf den Aktenschreibtisch angewendet).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeskStateResponse'
+        '400':
+          description: Keine Datei im Request
+          $ref: '#/components/responses/ErrorResponse'
+        '401':
+          description: Bitte neu anmelden
+          $ref: '#/components/responses/ErrorResponse'
+        '502':
+          description: j-lawyer nicht erreichbar
+          $ref: '#/components/responses/ErrorResponse'
+  /api/v1/desks:
+    get:
+      operationId: listDesks
+      summary: Listet alle Schreibtische
+      description: Unabhängig vom Eigentümer — es gibt keine Zugriffsbeschränkung pro Nutzer.
+      tags: [Desks]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Desk'
+    post:
+      operationId: createDesk
+      summary: Legt einen neuen, leeren Schreibtisch an
+      tags: [Desks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Angelegt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Desk'
+        '400':
+          description: Feld "name" fehlt oder ist leer
+          $ref: '#/components/responses/ErrorResponse'
+  /api/v1/desks/{id}:
+    patch:
+      operationId: renameDesk
+      summary: Benennt einen Schreibtisch um
+      tags: [Desks]
+      parameters:
+        - $ref: '#/components/parameters/DeskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponse'
+        '400':
+          description: Feld "name" fehlt oder ist leer
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          description: Schreibtisch nicht gefunden
+          $ref: '#/components/responses/ErrorResponse'
+    delete:
+      operationId: deleteDesk
+      summary: Löscht einen Schreibtisch endgültig
+      tags: [Desks]
+      parameters:
+        - $ref: '#/components/parameters/DeskId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponse'
+        '404':
+          description: Schreibtisch nicht gefunden
+          $ref: '#/components/responses/ErrorResponse'
+  /api/v1/desks/{id}/state:
+    get:
+      operationId: getDeskState
+      summary: Liest den aktuellen Zustand eines Schreibtischs
+      tags: [Desks]
+      parameters:
+        - $ref: '#/components/parameters/DeskId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeskStateResponse'
+        '404':
+          description: Schreibtisch nicht gefunden
+          $ref: '#/components/responses/ErrorResponse'
+    put:
+      operationId: putDeskState
+      summary: Ersetzt den gesamten Zustand eines Schreibtischs
+      description: >
+        Broadcastet das Ergebnis an alle verbundenen WebSocket-Clients desselben
+        Schreibtischs. Für clientseitiges Undo über mehrere Schritte.
+      tags: [Desks]
+      parameters:
+        - $ref: '#/components/parameters/DeskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DesktopState'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeskStateResponse'
+        '400':
+          description: Ungültiger Schreibtisch-Zustand (isValidState schlägt fehl)
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          description: Schreibtisch nicht gefunden
+          $ref: '#/components/responses/ErrorResponse'
+  /api/v1/desks/{id}/commands:
+    post:
+      operationId: applyCommand
+      summary: Wendet einen einzelnen Command auf den Schreibtisch-Zustand an
+      description: >
+        Der Weg, auf dem alle Nutzeraktionen den Server erreichen. Alle Command-Typen und ihre
+        Payload-Felder stehen in [commands.md](commands.md). `rev` erhöht sich um genau eins
+        pro erfolgreichem Command; dieselbe Antwortform wird zusätzlich per WebSocket an alle
+        verbundenen Clients desselben Schreibtischs gebroadcastet (einschließlich des
+        Auslösers, siehe [websocket.md](websocket.md)).
+      tags: [Desks, Commands]
+      parameters:
+        - $ref: '#/components/parameters/DeskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommandRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResponse'
+        '400':
+          description: >
+            Unbekannte fileId bei addDoc, oder ein sonstiger CommandError (unbekannter Typ,
+            fehlendes Pflichtfeld, ungültige Referenz — Details in commands.md)
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          description: Schreibtisch nicht gefunden
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          description: >
+            Eine mitgeschickte erwartet-Vorbedingung trifft nicht mehr zu (Details in
+            commands.md → Konflikterkennung). Zustand und Journal bleiben dabei unberührt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Konflikt'
+  /api/v1/desks/{id}/journal:
+    get:
+      operationId: getDeskJournal
+      summary: Änderungshistorie eines Schreibtischs (append-only, neueste zuerst)
+      description: >
+        Jeder angenommene Command (über diese Route sowie der interne addDoc aus
+        POST /api/v1/cases/{id}/documents) wird mit dem auslösenden Nutzer journaliert;
+        dazu kommen die synthetischen Einträge deskCreated, stateReplaced, caseSync und
+        snapshot. Details und ein gegen einen laufenden Server verifiziertes Beispiel in
+        [rest.md](rest.md#get-apiv1desksidjournal).
+      tags: [Desks]
+      parameters:
+        - $ref: '#/components/parameters/DeskId'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: >
+            Max. Anzahl Einträge, Default 50, beidseitig auf 0–200 geklemmt. Leere oder
+            ungültige Werte werden ignoriert (Default greift).
+        - name: before
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: >
+            Keyset-Pagination — liefert nur Einträge mit id < before. Leer/ungültig wird
+            ignoriert (keine Untergrenze).
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalListResponse'
+        '404':
+          description: Schreibtisch nicht gefunden
+          $ref: '#/components/responses/ErrorResponse'
+  /api/v1/files:
+    post:
+      operationId: uploadFile
+      summary: Lädt eine Datei in die eigene Ablage hoch
+      description: >
+        Nur im Standalone-Modus aktiv (inhaltsadressiert über SHA-256 — identische Bytes
+        ergeben dieselbe fileId). Im jlawyer-Modus liefert diese Route immer 400 mit dem
+        Hinweis, stattdessen `POST /api/v1/cases/{id}/documents` zu nutzen.
+      tags: [Dateien]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Hochgeladen (nur Standalone-Modus)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [fileId, kind]
+                properties:
+                  fileId:
+                    type: string
+                  kind:
+                    type: string
+                    enum: [pdf, image, convertible, other]
+        '400':
+          description: >
+            Keine Datei im Request, Datei ist leer — oder (immer im jlawyer-Modus) Uploads
+            erfolgen in die Akte
+          $ref: '#/components/responses/ErrorResponse'
+        '413':
+          description: >
+            Datei ist größer als 100 MB (Fastify-Standard-Fehlerbody von `@fastify/multipart`,
+            NICHT das einheitliche `{ error }`-Format der übrigen Routen)
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Fastify-Standard-Fehlerbody (nicht das `Error`-Schema dieser API)
+                properties:
+                  statusCode:
+                    type: integer
+                  error:
+                    type: string
+                  message:
+                    type: string
+  /api/v1/files/{id}:
+    get:
+      operationId: getFile
+      summary: Liefert den Dateiinhalt
+      description: >
+        Standalone: `id` ist die eigene Datei-Id, Inhalt aus der lokalen Ablage. jlawyer: `id`
+        ist die j-lawyer-Dokument-Id, Metadatenabruf mit Sitzungs-Credentials dient zugleich
+        als Berechtigungsprüfung, Inhalt wird bei Bedarf von j-lawyer nachgeladen und
+        gecacht.
+      tags: [Dateien]
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '200':
+          description: Binärdaten, content-type immer application/pdf (unabhängig vom tatsächlichen Format)
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Bitte neu anmelden (nur jlawyer-Modus, keine Sitzungs-Credentials mehr im RAM)
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          description: Datei nicht gefunden (nur Standalone-Modus)
+          $ref: '#/components/responses/ErrorResponse'
+        '502':
+          description: j-lawyer nicht erreichbar
+          $ref: '#/components/responses/ErrorResponse'
+  /api/v1/files/{id}/preview:
+    get:
+      operationId: getFilePreview
+      summary: Liefert eine PDF-Vorschau
+      description: >
+        Für PDFs der Originalinhalt; für konvertierbare Formate (Office-Dokumente etc.) wird
+        asynchron über den Euro-Office-DocumentServer konvertiert. Gleiche Quellen-Logik wie
+        `GET /api/v1/files/{id}` je nach Betriebsmodus.
+      tags: [Dateien]
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '200':
+          description: kind === 'pdf' oder bereits gecachte Konvertierung
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '202':
+          description: >
+            kind === 'convertible' ohne Cache-Treffer — Konvertierung wird im Hintergrund
+            angestoßen, der Client soll erneut pollen.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    enum: [converting]
+        '401':
+          description: Bitte neu anmelden (nur jlawyer-Modus)
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          description: >
+            Keine Vorschau für diese Datei-Art (kind image/other), oder Datei nicht gefunden
+            (nur Standalone-Modus, unbekannte fileId)
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          description: >
+            Vorschau-Dienst nicht konfiguriert (reason "disabled"), oder der vorherige
+            Konvertierungsversuch ist fehlgeschlagen (reason "unavailable"/"failed")
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error, reason]
+                properties:
+                  error:
+                    type: string
+                  reason:
+                    type: string
+                    enum: [disabled, unavailable, failed]
+        '502':
+          description: j-lawyer nicht erreichbar (nur jlawyer-Modus)
+          $ref: '#/components/responses/ErrorResponse'
+  /api/v1/files/{id}/meta:
+    get:
+      operationId: getFileMeta
+      summary: Liefert Fundstellen-Metadaten einer Datei (Name, Art, Hash)
+      description: >
+        Grundlage für „Sprung zur Quelle". Gleiche Quellen-Logik wie `GET /api/v1/files/{id}`
+        je nach Betriebsmodus; im jlawyer-Modus ist `sha256` immer null.
+      tags: [Dateien]
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileMeta'
+        '401':
+          description: Bitte neu anmelden (nur jlawyer-Modus, keine Sitzungs-Credentials mehr im RAM)
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          description: Datei nicht gefunden (nur Standalone-Modus)
+          $ref: '#/components/responses/ErrorResponse'
+        '502':
+          description: j-lawyer nicht erreichbar
+          $ref: '#/components/responses/ErrorResponse'
+  /api/v1/convert-source/{ticket}:
+    get:
+      operationId: getConvertSource
+      summary: Interner Endpunkt für den Euro-Office-DocumentServer — liefert die Rohbytes einer zu konvertierenden Datei
+      description: >
+        Das Ticket in der URL ersetzt die Authentifizierung vollständig — ausgestellt von den
+        preview-Routen, nie direkt vom Client angefordert. Standalone-Payloads liefern die
+        lokal abgelegte Datei; j-lawyer-Payloads rufen den Akteninhalt live über die im Ticket
+        enthaltenen Sitzungs-Credentials ab.
+      tags: [Dateien]
+      security: []
+      parameters:
+        - name: ticket
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Einmal-Ticket, ausgestellt von den preview-Routen (fileTickets.issue)
+      responses:
+        '200':
+          description: Binärdaten
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Ticket ungültig oder abgelaufen, oder Datei nicht gefunden (Standalone-Zweig)
+          $ref: '#/components/responses/ErrorResponse'
+        '502':
+          description: j-lawyer nicht erreichbar (jlawyer-Zweig)
+          $ref: '#/components/responses/ErrorResponse'
+  /api/v1/ws-ticket:
+    post:
+      operationId: issueWsTicket
+      summary: Stellt ein Einmal-Ticket für den WebSocket-Verbindungsaufbau aus
+      description: >
+        Browser-WebSockets können keine Header setzen, daher kein Bearer-Token für die
+        eigentliche Verbindung. Das Ticket ist einmalig gültig und läuft nach 30 Sekunden ab.
+        Details in [websocket.md](websocket.md).
+      tags: [WebSocket]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ticket]
+                properties:
+                  ticket:
+                    type: string
+  /api/v1/desks/{id}/ws:
+    get:
+      operationId: connectDeskWebSocket
+      summary: WebSocket-Upgrade, siehe websocket.md
+      description: >
+        Kein regulärer REST-Endpunkt — vollständig beschrieben in
+        [websocket.md](websocket.md). Live-Updates eines Schreibtischs; jeder angenommene
+        Command wird nach seiner Anwendung an alle Sockets desselben Schreibtischs
+        gebroadcastet.
+      tags: [WebSocket]
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/DeskId'
+        - name: ticket
+          in: query
+          required: true
+          schema:
+            type: string
+          description: >
+            Einmal-Ticket statt Bearer-Token, ausgestellt von POST /api/v1/ws-ticket
+            (Browser-WebSockets können keine Header setzen).
+      responses:
+        '101':
+          description: WebSocket-Upgrade erfolgreich
+        '401':
+          description: Nicht angemeldet — ticket fehlt, unbekannt oder abgelaufen
+          $ref: '#/components/responses/ErrorResponse'

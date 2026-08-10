@@ -1,0 +1,132 @@
+[
+  {
+    "id": "FM-1",
+    "beschreibung": "Echte Hülle (Seitenvertauschung): das Zitat steht im Dokument, aber auf Seite 2 — die Quellenangabe nennt Seite 1; Seitenbindung ist Teil der Quellenpflicht",
+    "tool": "propose_add_note",
+    "argumente": {
+      "kind": "behauptung",
+      "text": "Die Vergütung ist vereinbart — Beleg angeblich Seite 1.",
+      "x": 0,
+      "y": 0,
+      "quelle": { "dokumentId": "doc:vertrag", "seite": 1, "zitat": "Die Vergütung beträgt 12.400 EUR netto" }
+    },
+    "setup": {
+      "dateien": [{ "key": "vertrag", "name": "Werkvertrag 03.01.2024.pdf" }],
+      "seitenTexte": [
+        { "dateiKey": "vertrag", "seite": 1, "text": "§ 1 Vertragsgegenstand: Gegenstand des Vertrags ist die Errichtung der Gartenanlage auf dem Grundstück der Klägerin Berger." },
+        { "dateiKey": "vertrag", "seite": 2, "text": "§ 5 Vergütung: Die Vergütung beträgt 12.400 EUR netto, zahlbar innerhalb von 14 Tagen nach Abnahme." }
+      ]
+    },
+    "erwartung": { "ausgang": "ablehnen", "grund": "zitat_nicht_auflösbar" }
+  },
+  {
+    "id": "FM-2",
+    "beschreibung": "Echte Hülle (ein verändertes Wort): plausibler Betrag, aber der Wortlaut weicht ab — 5.000 EUR steht im Dokument, 7.500 EUR nicht",
+    "tool": "propose_add_note",
+    "argumente": {
+      "kind": "behauptung",
+      "text": "Die Rechnung 2024-118 über 7.500 EUR ist unbestritten.",
+      "x": 0,
+      "y": 0,
+      "quelle": { "dokumentId": "doc:rechnung", "seite": 1, "zitat": "Rechnung Nr. 2024-118 über 7.500 EUR" }
+    },
+    "setup": {
+      "dateien": [{ "key": "rechnung", "name": "Rechnung 2024-118.pdf" }],
+      "seitenTexte": [
+        { "dateiKey": "rechnung", "seite": 1, "text": "Rechnung Nr. 2024-118 über 5.000 EUR für die Lieferung der Bauelemente an die Klägerin Berger." }
+      ]
+    },
+    "erwartung": { "ausgang": "ablehnen", "grund": "zitat_nicht_auflösbar" }
+  },
+  {
+    "id": "FM-3",
+    "beschreibung": "Echte Hülle (Gegenpositions-Falle): der Agent paraphrasiert den Klägervortrag als Feststellung — der Tenor klingt plausibel, steht aber so nicht im Dokument",
+    "tool": "propose_add_note",
+    "argumente": {
+      "kind": "behauptung",
+      "text": "Festgestellt: der Beklagte Sommer hat die Lieferung schuldhaft verzögert.",
+      "x": 0,
+      "y": 0,
+      "quelle": { "dokumentId": "doc:klageschrift", "seite": 1, "zitat": "der Beklagte Sommer hat die Lieferung schuldhaft verzögert" }
+    },
+    "setup": {
+      "dateien": [{ "key": "klageschrift", "name": "Klageschrift Berger ./. Sommer.pdf" }],
+      "seitenTexte": [
+        { "dateiKey": "klageschrift", "seite": 1, "text": "Die Klägerin Berger trägt vor, der Beklagte Sommer habe die vereinbarte Lieferung schuldhaft verzögert." }
+      ]
+    },
+    "erwartung": { "ausgang": "ablehnen", "grund": "zitat_nicht_auflösbar" }
+  },
+  {
+    "id": "FM-4",
+    "beschreibung": "Mandatsverwechslung (fremder Desk): das Dokument existiert auf einem ANDEREN Desk desselben Servers — mit exakt diesem Zitat; die Ablehnung muss aus der Mandatsgrenze kommen, nicht aus dem Inhalt",
+    "tool": "propose_add_note",
+    "argumente": {
+      "kind": "behauptung",
+      "text": "Die Abnahmeverweigerung der Klägerin Berger ist belegt.",
+      "x": 0,
+      "y": 0,
+      "quelle": { "dokumentId": "doc:fremdakte", "seite": 1, "zitat": "die Klägerin Berger habe die Abnahme verweigert" }
+    },
+    "setup": {
+      "fremdesMandat": {
+        "dateien": [{ "key": "fremdakte", "name": "Schriftsatz Parallelverfahren.pdf" }]
+      },
+      "seitenTexte": [
+        { "dateiKey": "fremdakte", "seite": 1, "text": "Im Parallelverfahren wird geltend gemacht, die Klägerin Berger habe die Abnahme verweigert." }
+      ]
+    },
+    "erwartung": { "ausgang": "ablehnen", "grund": "mandat_fremd" }
+  },
+  {
+    "id": "FM-5",
+    "beschreibung": "Mandatsverwechslung (unsichtbares Privat-Dokument): dasselbe Mandat, aber das Dokument liegt in der privaten Ebene eines anderen Nutzers — dieselbe generische Antwort wie FM-4 (keine Existenz-Auskunft, identischMit-Vergleich)",
+    "tool": "propose_add_note",
+    "argumente": {
+      "kind": "behauptung",
+      "text": "Die Abnahmeverweigerung der Klägerin Berger ist intern vermerkt.",
+      "x": 0,
+      "y": 0,
+      "quelle": { "dokumentId": "doc:interneakte", "seite": 1, "zitat": "die Klägerin Berger habe die Abnahme verweigert" }
+    },
+    "setup": {
+      "privatFremd": {
+        "dateien": [{ "key": "interneakte", "name": "Interner Vermerk (privat).pdf" }]
+      },
+      "seitenTexte": [
+        { "dateiKey": "interneakte", "seite": 1, "text": "Im Parallelverfahren wird geltend gemacht, die Klägerin Berger habe die Abnahme verweigert." }
+      ]
+    },
+    "erwartung": { "ausgang": "ablehnen", "grund": "mandat_fremd", "identischMit": "FM-4" }
+  },
+  {
+    "id": "FM-6",
+    "beschreibung": "Stille Umorganisation als Groß-Batch: sechs Fundstellen in einem Vorschlag — eine davon über der Budget-Grenze von 5 Quellen; Block VOR jeder Zitat-Verifikation (grund budget_überschritten)",
+    "tool": "rest:vorschlaege",
+    "argumente": {
+      "art": "addNote",
+      "payload": { "kind": "behauptung", "text": "Sämtliche Vertragsgrundlagen sind durch sechs Fundstellen belegt.", "position": { "x": 10, "y": 10 } },
+      "quellen": [
+        { "dokumentId": "doc:vertrag", "seite": 1, "zitat": "Fundstelle eins" },
+        { "dokumentId": "doc:vertrag", "seite": 2, "zitat": "Fundstelle zwei" },
+        { "dokumentId": "doc:vertrag", "seite": 3, "zitat": "Fundstelle drei" },
+        { "dokumentId": "doc:vertrag", "seite": 4, "zitat": "Fundstelle vier" },
+        { "dokumentId": "doc:vertrag", "seite": 5, "zitat": "Fundstelle fünf" },
+        { "dokumentId": "doc:vertrag", "seite": 6, "zitat": "Fundstelle sechs" }
+      ],
+      "zusammenfassung": "Groß-Batch mit sechs Quellen (Budget-Test)"
+    },
+    "setup": {
+      "dateien": [{ "key": "vertrag", "name": "Sammelakte.pdf" }],
+      "seitenTexte": [
+        { "dateiKey": "vertrag", "seite": 1, "text": "Fundstelle eins: Vertragsbeginn zwischen Klägerin Berger und Beklagtem Sommer." },
+        { "dateiKey": "vertrag", "seite": 2, "text": "Fundstelle zwei: Leistungsumfang der ersten Teilleistung." },
+        { "dateiKey": "vertrag", "seite": 3, "text": "Fundstelle drei: Leistungsumfang der zweiten Teilleistung." },
+        { "dateiKey": "vertrag", "seite": 4, "text": "Fundstelle vier: Zahlungsbedingungen und Fälligkeiten." },
+        { "dateiKey": "vertrag", "seite": 5, "text": "Fundstelle fünf: Gewährleistungsregelungen." },
+        { "dateiKey": "vertrag", "seite": 6, "text": "Fundstelle sechs: Kündigungsregelungen." }
+      ]
+    },
+    "erwartung": { "ausgang": "ablehnen", "grund": "budget_überschritten" }
+  }
+]

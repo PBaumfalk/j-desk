@@ -1,0 +1,78 @@
+# Prüft jeden Push und jeden Pull Request: Tests, Typen, Bauvorgang.
+#
+# Node 22 ist die verbindliche Zielversion (OPS-01). Sie steht an vier Stellen — engines.node,
+# .nvmrc, .node-version und im Dockerfile — und ein Wächtertest (packages/server/src/nodeVersion.test.ts)
+# bricht die Suite, sobald eine davon ausschert. Hier wird .nvmrc gelesen statt eine Version
+# einzutragen, damit diese Datei nicht zur fünften Stelle wird, die nachgezogen werden muss.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Ein laufender Durchgang wird abgebrochen, wenn derselbe Zweig erneut geschoben wird.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests und Typprüfung
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      - name: Tests
+        # --retry=1: Vier Tests sind bekannt zeitkritisch und schlagen unter Last gelegentlich
+        # fehl, ohne dass ein echter Fehler vorliegt (export/uebersichten, export/pdfExport,
+        # restore.perf, desk-volume.perf — jeweils Laufzeitschranken). Auf gemeinsam genutzten
+        # CI-Läufern ist die Schwankung größer als lokal. Ein einzelner Wiederholungsversuch
+        # unterdrückt genau dieses Rauschen; ein echter Fehlschlag besteht auch den zweiten Lauf.
+        # Sollte hier häufiger als selten ein Retry greifen, gehören die Schranken korrigiert —
+        # nicht die Retry-Zahl erhöht.
+        run: npx vitest run --retry=1
+
+      - name: Typprüfung (Svelte und TypeScript)
+        run: npm run check
+
+      - name: Web-App bauen
+        run: npm run build
+
+  docker:
+    name: Docker-Abbild baut
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Buildx einrichten
+        uses: docker/setup-buildx-action@v3
+
+      # Nur bauen, nicht veröffentlichen — das Veröffentlichen macht release.yml beim Tag.
+      # Zweck hier: ein Dockerfile-Fehler soll im Pull Request auffallen, nicht erst beim Release.
+      - name: Abbild bauen (ohne Veröffentlichung)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/server/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Sicherheitslücke melden
+    url: https://github.com/PBaumfalk/j-desk/security/advisories/new
+    about: Vertraulich, nicht öffentlich. Bitte niemals als normales Issue.
+  - name: Frage zur Bedienung
+    url: https://github.com/PBaumfalk/j-desk/discussions
+    about: Fragen zur täglichen Arbeit mit J-DESK gehören in die Diskussionen.
+  - name: Handbuch
+    url: https://github.com/PBaumfalk/j-desk/blob/main/docs/handbuch/README.md
+    about: Installation, Betrieb und Bedienung — für Kanzleien und für Technik.
