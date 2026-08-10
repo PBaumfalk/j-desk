@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {
@@ -172,6 +173,34 @@ export interface AnnotierteKopie {
 }
 
 /**
+ * Pfad zur Originaldatei eines Dokuments — die EINE Stelle, an der beide Betriebsarten
+ * zusammenlaufen.
+ *
+ * Eigenständiger Betrieb: die Datei liegt inhaltsadressiert in der lokalen Ablage
+ * (files-Tabelle, getFilePath). Im j-lawyer-Modus liegt sie dort NIE — führendes System ist
+ * j-lawyer, der Server hält nur den Plattencache unter `data/jlcache`, den cachedDocBytes()
+ * (app.ts) beim ersten Anzeigen des Dokuments füllt. Ohne diesen zweiten Weg scheiterte JEDER
+ * Export, der das Original braucht (annotierte Kopie, Fundstellen-PDF und darüber auch das
+ * Anlagenpaket), im Normalbetrieb mit 'quelle-fehlt'.
+ *
+ * Schlüsselkonvention identisch zu cachedDocBytes(): `<bereinigte fileId>-<changeDate>.pdf`;
+ * `sourceChangeDate` im Modell IST das j-lawyer-changeDate. Läuft die Konvention hier und dort
+ * auseinander, fällt der Export still auf 'quelle-fehlt' zurück.
+ */
+function originalPfad(
+  db: Db,
+  dataDir: string,
+  doc: { fileId: string; sourceChangeDate?: number },
+): string | null {
+  const lokal = getFilePath(db, dataDir, doc.fileId);
+  if (lokal) return lokal;
+  if (doc.sourceChangeDate === undefined) return null;
+  const safe = doc.fileId.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const pfad = join(dataDir, 'jlcache', `${safe}-${doc.sourceChangeDate}.pdf`);
+  return existsSync(pfad) ? pfad : null;
+}
+
+/**
  * Annotierte PDF-Kopie (EXP-01, D-04, 10-01): die Pipeline-Reihenfolge IST die
  * Sicherheitsgarantie (03-RESEARCH Architektur) — Doc-Gate → Quelle wählen → load →
  * Redaktion (echte Schwärzung) → Overlays einbrennen → Scrub → save → Verifikationsgate.
@@ -220,7 +249,7 @@ export async function erzeugeAnnotierteDokumentKopie(
     }
     quellBytes = readFileSync(cachePfad);
   } else if (kind === 'pdf' || kind === 'image') {
-    const pfad = getFilePath(db, dataDir, doc.fileId);
+    const pfad = originalPfad(db, dataDir, doc);
     if (!pfad) throw new ExportFehler('quelle-fehlt', 'Die Originaldatei wurde nicht gefunden');
     quellBytes = readFileSync(pfad);
   } else {
@@ -373,7 +402,7 @@ function macheLadeDocBytes(db: Db, dataDir: string, state: DesktopState): (docId
       return readFileSync(cachePfad);
     }
     if (kind === 'pdf') {
-      const pfad = getFilePath(db, dataDir, doc.fileId);
+      const pfad = originalPfad(db, dataDir, doc);
       if (!pfad) throw new ExportFehler('quelle-fehlt', 'Die Originaldatei wurde nicht gefunden');
       return readFileSync(pfad);
     }
