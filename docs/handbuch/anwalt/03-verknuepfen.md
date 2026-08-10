@@ -15,15 +15,43 @@ Sie später auswerten können.
 
 ## Wie verknüpfe ich zwei Dinge?
 
+Eine Verknüpfung entsteht in zwei Klicks — die Bedeutung geben Sie ihr danach.
+
+**So geht's:**
+
 1. **Rechtsklick** auf das erste Objekt → **„Verknüpfen…"**
-2. Auf das zweite Objekt **klicken**
-3. Eine Linie erscheint
 
-Dann **klicken Sie die Linie an** und legen fest, worin die Beziehung besteht — dazu
-gleich mehr. Sie können außerdem eine Notiz an die Linie schreiben, etwa
-„Anlage K2, Seite 3".
+   ![Das Kontextmenü einer Karte mit dem Eintrag „Verknüpfen…"](../bilder/objekt-kontextmenue.png)
 
-![Das Fenster an einer Verknüpfung](../bilder/verknuepfung-fenster.png)
+2. Oben erscheint der Hinweis, dass J-DESK jetzt auf das Ziel wartet. Mit **Esc** brechen
+   Sie ab, falls Sie sich vertan haben.
+
+   ![Die Hinweisleiste „Verknüpfen: Ziel anklicken (Esc bricht ab)"](../bilder/verknuepfen-hinweis.png)
+
+3. Auf das zweite Objekt **klicken**. Eine Linie erscheint — zunächst **gestrichelt und
+   ohne Beschriftung**, denn sie hat noch keine Bedeutung.
+
+4. **Die Linie anklicken.** Es öffnet sich ein kleines Fenster mit der Auswahl
+   **„Bedeutung"** und einem Feld für eine Notiz.
+
+   ![Die frisch angelegte Verknüpfung: „— keine Bedeutung —" und ein leeres Notizfeld](../bilder/verknuepfung-neu.png)
+
+5. Bedeutung wählen, gegebenenfalls eine Notiz dazuschreiben — etwa die Fundstelle
+   „Anlage K2, Seite 3" — und **Schließen**.
+
+   ![Das Fenster an einer Verknüpfung](../bilder/verknuepfung-fenster.png)
+
+Die Linie trägt danach Bedeutung und Notiz sichtbar auf dem Tisch, in der Farbe ihrer
+Familie:
+
+![Eine fertige Verknüpfung „Voraussetzung für" mit der Notiz „Zug um Zug, § 320 BGB"](../bilder/verknuepfung-fertig.png)
+
+> **Stolperstein:** Eine Verknüpfung ohne gewählte Bedeutung bleibt bestehen — sie ist
+> dann aber nur ein blasser Strich und taucht in keiner Auswertung als Beleg auf. Wenn
+> Ihnen später gestrichelte Linien ohne Beschriftung auffallen: das sind
+> Verknüpfungen, bei denen Schritt 5 vergessen wurde.
+
+So sieht eine ausgearbeitete Stelle am Ende aus — Behauptung, Beleg und Gegenposition:
 
 ![Behauptung, Beleg und Gegenposition](../bilder/schreibtisch-beispiel.png)
 
@@ -83,22 +111,42 @@ anders aus als Ihre eigene — das erspart das Lesen beim Überfliegen.
 
 ## Jede Fundstelle bleibt auffindbar
 
-Jedes Objekt trägt seine Herkunft dauerhaft mit sich: **Dokument, Version, Seite,
-Position, wer es angelegt hat, wann.**
+Karten, die aus einem Dokument stammen — das Dokument selbst, Ausschnitte, Markierungen,
+Stempel und Fähnchen — tragen ihre Herkunft mit sich.
 
-- **Rechtsklick → „Zur Originalstelle"** öffnet das Dokument an genau der Stelle,
-  hervorgehoben
-- **Rechtsklick → „Herkunft"** zeigt, woher das Objekt stammt
+**So geht's:** **Rechtsklick → „Herkunft"**.
+
+![Das Herkunft-Fenster mit Dokument, Seite, Zeitpunkt, Freigabe und dem Knopf „Zur Originalstelle"](../bilder/herkunft.png)
+
+Sie sehen **Dokument und Seite**, **woher die Karte kam und wann** (hier: aus dem
+Abgleich mit j-lawyer), die **Freigabestufe** und ob ein **Textauszug** und ein
+**Fingerabdruck** der Datei gesichert sind.
+
+Der Knopf **„Zur Originalstelle"** springt in das Dokument an genau diese Stelle und hebt
+sie kurz hervor. Bei Ausschnitten, Markierungen, Stempeln und Fähnchen steht derselbe
+Sprung zusätzlich direkt im Kontextmenü.
 
 Das funktioniert auch nach Verschieben, nach einer neuen Dokumentversion, nach Neustart
 und nach Export.
 
 **Beim Ausschneiden wird der Text zusätzlich gesichert.** Ändert sich das Quelldokument,
 sehen Sie noch, was dort stand, als Sie es zitiert haben — wichtig, wenn die Gegenseite
-eine korrigierte Fassung nachreicht.
+eine korrigierte Fassung nachreicht. Steht dort „Kein Textauszug gespeichert", stammt die
+Karte aus einer Zeit vor dieser Sicherung.
 
 Bei Altbeständen ohne diese Angaben steht ehrlich **„Herkunft unbekannt"** statt einer
 erfundenen Angabe.
+
+**Bei Karten, die nicht aus einem Dokument stammen** — Zetteln, Stapeln, Verknüpfungen und
+den juristischen Objekten — zeigt „Herkunft" nur, **wer sie angelegt hat, wann, und mit
+welcher Freigabe**. Einen Sprung ins Dokument gibt es dort nicht, weil es keine
+Dokumentstelle gibt: Diese Karten entstehen aus Ihrer Wertung.
+
+![Die Herkunft eines juristischen Objekts: Ersteller, Zeitpunkt und Freigabe](../bilder/herkunft-objekt.png)
+
+> **Tipp:** Soll eine Behauptung trotzdem an ihrer Fundstelle hängen, schneiden Sie die
+> Passage aus dem Dokument aus und **verknüpfen** Sie das Objekt mit dem Ausschnitt. Dann
+> führt der Weg über die Verknüpfung zurück ins Dokument.
 
 ---
 
@@ -116,13 +164,26 @@ Ausschnitte lassen sich verknüpfen wie alles andere. So steht am Ende nicht
 
 ## Versionsketten
 
-Wenn ein Dokument eine neue Fassung eines anderen ist:
+Wenn ein Dokument eine neue Fassung eines anderen ist — der nachgereichte Vertrag, der
+korrigierte Schriftsatz —, halten Sie das als Versionsbeziehung fest.
 
-**Rechtsklick → „Ist neue Version von…"**
+**So geht's:**
 
-Das ist bewusst **keine** der elf Bedeutungen, sondern eine eigene Art von Beziehung —
-eine Versionsbeziehung sagt nichts darüber aus, ob etwas belegt oder bestritten wird. Sie
-wird mit einem Richtungspfeil dargestellt und lässt sich über beliebig viele Stufen
+1. **Rechtsklick auf die neuere Fassung** → **„Ist neue Version von…"**
+2. Die **ältere** Fassung anklicken
+
+Der Pfeil zeigt danach von alt nach neu.
+
+> **Stolperstein:** Die Richtung ist leicht zu verdrehen. Merken Sie sich: Sie starten
+> immer bei dem Dokument, das Sie gerade in der Hand haben — der neuen Fassung — und
+> zeigen dann auf das, was es ablöst.
+
+Den Eintrag gibt es nur im Menü eines **Dokuments**, nicht bei Zetteln oder juristischen
+Objekten. Direkt darüber steht **„Vergleichen mit…"**, wenn Sie die beiden Fassungen
+nebeneinanderlegen wollen.
+
+Eine Versionsbeziehung ist bewusst **keine** der elf Bedeutungen: Sie sagt nichts darüber
+aus, ob etwas belegt oder bestritten wird. Sie lässt sich über beliebig viele Stufen
 verfolgen.
 
 ---

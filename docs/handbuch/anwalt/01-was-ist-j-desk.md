@@ -23,6 +23,21 @@ Linie von einer Behauptung zu der Fundstelle, die sie belegt. Sie markieren, was
 Sie schreiben Notizen daneben, die niemand außer Ihnen sieht. Und wenn Sie am nächsten Morgen
 zurückkommen, liegt alles genau so da, wie Sie es verlassen haben.
 
+So sieht das aus:
+
+![Ein Schreibtisch mit Dokumenten, Zetteln, Behauptungen und farbigen Verknüpfungen](../bilder/gesamtansicht.jpg)
+
+Vier Dinge, an denen Sie sich orientieren können:
+
+- **Oben** steht das Aktenzeichen; dahinter verbergen sich alle Schreibtische. Rechts davon
+  die Menüs, mit denen Sie arbeiten — *Hinzufügen*, *Ansichten*, *Ebenen*, *Historie*.
+- **In der Mitte** die Arbeitsfläche mit den Karten. Alles darauf lässt sich anfassen und
+  verschieben.
+- **Unten** eine kleine Leiste: Pfeile zum Verschieben der Fläche, *Verkleinern* · *Übersicht*
+  · *Vergrößern*, eine Lupe und die Suche (⌘F).
+- **Links unten** die Minikarte: der ganze Schreibtisch im Überblick, wenn er größer wird
+  als der Bildschirm. **Rechts unten** der Papierkorb — mit der Zahl dessen, was darin liegt.
+
 Die Frage, auf die alles zuläuft:
 
 > **Welche Behauptung wird durch welche konkrete Fundstelle belegt, welche Gegenposition besteht,
