@@ -10,6 +10,8 @@ Ihre Kanzlei nennt Ihnen eine Adresse, meist in dieser Form:
 http://kanzlei-server:4810
 ```
 
+![Anmeldemaske von J-DESK](../bilder/anmeldung.jpg)
+
 **Ist J-DESK mit j-lawyer verbunden** (der Normalfall), melden Sie sich mit **denselben
 Zugangsdaten wie bei j-lawyer** an. Kein zweites Passwort, kein zweites Konto.
 
@@ -22,6 +24,13 @@ Nach der Anmeldung wählen Sie eine Akte. J-DESK zeigt Ihnen die Akten aus j-law
 die Sie dort auch sehen, mit Aktenzeichen, Beteiligten und Gegenstand.
 
 Wählen Sie eine aus, und die Dokumente stehen bereit.
+
+![Schreibtisch mit zwei Dokumenten der Akte](../bilder/schreibtisch.jpg)
+
+Oben links steht, in welcher Akte Sie sich befinden — hier *00001/26 Müller ./. Schmidt
+(Kaufpreisklage)*. Über das Feld wechseln Sie zu einer anderen. Oben rechts liegt die Kopfleiste
+mit Ansichten, Ebenen, Historie und den übrigen Werkzeugen; unten in der Mitte die Leiste zum
+Bewegen und Zoomen.
 
 **Zur Erinnerung:** Es entsteht dabei keine Kopie. Die Dokumente bleiben in j-lawyer. J-DESK legt
 sie Ihnen nur auf den Tisch.
@@ -44,6 +53,8 @@ und wo Sie sich gerade befinden.
 ## Das Kontextmenü — der Weg zu allem
 
 Ein **Rechtsklick auf ein Dokument** öffnet das Menü mit allem, was Sie damit tun können:
+
+![Kontextmenü eines Dokuments](../bilder/kontextmenue.jpg)
 
 | Eintrag | Was er tut |
 |---|---|
@@ -102,11 +113,6 @@ liegt am nächsten Morgen alles unverändert da.
 Arbeiten zwei Personen gleichzeitig am selben Schreibtisch, sehen beide die Änderungen der
 anderen. Ändern beide **dasselbe** gleichzeitig, meldet sich J-DESK und fragt, welche Fassung
 gelten soll — statt still eine davon zu verwerfen.
-
----
-
-> **Hinweis:** Dieses Kapitel beschreibt die Bedienung anhand der tatsächlichen Menüs des
-> Programms. Bebilderte Schritt-für-Schritt-Anleitungen mit Bildschirmfotos folgen.
 
 ---
 
