@@ -493,7 +493,7 @@ describe('erzeugeFundstellenPdf (EXP-02, D-04): TOC, Crop, Provenienz, Redaktion
 
   it('zwei freigegebene Fundstellen ⇒ TOC-Seite mit Link-Annots auf beide Fundstellen-Seiten', async () => {
     const { state, quellen } = await zweiFundstellenFixtures();
-    const bytes = await erzeugeFundstellenPdf(state, quellen, 'Fundstellen — Testakte');
+    const bytes = await erzeugeFundstellenPdf(state, state, quellen, 'Fundstellen — Testakte');
     const out = await PDFDocument.load(bytes);
     const seiten = out.getPages();
     expect(seiten.length).toBe(3); // 1 TOC-Seite + 2 Fundstellen-Seiten
@@ -512,7 +512,7 @@ describe('erzeugeFundstellenPdf (EXP-02, D-04): TOC, Crop, Provenienz, Redaktion
 
   it('Crop-Region: die Fundstellen-Seite hat eine CropBox, die exakt die umgerechnete Fundstellen-Region (mit Rand) deckt', async () => {
     const { state, quellen, f1 } = await zweiFundstellenFixtures();
-    const bytes = await erzeugeFundstellenPdf(state, quellen, 'Fundstellen — Testakte');
+    const bytes = await erzeugeFundstellenPdf(state, state, quellen, 'Fundstellen — Testakte');
     const out = await PDFDocument.load(bytes);
     const seiten = out.getPages();
 
@@ -532,7 +532,7 @@ describe('erzeugeFundstellenPdf (EXP-02, D-04): TOC, Crop, Provenienz, Redaktion
 
   it('Provenienz-Block: Dokumentname, Seite, Ersteller, Zeitpunkt und Ursprungstext im extrahierten Text', async () => {
     const { state, quellen } = await zweiFundstellenFixtures();
-    const bytes = await erzeugeFundstellenPdf(state, quellen, 'Fundstellen — Testakte');
+    const bytes = await erzeugeFundstellenPdf(state, state, quellen, 'Fundstellen — Testakte');
     const seiten = await extrahiereSeiten(bytes);
     const fundstellenSeite1 = seiten[1];
     expect(fundstellenSeite1).toContain(FS_DOC_NAME);
@@ -564,10 +564,46 @@ describe('erzeugeFundstellenPdf (EXP-02, D-04): TOC, Crop, Provenienz, Redaktion
     };
     const quellen = { ladeDocBytes: async () => bytes0 };
 
-    const bytes = await erzeugeFundstellenPdf(state, quellen, 'Fundstellen — Testakte');
+    const bytes = await erzeugeFundstellenPdf(state, state, quellen, 'Fundstellen — Testakte');
     const text = await extrahiereText(bytes);
     expect(text).not.toContain(GEHEIM);
     expect(text).toContain(FS_URSPRUNG_1); // der Rest der Fundstelle bleibt lesbar
+  });
+
+  it('intern eingestufte Schwärzung wirkt trotzdem: Rects kommen aus dem projizierten, nicht dem gefilterten State', async () => {
+    // Regressionsschutz: die Pipeline las die Schwärzungs-Rects früher aus dem
+    // freigabe-gefilterten State. Eine frisch gezogene Fläche trägt kein `freigabe` und fällt
+    // fail-closed auf 'intern' — sie fehlte damit im gefilterten State und das Fundstellen-PDF
+    // trug den Klartext. Hier ist genau diese Lage nachgestellt: `state` (gefiltert) kennt die
+    // Mark NICHT, `projiziert` schon. Geschwärzt werden muss trotzdem.
+    const GEHEIM = 'FUNDSTELLENGEHEIMINTERN-6W1V';
+    const f1 = await erzeugeTextPdf(FS_URSPRUNG_1, 80, 700);
+    const geladen = await PDFDocument.load(f1.bytes);
+    const seite0 = geladen.getPage(0);
+    const font = await geladen.embedFont(StandardFonts.Helvetica);
+    seite0.drawText(GEHEIM, { x: 80, y: 300, size: 12, font });
+    const bytes0 = await geladen.save();
+    const geheimBasis = { x: 80, y: 842 - 300 - 12, w: font.widthOfTextAtSize(GEHEIM, 12), h: 12 };
+
+    const doc1 = macheDoc('doc-1', 'file-1', { name: FS_DOC_NAME });
+    const state: DesktopState = {
+      docs: [doc1], links: [], stacks: [],
+      cutouts: [{
+        id: 'cut-1', fileId: 'file-1', page: 1, rect: f1.basis, position: { x: 0, y: 0 }, zIndex: 1,
+        textSnapshot: FS_URSPRUNG_1, createdBy: FS_ERSTELLER, createdAt: '2026-01-15T09:00:00.000Z',
+      }],
+      marks: [], // gefilterter State: die interne Mark ist hier bereits herausgefallen
+    };
+    const projiziert: DesktopState = {
+      ...state,
+      marks: [{ id: 'mark-redact', docId: 'doc-1', page: 1, rect: geheimBasis, kind: 'redact', textSnapshot: GEHEIM }],
+    };
+    const quellen = { ladeDocBytes: async () => bytes0 };
+
+    const bytes = await erzeugeFundstellenPdf(state, projiziert, quellen, 'Fundstellen — Testakte');
+    const text = await extrahiereText(bytes);
+    expect(text).not.toContain(GEHEIM);
+    expect(text).toContain(FS_URSPRUNG_1);
   });
 
   it('Fundstelle auf internem Doc (Doc nicht im gefilterten State) ⇒ taucht lautlos nicht auf, kein Hinweis im Artefakt', async () => {
@@ -584,7 +620,7 @@ describe('erzeugeFundstellenPdf (EXP-02, D-04): TOC, Crop, Provenienz, Redaktion
     expect(sammleFundstellenKandidaten(state)).toHaveLength(0);
 
     const quellen = { ladeDocBytes: async () => f1.bytes };
-    const bytes = await erzeugeFundstellenPdf(state, quellen, 'Fundstellen — Testakte');
+    const bytes = await erzeugeFundstellenPdf(state, state, quellen, 'Fundstellen — Testakte');
     const text = await extrahiereText(bytes);
     expect(text).not.toContain(FS_URSPRUNG_1);
     expect(text).not.toMatch(/ausgelassen|gefiltert|intern/i);
@@ -607,7 +643,7 @@ describe('erzeugeFundstellenPdf (EXP-02, D-04): TOC, Crop, Provenienz, Redaktion
     };
     const quellen = { ladeDocBytes: async () => rot.bytes };
 
-    await expect(erzeugeFundstellenPdf(state, quellen, 'Fundstellen — Testakte')).rejects.toMatchObject({
+    await expect(erzeugeFundstellenPdf(state, state, quellen, 'Fundstellen — Testakte')).rejects.toMatchObject({
       reason: 'verifikation-fehlgeschlagen',
     });
   });
@@ -636,7 +672,7 @@ describe('erzeugeFundstellenPdf (EXP-02, D-04): TOC, Crop, Provenienz, Redaktion
       },
     };
 
-    await expect(erzeugeFundstellenPdf(state, quellen, 'Fundstellen — Testakte')).rejects.toMatchObject({
+    await expect(erzeugeFundstellenPdf(state, state, quellen, 'Fundstellen — Testakte')).rejects.toMatchObject({
       reason: 'quelle-fehlt',
     });
   });
@@ -653,7 +689,7 @@ describe('erzeugeFundstellenPdf (EXP-02, D-04): TOC, Crop, Provenienz, Redaktion
     };
     const quellen = { ladeDocBytes: async () => f1.bytes };
 
-    const bytes = await erzeugeFundstellenPdf(state, quellen, 'Fundstellen — Testakte');
+    const bytes = await erzeugeFundstellenPdf(state, state, quellen, 'Fundstellen — Testakte');
     const text = await extrahiereText(bytes);
     expect(text).toContain('Stand-Hinweis');
     expect(text).toContain(FS_URSPRUNG_1); // Ursprungstext bleibt trotz Stand-Hinweis erhalten (D-15)

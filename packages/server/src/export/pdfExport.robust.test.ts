@@ -137,7 +137,23 @@ describe('EXP-04: Schwärzungs- und Scrub-Robustheit end-to-end über die Dokume
     expect(elemente.some((e) => e.op === 'f')).toBe(true);
   });
 
-  it('interne (nicht freigegebene) redact-Mark verändert den Export NICHT; erst die Freigabe der Mark entfernt den Text (A/B)', async () => {
+  /**
+   * KEHRT ein abgenommenes Kriterium aus 03-09-PLAN.md um („Eine interne (nicht freigegebene)
+   * Schwärzung verändert den Export NICHT … Freigabe-Hoheit des Marks über seinem Effekt").
+   *
+   * Diese Regel war die Ursache eines Klartext-Lecks im Normalbetrieb: eine frisch gezogene
+   * Fläche trägt weder `freigabe` noch `layerId` (addMark), fällt also fail-closed auf
+   * 'intern' — der Regelfall, nicht die Ausnahme. Der Anwender sah auf dem Schirm einen
+   * schwarzen Balken und verschickte eine Datei, in der alles stand. Eine Schwärzung ist
+   * subtraktiv: sie wegzulassen schützt nichts, es legt frei (Begründung bei
+   * schwaerzendeMarks, packages/core/src/freigabe.ts).
+   *
+   * Der Balken bleibt dabei sichtbar im Artefakt, obwohl das Objekt intern eingestuft ist.
+   * Das ist KEIN Existenz-Leck im Sinne von D-08: eine Schwärzung soll erkennbar sein
+   * (sonst klaffte an der Stelle nur eine unerklärte Lücke), und über den verdeckten INHALT
+   * sagt der Balken nichts.
+   */
+  it('redact-Mark wirkt unabhängig von ihrer Freigabe-Stufe: intern wie freigegeben entfernen den Text (A/B)', async () => {
     const fixture = await erzeugeTextPdf(GEHEIM_TOKEN, 100, 700);
     const ctx = await deskMitPdfDoc(fixture.bytes);
     await befehl(ctx, ctx.deskId, 'addMark', {
@@ -147,14 +163,22 @@ describe('EXP-04: Schwärzungs- und Scrub-Robustheit end-to-end über die Dokume
     const resA = await exportiere(ctx);
     expect(resA.statusCode).toBe(200);
     const textA = await extrahiereText(new Uint8Array(resA.rawPayload));
-    expect(textA).toContain(GEHEIM_TOKEN); // die interne Schwärzung wirkt NICHT im Export
+    expect(textA).not.toContain(GEHEIM_TOKEN);
 
-    // B: dieselbe Mark wird freigegeben — jetzt greift die Redaktion.
+    // B: dieselbe Mark ausdrücklich freigegeben — identisches Ergebnis, die Stufe ist für
+    // die Wirkung der Schwärzung bedeutungslos.
     await befehl(ctx, ctx.deskId, 'setFreigabe', { objectId: 'm-1', freigabe: 'export' });
     const resB = await exportiere(ctx);
     expect(resB.statusCode).toBe(200);
     const textB = await extrahiereText(new Uint8Array(resB.rawPayload));
-    expect(textB).not.toContain(GEHEIM_TOKEN); // Freigabe-Hoheit des Marks über seinem Effekt
+    expect(textB).not.toContain(GEHEIM_TOKEN);
+
+    // Auch die Zwischenstufe 'mandant' darf die Schwärzung nicht aufheben (D-06: 'mandant'
+    // ist NICHT export-fähig — unter der alten Regel war das der zweite Leckweg).
+    await befehl(ctx, ctx.deskId, 'setFreigabe', { objectId: 'm-1', freigabe: 'mandant' });
+    const resC = await exportiere(ctx);
+    expect(resC.statusCode).toBe(200);
+    expect(await extrahiereText(new Uint8Array(resC.rawPayload))).not.toContain(GEHEIM_TOKEN);
   });
 
   it('Metadaten-Fixture (XMP/Outlines/Annots/AcroForm) ⇒ weder extrahiereText noch Rohtext-Smoke findet GEHEIM nach dem Export (Scrub end-to-end)', async () => {

@@ -1,5 +1,6 @@
 import type { DesktopState } from './model';
 import { findeEbene, type Ebene } from './layers';
+import type { Mark } from './marks';
 import { findeObjekt, VERSIONIERTE_ARTEN } from './stempel';
 import type { TrashedItem } from './trash';
 
@@ -72,6 +73,36 @@ export function freigabeFilter(state: DesktopState): DesktopState {
   }
 
   return geaendert ? (ergebnis as unknown as DesktopState) : state;
+}
+
+/**
+ * Schwärzende Markierungen einer Seite — die EINZIGE Ausnahme vom freigabeFilter, und der
+ * einzige Weg, auf dem die Exportkette an Schwärzungs-Rects kommen darf.
+ *
+ * Der Filter oben ist für ADDITIVE Objekte gebaut (Zettel, Stempel, Fähnchen): sie
+ * weglassen schützt die Vertraulichkeit, deshalb ist der Default 'intern' fail-CLOSED
+ * (D-14). Eine Schwärzung ist das Gegenteil — SUBTRAKTIV: sie weglassen legt den
+ * darunterliegenden Text frei. Durch den Filter gereicht war dieselbe Regel damit
+ * fail-OPEN, und zwar im Normalfall: eine frisch gezogene Fläche trägt weder `freigabe`
+ * noch `layerId` (addMark, marks.ts), fällt also auf 'intern' und verschwand still aus
+ * dem Export — der Anwender sah einen schwarzen Balken auf dem Schirm und verschickte
+ * eine Datei, in der alles stand.
+ *
+ * Deshalb: die Freigabe-Stufe einer Schwärzung ist für das ARTEFAKT bedeutungslos, eine
+ * Schwärzung wirkt immer. Maßgeblich bleibt allein die Projektion (projectStateForActor):
+ * angewendet wird, was der Anfragende auch auf dem Schirm sieht — genau die Flächen, auf
+ * deren Wirkung er sich verlässt. Aufrufer übergeben deshalb den PROJIZIERTEN,
+ * NICHT freigabe-gefilterten State.
+ *
+ * `freigabeFilter` bleibt bewusst unverändert: ein Mark führt in `textSnapshot` den
+ * überdeckten Klartext (marks.ts) — ein State, der von sich behauptet „alles hierin darf
+ * ins Artefakt", darf ihn niemals enthalten. Die Ausnahme gehört an die Stelle, die die
+ * Rects zum Löschen braucht, nicht in den generischen Filter.
+ */
+export function schwaerzendeMarks(state: DesktopState, docId: string, page: number): Mark[] {
+  return (state.marks ?? []).filter(
+    (m) => m.docId === docId && m.page === page && (m.kind === 'redact' || m.kind === 'tippex'),
+  );
 }
 
 /**

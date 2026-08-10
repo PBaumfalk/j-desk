@@ -6,10 +6,10 @@
  * wäre genau der Verstoß (T-03-05-01), den der Pflichttest sucht (D-01).
  *
  * Entscheidende Vereinfachung (03-RESEARCH): KEIN Font-Metrik-/Glyphen-Breiten-Nachbau —
- * gelöscht wird, sobald die Startposition im um die aktuelle Font-Size erweiterten Rect liegt,
- * im Zweifel wird gelöscht (fail-closed-Richtung). Fehlgriffe nach außen (zu viel gelöscht)
- * sind sicherheitsunkritisch und visuell sichtbar; Rest-Text fängt das pdfjs-
- * Verifikationsgate in 03-07 fail-closed ab.
+ * gelöscht wird jeder Operator, der die Fläche ERREICHEN KANN (Zeilenband + Laufrichtung,
+ * Regel und Begründung bei `trifft` unten), im Zweifel wird gelöscht (fail-closed-Richtung).
+ * Fehlgriffe nach außen (zu viel gelöscht) sind sicherheitsunkritisch und visuell sichtbar;
+ * Rest-Text fängt das pdfjs-Verifikationsgate in 03-07 fail-closed ab.
  *
  * KEINE Rekursion in Form-XObjects (Open Question 1): Do-Verweise auf Form-XObjects mit
  * Font-Ressourcen werden nur gezählt (xobjectTextVerdacht) — die Pipeline entscheidet über
@@ -110,17 +110,57 @@ function xobjectMitTextverdacht(pdfDoc: PDFDocument, page: PDFPage, name: string
   return xres?.has(PDFName.of('Font')) ?? false;
 }
 
-/** Startposition des Textes im User-Space: Text-Ursprung durch Textmatrix × CTM. */
-function textPosition(tm: Matrix, ctm: Matrix): { x: number; y: number } {
-  const kombiniert = multiply(tm, ctm);
-  return { x: kombiniert.e, y: kombiniert.f };
-}
+/** Ober-/Unterlänge einer Zeile als Vielfaches der effektiven Schriftgröße — grobes, aber für
+ *  jede Latin-Schrift auskömmliches Modell der Glyphenbox um die Grundlinie. */
+const OBERLAENGE = 0.75;
+const UNTERLAENGE = 0.25;
 
-/** Positions-Check gegen die um die Font-Size erweiterten Rects (Sicherheitsmarge, fail-closed). */
-function trifft(pos: { x: number; y: number }, rects: UserSpaceRect[], marge: number): boolean {
-  return rects.some(
-    (r) => pos.x >= r.x - marge && pos.x <= r.x + r.w + marge && pos.y >= r.y - marge && pos.y <= r.y + r.h + marge
-  );
+/**
+ * Trifft der Textoperator die Schwärzungsfläche? Geprüft wird NICHT, ob seine Startposition
+ * in der Fläche liegt, sondern ob er sie ERREICHEN KANN — der Unterschied ist der ganze
+ * Punkt:
+ *
+ * Ein Textzeige-Operator setzt an seiner Grundlinien-Startposition an und schiebt sich von
+ * dort nach rechts fort. Bei jedem PDF, das eine Zeile als EINEN Tj schreibt (der Normalfall
+ * aus Textverarbeitungen), liegt diese Startposition am linken Zeilenrand. Eine Schwärzung
+ * über einer Anschrift oder IBAN MITTEN im Satz traf sie damit nie — der Operator blieb
+ * stehen, der Text überlebte, und das Verifikationsgate in 03-07 brach den Export ab
+ * ("Die Schwärzung konnte nicht verifiziert werden"). Geschwärzt werden konnte praktisch
+ * nur, wer die Fläche exakt am Zeilenanfang aufzog.
+ *
+ * Regel jetzt, in der bereits im Modulkopf festgeschriebenen Richtung („im Zweifel wird
+ * gelöscht"), OHNE Font-Metriken:
+ *   1. Zeilenband: überlappt die Glyphenbox um die Grundlinie (Ober-/Unterlänge, skaliert
+ *      mit der effektiven Schriftgröße) die Fläche senkrecht? Sonst kein Treffer — sonst
+ *      nähme jede Schwärzung auch die Nachbarzeilen mit.
+ *   2. Laufrichtung: bei positivem x-Maßstab genügt, dass der Operator LINKS des rechten
+ *      Flächenrandes ansetzt — wie weit er läuft, wissen wir ohne Glyphenbreiten nicht, also
+ *      wird gelöscht. Bei negativem x-Maßstab (gespiegelter Textlauf) gilt das Gegenstück,
+ *      bei Maßstab 0 (entartet) wird immer gelöscht.
+ *
+ * Preis: auf derselben Zeile verschwindet auch Text LINKS der Fläche, wenn er in eigenen
+ * Operatoren steht (mehrspaltige Zeilen, Tabellen). Das ist die im Modulkopf ausdrücklich
+ * akzeptierte Richtung — sichtbar und sicherheitsunkritisch, anders als überlebender
+ * Resttext. Ein exakter Zuschnitt bräuchte Glyphenbreiten je Font (03-RESEARCH: bewusst
+ * nicht in dieser Phase).
+ *
+ * NICHT abgedeckt: gedrehte/gescherte Textmatrizen (b, c ≠ 0) innerhalb einer unrotierten
+ * Seite — dort ist „Zeilenband" keine sinnvolle Größe. Seitenrotation fängt
+ * seiteBrauchtFallback ab; für gedrehte Textmatrizen bleibt das Verifikationsgate die
+ * einzige Absicherung.
+ */
+function trifft(trm: Matrix, fontSize: number, rects: UserSpaceRect[]): boolean {
+  // Effektive Schriftgröße = Tf-Größe skaliert mit dem y-Anteil der Gesamtmatrix; das
+  // verbreitete Muster "/F1 1 Tf" mit Größe in der Textmatrix liefert sonst 1 statt 12.
+  const groesse = fontSize * Math.hypot(trm.c, trm.d);
+  const oben = OBERLAENGE * groesse;
+  const unten = UNTERLAENGE * groesse;
+  return rects.some((r) => {
+    if (trm.f - unten > r.y + r.h || trm.f + oben < r.y) return false; // Zeilenband verfehlt
+    if (trm.a > 0) return trm.e <= r.x + r.w + groesse;
+    if (trm.a < 0) return trm.e >= r.x - groesse;
+    return true;
+  });
 }
 
 /** Entfernt die Byte-Bereiche (aufsteigend, überlappungsfrei) und setzt Zeilenumbrüche als Token-Trenner. */
@@ -144,9 +184,9 @@ function entferneBereiche(bytes: Uint8Array, bereiche: Array<[number, number]>):
 }
 
 /**
- * Löscht alle Textzeige-Operatoren, deren Startposition in einem der Schwärzungs-Rects
- * (User-Space, via coordinates.ts umgerechnet) liegt, aus dem Content-Stream der Seite.
- * Rects werden um die jeweils aktuelle Font-Size erweitert — im Zweifel wird gelöscht.
+ * Löscht alle Textzeige-Operatoren, die eines der Schwärzungs-Rects (User-Space, via
+ * coordinates.ts umgerechnet) erreichen können, aus dem Content-Stream der Seite.
+ * Trefferregel und ihre Grenzen: siehe `trifft` oben — im Zweifel wird gelöscht.
  */
 export function redactiereSeite(
   pdfDoc: PDFDocument,
@@ -221,13 +261,13 @@ export function redactiereSeite(
         break;
       case 'Tj':
       case 'TJ':
-        if (trifft(textPosition(tm, ctm), rectsUserSpace, fontSize)) loeschBereiche.push([el.start, el.end]);
+        if (trifft(multiply(tm, ctm), fontSize, rectsUserSpace)) loeschBereiche.push([el.start, el.end]);
         break;
       case "'":
       case '"':
         // ' und " wechseln vor dem Zeigen in die nächste Zeile (wie T*)
         naechsteZeile();
-        if (trifft(textPosition(tm, ctm), rectsUserSpace, fontSize)) loeschBereiche.push([el.start, el.end]);
+        if (trifft(multiply(tm, ctm), fontSize, rectsUserSpace)) loeschBereiche.push([el.start, el.end]);
         break;
       case 'Do': {
         // KEINE Rekursion (Open Question 1): Form-XObject mit Fonts = Fallback-Signal

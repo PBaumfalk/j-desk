@@ -5,6 +5,7 @@ import {
   docBox,
   freeDocs,
   noteBox,
+  schwaerzendeMarks,
   stackBox,
   type Box,
   type DesktopState,
@@ -575,8 +576,18 @@ export interface FundstellenQuellen {
   ladeDocBytes(docId: string): Promise<Uint8Array>;
 }
 
+/**
+ * @param state       freigabe-gefilterter State — bestimmt, WELCHE Fundstellen ins Artefakt kommen.
+ * @param projiziert  projizierter, NICHT freigabe-gefilterter State — ausschließlich Quelle der
+ *                    Schwärzungs-Rects. Bewusst ein eigener PFLICHT-Parameter statt eines
+ *                    optionalen: eine Schwärzung wirkt stufenunabhängig (schwaerzendeMarks,
+ *                    freigabe.ts), und kein Aufrufer darf sie versehentlich weglassen können —
+ *                    dieselbe Haltung wie beim einen registrierenden Routen-Helfer für den
+ *                    Freigabe-Filter (pdfExport.ts, T-03-04-02).
+ */
 export async function erzeugeFundstellenPdf(
   state: DesktopState,
+  projiziert: DesktopState,
   quellen: FundstellenQuellen,
   titel: string,
   ids?: string[],
@@ -625,12 +636,14 @@ export async function erzeugeFundstellenPdf(
     out.addPage(kopie);
     const geo = seitenGeometrieVon(quellSeiten[seitenIndex]);
 
-    // Redaktion VOR Crop (Pattern 5, T-03-08-01): ALLE freigegebenen Schwärzungs-Rects DIESER
-    // Quellseite — unabhängig davon, ob sie den Crop-Bereich überlappen. Der Crop entfernt
-    // nichts aus dem Content-Stream; nur redactiereSeite tut das.
-    const schwaerzungen = (state.marks ?? []).filter(
-      (m) => m.docId === f.doc.id && m.page === f.page && (m.kind === 'redact' || m.kind === 'tippex'),
-    );
+    // Redaktion VOR Crop (Pattern 5, T-03-08-01): ALLE Schwärzungs-Rects DIESER Quellseite —
+    // unabhängig davon, ob sie den Crop-Bereich überlappen. Der Crop entfernt nichts aus dem
+    // Content-Stream; nur redactiereSeite tut das.
+    // Quelle ist `projiziert`, NICHT `state`: eine Schwärzung ist subtraktiv und wirkt
+    // stufenunabhängig (schwaerzendeMarks, freigabe.ts) — über den freigabe-gefilterten State
+    // gelesen fiel eine intern eingestufte Schwärzung heraus und das Fundstellen-PDF trug den
+    // Klartext.
+    const schwaerzungen = schwaerzendeMarks(projiziert, f.doc.id, f.page);
     if (schwaerzungen.length > 0) {
       const rects = schwaerzungen.map((m) => basisNachUserSpace(m.rect, geo));
       const erg = redactiereSeite(out, kopie, rects, geo);

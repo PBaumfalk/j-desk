@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {
-  effektiveFreigabe, freigabeFilter, projectStateForActor, VERSIONIERTE_ARTEN,
+  effektiveFreigabe, freigabeFilter, projectStateForActor, schwaerzendeMarks, VERSIONIERTE_ARTEN,
   type DesktopState, type Freigabe,
 } from '@j-desk/core';
 import type { Db } from '../db';
@@ -227,7 +227,9 @@ export async function erzeugeAnnotierteDokumentKopie(
     );
   }
   // Ab hier zählt nur noch die freigegebene Sicht (Annotationen mit freigabe ≠ export
-  // fehlen restlos, D-05/D-06/D-08).
+  // fehlen restlos, D-05/D-06/D-08) — mit der EINEN dokumentierten Ausnahme: schwärzende
+  // Markierungen sind subtraktiv und wirken unabhängig von ihrer Stufe (schwaerzendeMarks,
+  // freigabe.ts). Sie kommen deshalb weiter unten aus `projiziert`, nicht aus `freigegeben`.
   const freigegeben = freigabeFilter(projiziert);
 
   // Quelle wählen (Pitfall 5, T-03-07-03): convertible IMMER aus dem Vorschau-Cache —
@@ -279,7 +281,10 @@ export async function erzeugeAnnotierteDokumentKopie(
   for (let i = 0; i < seiten.length; i++) {
     const seite = seiten[i];
     const geo = seitenGeometrieVon(seite);
-    const marks = (freigegeben.marks ?? []).filter((m) => m.docId === docId && m.page === i + 1);
+    // Schwärzungen aus dem PROJIZIERTEN State (nicht aus `freigegeben`): eine Schwärzung ist
+    // subtraktiv, ihr Weglassen legt Text frei statt ihn zu schützen — Begründung und einzige
+    // Wahrheit in schwaerzendeMarks (freigabe.ts). Alle übrigen Annotationen bleiben gefiltert.
+    const marks = schwaerzendeMarks(projiziert, docId, i + 1);
     const strokes = (freigegeben.strokes ?? []).filter((s) => s.docId === docId && s.page === i + 1);
     const stamps = (freigegeben.stamps ?? []).filter((s) => s.docId === docId && s.page === i + 1);
 
@@ -298,8 +303,9 @@ export async function erzeugeAnnotierteDokumentKopie(
       continue; // niemals Overlays auf eine Seite brennen, deren Geometrie wir nicht trauen
     }
 
-    // redact UND tippex schwärzen echt (D-01): beide löschen den darunterliegenden Text
-    const schwaerzungen = marks.filter((m) => m.kind === 'redact' || m.kind === 'tippex');
+    // redact UND tippex schwärzen echt (D-01): beide löschen den darunterliegenden Text —
+    // schwaerzendeMarks liefert bereits genau diese beiden Arten.
+    const schwaerzungen = marks;
     if (schwaerzungen.length > 0) {
       const rects = schwaerzungen.map((m) => basisNachUserSpace(m.rect, geo));
       const erg = redactiereSeite(pdfDoc, seite, rects, geo);
@@ -453,6 +459,7 @@ function registriereFundstellenRoute(app: FastifyInstance, db: Db, dataDir: stri
 
         const bytes = await erzeugeFundstellenPdf(
           freigegeben,
+          projiziert, // nur für die Schwärzungs-Rects (schwaerzendeMarks) — siehe dortigen Docstring
           { ladeDocBytes: macheLadeDocBytes(db, dataDir, freigegeben) },
           `Fundstellen — ${row.name}`,
           ids

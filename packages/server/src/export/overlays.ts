@@ -1,8 +1,13 @@
 /**
- * Vektor-Overlays für die annotierte PDF-Kopie (EXP-01, D-04): freigegebene marks/strokes/
- * stamps werden als echte PDF-Vektor-Operatoren an ihrer gespeicherten Geometrie eingebrannt
- * — der Dokumentinhalt bleibt vollständig und textwählbar (kein Raster-Abzug, Research
- * Locked Decision „Vektor-Overlays an gespeicherter Geometrie").
+ * Vektor-Overlays für die annotierte PDF-Kopie (EXP-01, D-04): marks/strokes/stamps werden als
+ * echte PDF-Vektor-Operatoren an ihrer gespeicherten Geometrie eingebrannt — der Dokumentinhalt
+ * bleibt vollständig und textwählbar (kein Raster-Abzug, Research Locked Decision
+ * „Vektor-Overlays an gespeicherter Geometrie").
+ *
+ * Welche Objekte hereinkommen, entscheidet die Pipeline (pdfExport.ts), nicht dieses Modul:
+ * strokes/stamps sind freigabe-gefiltert, schwärzende marks bewusst NICHT — eine Schwärzung
+ * wirkt stufenunabhängig, und ihr Balken gehört sichtbar ins Artefakt (schwaerzendeMarks,
+ * packages/core/src/freigabe.ts).
  *
  * SÄMTLICHE Koordinaten-Umrechnung läuft über coordinates.ts (Pitfall 1: Basiskoordinaten
  * y-down → User-Space y-up) — hier gibt es keinen eigenen Umrechnungs-Code. Seitenrotation

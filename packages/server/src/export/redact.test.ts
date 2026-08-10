@@ -110,3 +110,121 @@ describe('redactiereSeite — echte Schwärzung im Content-Stream', () => {
     expect(text).toContain(OFFEN);
   });
 });
+
+/**
+ * Trefferregel: Lage des Rects GEGENÜBER der Startposition des Textoperators.
+ *
+ * Regressionsschutz für den Fehler „Schwärzung mitten in der Zeile wirkt nicht": geprüft
+ * wurde früher nur, ob die START-Position des Operators im Rect liegt. Textverarbeitungen
+ * schreiben eine Zeile als EINEN Tj mit Start am linken Zeilenrand — jede Schwärzung, die
+ * nicht exakt dort ansetzte (Anschrift, IBAN, Name mitten im Satz: der Normalfall), traf ihn
+ * nie. Der Text überlebte und das Verifikationsgate brach den Export ab.
+ *
+ * Die Äquivalenzklasse ist der x-Versatz des Rects gegenüber dem Operator-Start; die Fälle
+ * unten laufen sie ab (Zeilenanfang → Mitte → letztes Wort → rechts daneben) und sichern das
+ * Zeilenband gegen die Gegenrichtung ab (Nachbarzeilen dürfen nicht mitgelöscht werden).
+ */
+describe('redactiereSeite — Trefferregel gegenüber der Operator-Startposition', () => {
+  const ZEILE = 'Die Zeugin Renate Meier, wohnhaft Lindenstrasse 14 in 48143 Muenster,';
+  const ZEILE_DARUEBER = 'ZEILEDARUEBER-03-05';
+  const ZEILE_DARUNTER = 'ZEILEDARUNTER-03-05';
+  const LINKS = 'LINKERLAUF-03-05';
+  const RECHTS = 'RECHTERLAUF-03-05';
+
+  /** Seite mit je einem drawText pro Zeile (= ein Tj je Zeile, Start am linken Zeilenrand). */
+  async function seiteMitZeilen(zeilen: Array<{ text: string; x: number; y: number }>) {
+    const doc = await PDFDocument.create();
+    const seite = doc.addPage([595, 842]);
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    for (const z of zeilen) seite.drawText(z.text, { x: z.x, y: z.y, size: 12, font });
+    return { doc, seite, breiteVon: (t: string) => font.widthOfTextAtSize(t, 12) };
+  }
+
+  /** Basis-Rect über einem Textstück derselben Zeile (Grundlinie y im User-Space, Größe 12). */
+  function rectUeber(x: number, breite: number, y: number) {
+    return { x, y: 842 - y - 12, w: breite, h: 12 };
+  }
+
+  it('Rect deckt nur den hinteren Teil der Zeile ⇒ der Operator wird trotzdem gelöscht', async () => {
+    const { doc, seite, breiteVon } = await seiteMitZeilen([{ text: ZEILE, x: 60, y: 760 }]);
+    const geo = seitenGeometrieVon(seite);
+    const vorlauf = breiteVon('Die Zeugin Renate Meier, wohnhaft ');
+    const rect = rectUeber(60 + vorlauf, breiteVon('Lindenstrasse 14 in 48143 Muenster,'), 760);
+
+    const erg = redactiereSeite(doc, seite, [basisNachUserSpace(rect, geo)], geo);
+
+    expect(erg.geaendert).toBe(true);
+    expect(await extrahiereText(await doc.save())).not.toContain('Lindenstrasse');
+  });
+
+  it('Rect deckt nur das letzte Wort der Zeile ⇒ gelöscht (äußerster Punkt der Klasse)', async () => {
+    const { doc, seite, breiteVon } = await seiteMitZeilen([{ text: ZEILE, x: 60, y: 760 }]);
+    const geo = seitenGeometrieVon(seite);
+    const vorlauf = breiteVon(ZEILE.slice(0, ZEILE.length - 'Muenster,'.length));
+    const rect = rectUeber(60 + vorlauf, breiteVon('Muenster,'), 760);
+
+    const erg = redactiereSeite(doc, seite, [basisNachUserSpace(rect, geo)], geo);
+
+    expect(erg.geaendert).toBe(true);
+    expect(await extrahiereText(await doc.save())).not.toContain('Muenster');
+  });
+
+  it('Nachbarzeilen (22 pt Abstand) bleiben erhalten — das Zeilenband greift nicht über', async () => {
+    const { doc, seite, breiteVon } = await seiteMitZeilen([
+      { text: ZEILE_DARUEBER, x: 60, y: 782 },
+      { text: ZEILE, x: 60, y: 760 },
+      { text: ZEILE_DARUNTER, x: 60, y: 738 },
+    ]);
+    const geo = seitenGeometrieVon(seite);
+    const vorlauf = breiteVon('Die Zeugin Renate Meier, wohnhaft ');
+    const rect = rectUeber(60 + vorlauf, breiteVon('Lindenstrasse 14 in 48143 Muenster,'), 760);
+
+    redactiereSeite(doc, seite, [basisNachUserSpace(rect, geo)], geo);
+
+    const text = await extrahiereText(await doc.save());
+    expect(text).not.toContain('Lindenstrasse');
+    expect(text).toContain(ZEILE_DARUEBER);
+    expect(text).toContain(ZEILE_DARUNTER);
+  });
+
+  it('Textlauf RECHTS der Fläche bleibt, Textlauf LINKS davon fällt weg (bewusste Über-Löschung)', async () => {
+    // Ohne Glyphenbreiten ist nicht entscheidbar, wie weit ein links beginnender Lauf reicht —
+    // er wird deshalb gelöscht (fail-closed-Richtung, sichtbar und unkritisch). Ein Lauf, der
+    // erst RECHTS der Fläche ansetzt, kann sie nicht erreichen und bleibt.
+    const { doc, seite } = await seiteMitZeilen([
+      { text: LINKS, x: 60, y: 760 },
+      { text: RECHTS, x: 400, y: 760 },
+    ]);
+    const geo = seitenGeometrieVon(seite);
+    const rect = rectUeber(200, 100, 760); // Fläche zwischen beiden Läufen
+
+    redactiereSeite(doc, seite, [basisNachUserSpace(rect, geo)], geo);
+
+    const text = await extrahiereText(await doc.save());
+    expect(text).not.toContain(LINKS);
+    expect(text).toContain(RECHTS);
+  });
+
+  it('Schriftgröße in der Textmatrix statt im Tf ⇒ das Zeilenband skaliert trotzdem mit', async () => {
+    // Verbreitetes Muster "/F1 1 Tf 12 0 0 12 x y Tm": die Tf-Größe ist 1, die tatsächliche
+    // Schriftgröße steckt in der Matrix. Wird sie nicht mitskaliert, ist das Zeilenband nur
+    // 1 pt hoch — eine Fläche, die bloß die Oberlängen abdeckt (typisch zu hoch gezogener
+    // Balken), verfehlte die Grundlinie und der Text überlebte.
+    const doc = await PDFDocument.create();
+    const seite = doc.addPage([595, 842]);
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    seite.node.set(PDFName.of('Resources'), doc.context.obj({ Font: { F1: font.ref } }));
+    seite.node.set(
+      PDFName.of('Contents'),
+      doc.context.register(doc.context.stream(`BT /F1 1 Tf 12 0 0 12 60 760 Tm (${GEHEIM}) Tj ET`))
+    );
+    const geo = seitenGeometrieVon(seite);
+    // Fläche NUR über den Oberlängen (Grundlinie 760 liegt darunter, nicht im Rect):
+    const rect = basisNachUserSpace(rectUeber(60, 200, 766), geo);
+
+    const erg = redactiereSeite(doc, seite, [rect], geo);
+
+    expect(erg.geaendert).toBe(true);
+    expect(await extrahiereText(await doc.save())).not.toContain(GEHEIM);
+  });
+});

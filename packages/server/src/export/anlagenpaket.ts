@@ -1,6 +1,6 @@
 import { PDFDocument } from 'pdf-lib';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { effektiveFreigabe, freigabeFilter, projectStateForActor, type DesktopState, type Doc } from '@j-desk/core';
+import { effektiveFreigabe, projectStateForActor, schwaerzendeMarks, type DesktopState, type Doc } from '@j-desk/core';
 import type { Db } from '../db';
 import { getDeskState } from '../deskStore';
 import { requireDeskAktion } from '../guards';
@@ -369,22 +369,21 @@ export async function pruefeAnlagenpaket(
 ): Promise<AnlagenpaketPruefung> {
   const { teile, ausgelassen } = await sammleAuswahl(db, dataDir, projiziert, wunsch, false);
 
-  // Dieselben Markierungen, die erzeugeAnnotierteDokumentKopie() tatsächlich einbrennt: nur
-  // export-freigegebene redact-/tippex-Markierungen zählen als Schwärzung dieser Seite — eine
-  // NICHT freigegebene Markierung wurde beim Kopieren gar nicht angewendet und darf die
-  // Textquellenregel deshalb auch hier nicht beeinflussen (eine Wahrheit, kein zweiter Filter).
-  const schwaerzungsMarks = freigabeFilter(projiziert).marks ?? [];
-
   const alleBefunde: SeitenBefund[] = [];
   for (const { doc, bytes, indizes } of teile) {
     // KOPIE (dieselbe Notwendigkeit wie im Verifikationsgate): pdfjs übernimmt den Buffer als
     // Transferable — ohne slice() wären die Bytes danach nicht mehr verwendbar.
     const seitenTexte = await extrahiereSeiten(bytes.slice());
     const lokaleSeiten = indizes.map((i) => i + 1);
+    // Dieselben Markierungen, die erzeugeAnnotierteDokumentKopie() tatsächlich einbrennt (eine
+    // Wahrheit, kein zweiter Filter): das ist seit dem Schwärzungs-Fix JEDE projizierte
+    // redact-/tippex-Markierung, unabhängig von ihrer Freigabe-Stufe — eine Schwärzung ist
+    // subtraktiv und wirkt stufenunabhängig (schwaerzendeMarks, freigabe.ts). Über
+    // freigabeFilter gelesen hätte diese Prüfung intern eingestufte Schwärzungen übersehen und
+    // die Textquellenregel auf einer Seite falsch entschieden, die im Artefakt sehr wohl
+    // geschwärzt ist.
     const seitenMitSchwaerzung = new Set(
-      schwaerzungsMarks
-        .filter((m) => m.docId === doc.id && (m.kind === 'redact' || m.kind === 'tippex'))
-        .map((m) => m.page)
+      lokaleSeiten.filter((seite) => schwaerzendeMarks(projiziert, doc.id, seite).length > 0)
     );
     const seitenTexteFuerAuswahl = indizes.map((i) => seitenTexte[i] ?? '');
     alleBefunde.push(...bestimmeSeitenBefunde(db, doc, lokaleSeiten, seitenTexteFuerAuswahl, seitenMitSchwaerzung));

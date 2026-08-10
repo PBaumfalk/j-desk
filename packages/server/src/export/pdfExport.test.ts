@@ -195,6 +195,39 @@ describe('GET /api/v1/desks/:id/export/pdf/dokument/:docId (annotierte Kopie)', 
     expect(text).toContain(OFFEN);
   });
 
+  /**
+   * Der Fehlerfall aus dem Feld, end-to-end über die Route: eine Schwärzung, die MITTEN in
+   * einer Zeile ansetzt und (wie jede frisch gezogene Fläche) KEIN freigabe-Attribut trägt.
+   * Beide Eigenschaften zusammen ergaben früher entweder ein Artefakt mit Klartext (Mark
+   * intern ⇒ lautlos weggefiltert) oder 422 „Die Schwärzung konnte nicht verifiziert werden"
+   * (Mark freigegeben ⇒ Trefferregel verfehlte den am Zeilenanfang startenden Tj).
+   */
+  it('Schwärzung mitten in der Zeile und ohne Freigabe-Override ⇒ 200, Text echt weg, Rest der Zeile bleibt', async () => {
+    const doc = await PDFDocument.create();
+    const seite = doc.addPage([595, 842]);
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    const zeile = `Die Zeugin wohnt ${GEHEIM} und wurde gehoert.`;
+    seite.drawText(zeile, { x: 60, y: 760, size: 12, font }); // eine Zeile = EIN Tj ab x = 60
+    seite.drawText(OFFEN, { x: 60, y: 700, size: 12, font });
+    const bytes = await doc.save();
+
+    const ctx = await deskMitPdfDoc({ bytes, aufExportEbene: true });
+    const vorlauf = font.widthOfTextAtSize('Die Zeugin wohnt ', 12);
+    await befehl(ctx, ctx.deskId, 'addMark', {
+      mark: {
+        id: 'm-1', docId: ctx.docId, page: 1, kind: 'redact', textSnapshot: GEHEIM,
+        rect: { x: 60 + vorlauf, y: 842 - 760 - 12, w: font.widthOfTextAtSize(GEHEIM, 12), h: 12 },
+      },
+    });
+    // KEIN setFreigabe — genau der Normalfall.
+
+    const res = await exportiere(ctx);
+    expect(res.statusCode).toBe(200);
+    const text = await extrahiereText(new Uint8Array(res.rawPayload));
+    expect(text).not.toContain(GEHEIM);
+    expect(text).toContain(OFFEN); // andere Zeilen bleiben unangetastet
+  });
+
   it("convertible ohne Vorschau-Cache ⇒ 422 mit Cache-Hinweis (Pitfall 5, keine falsche Quelle)", async () => {
     const ctx = await deskMitPdfDoc({
       bytes: new TextEncoder().encode('kein echtes Office-Paket'),
