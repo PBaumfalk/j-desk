@@ -57,10 +57,10 @@ Das Foto landet in der Akte und liegt beim nächsten Öffnen am Rechner auf dem 
 
 Ja. Notizen, Gedanken und Aufgaben lassen sich sprechen.
 
-**Für die Verschwiegenheit wichtig:** Die Aufnahme läuft über den Server Ihrer Kanzlei zur
-Umwandlung in Text und wird **nirgends abgelegt**. Der frühere Weg über die
-Spracherkennung des Browsers — bei dem Ton an dessen Hersteller ging — wurde aus dem
-Programm entfernt.
+**Für die Verschwiegenheit wichtig:** Die Aufnahme geht an den Server Ihrer Kanzlei, der
+sie zur Umwandlung in Text weiterreicht. Sie wird **nirgends abgelegt**. Die
+Spracherkennung des Browsers wird nicht verwendet — sie würde den Ton an dessen Hersteller
+senden.
 
 ---
 

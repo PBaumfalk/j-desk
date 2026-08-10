@@ -88,7 +88,7 @@ Fristen bleibt der Fristenkalender von j-lawyer zuständig — siehe oben.
 
 **Rechtsklick → „Status" → erledigt.**
 
-Sie verschwindet nicht, sondern bleibt sichtbar abgehakt. Das ist Absicht: In einer Akte
+Sie verschwindet nicht, sondern bleibt sichtbar abgehakt. In einer Akte
 ist es oft wichtiger, zu sehen, *dass* etwas erledigt wurde, als nur, was noch offen ist.
 
 Wenn die Karte stört, legen Sie sie in den Papierkorb — dort ist sie wiederherstellbar,

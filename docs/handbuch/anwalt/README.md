@@ -49,6 +49,8 @@ Alles andere ist Zubehör.
 6. **[Vertraulichkeit](06-vertraulichkeit.md)** — interne Notizen, Schwärzungen. **Bitte lesen.**
 7. **[Export und Schwärzen](07-export-und-schwaerzen.md)** — was das Haus verlässt
 8. **[Termin und KI](08-termin-und-ki.md)** — Sitzungsmodus, iPad, KI-Vorschläge
+9. **[Anonymisieren](09-anonymisieren.md)** — Namen durch Platzhalter ersetzen, bevor etwas
+   zur KI geht
 
 ---
 

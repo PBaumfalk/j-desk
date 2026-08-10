@@ -43,7 +43,7 @@ versehentlich beim Verschieben.
 J-DESK schaut sich den Tisch an und schlägt vor: ausrichten, sortieren, gruppieren,
 Dubletten zusammenlegen, unverbundene Notizen sammeln.
 
-> **Wichtig, und bewusst so gebaut:** Aufräumen zeigt **immer erst eine Vorschau**. Sie
+> **Wichtig:** Aufräumen zeigt **immer erst eine Vorschau**. Sie
 > sehen, was geschehen *würde*, und entscheiden. Es passiert nie automatisch etwas, das Sie
 > nicht angesehen haben.
 

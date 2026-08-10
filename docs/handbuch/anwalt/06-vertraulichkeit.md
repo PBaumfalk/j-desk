@@ -23,15 +23,12 @@ Womit Sie in der Anwendung arbeiten, sind **Ebenen**. Jede trägt sichtbar, wer 
 Entscheidend ist die Voreinstellung: **Was nicht ausdrücklich für den Export freigegeben ist,
 gilt als intern.** Nicht umgekehrt.
 
-Das klingt selbstverständlich, ist es aber nicht — es ist eine bewusste Bauentscheidung. Wenn
-J-DESK bei einem Inhalt nicht sicher bestimmen kann, welche Stufe gilt, entscheidet es sich für
-*intern*. Die Begründung steht so im Quelltext des Programms:
+Kann J-DESK bei einem Inhalt nicht sicher bestimmen, welche Stufe gilt, entscheidet es sich für
+*intern*.
 
-> Ein Irrtum in Export-Richtung kostet Vertraulichkeit, ein Irrtum in intern-Richtung nur eine
-> fehlende Seite im Artefakt. Vertraulichkeit schlägt Vollständigkeit.
-
-Im Klartext: Im schlimmsten Fall fehlt etwas in Ihrem Export — das sehen Sie und können es
-nachtragen. Der umgekehrte Fehler wäre nicht reparabel.
+Der Grund ist einfach: Im schlimmsten Fall fehlt dann etwas in Ihrem Export — das sehen Sie und
+können es nachtragen. Der umgekehrte Fehler wäre nicht reparabel. **Vertraulichkeit geht vor
+Vollständigkeit.**
 
 ## Was das praktisch heißt
 
@@ -66,7 +63,7 @@ Zwei zusätzliche Sicherungen:
 
 Bei ungewöhnlich aufgebauten PDF-Dateien — etwa gedrehten Seiten — verweigert J-DESK die
 Bearbeitung lieber, als heimlich an der falschen Stelle zu schwärzen. Dann erhalten Sie eine
-Meldung statt eines Ergebnisses. Das ist gewollt.
+Meldung statt eines Ergebnisses.
 
 ## Wo Ihre Sorgfalt trotzdem gefragt ist
 
@@ -83,8 +80,10 @@ geschwärzte Person aus dem Zusammenhang erschließen lässt.
 
 **3. Bedenken Sie, was Sie an eine KI geben.** Wenn Sie die KI-Unterstützung nutzen, verlassen die
 übermittelten Inhalte Ihr Haus. Das geschieht nur auf Ihre Veranlassung und wird protokolliert,
-aber es geschieht. Prüfen Sie vorher, ob der übermittelte Ausschnitt Mandatsgeheimnisse enthält —
-und ziehen Sie die Anonymisierungsfunktion in Betracht, falls Ihre Kanzlei sie eingerichtet hat.
+aber es geschieht. Prüfen Sie vorher, ob der übermittelte Ausschnitt Mandatsgeheimnisse enthält.
+
+Dafür gibt es die **Anonymisierung**: Namen werden vor der Übermittlung durch Platzhalter
+ersetzt und danach wieder eingesetzt — siehe [Anonymisieren](09-anonymisieren.md).
 
 ## Wer sieht was?
 

@@ -51,13 +51,14 @@ Zoll hilft niemandem. Stattdessen das, was unterwegs Sinn ergibt:
 
 Notizen, Gedanken und Aufgaben sprechen statt tippen.
 
-**Für die Verschwiegenheit relevant:** Die Aufnahme läuft über den Server Ihrer Kanzlei zur
-Umwandlung in Text und wird **nirgends abgelegt**.
+**Für die Verschwiegenheit relevant:** Die Aufnahme geht an den Server Ihrer Kanzlei, der
+sie zur Umwandlung in Text weiterreicht. Sie wird **nirgends abgelegt**, und der
+Zugangsschlüssel erreicht Ihren Browser nie.
 
-Der frühere Weg lief über die Spracherkennung des Browsers, die bei Chrome Ton an dessen
-Hersteller schickte. Dieser Weg wurde aus dem Programm **entfernt** und ist technisch
-dagegen gesichert, dass er zurückkehrt. Wenn Sie im Rahmen einer § 43e-Prüfung nach
-Auftragsverarbeitern gefragt werden, ist das der relevante Punkt.
+Die Spracherkennung des Browsers wird dabei **nicht** verwendet — sie würde den Ton an
+dessen Hersteller senden. Wenn Sie im Rahmen einer § 43e-Prüfung nach Auftragsverarbeitern
+gefragt werden, ist das der relevante Punkt. Mehr dazu:
+[Anonymisieren](09-anonymisieren.md#wo-landet-der-schlüssel).
 
 ---
 

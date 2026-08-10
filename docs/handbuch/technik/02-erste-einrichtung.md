@@ -137,6 +137,33 @@ Zwei Richtungen müssen stimmen: J-DESK muss den Vorschaudienst erreichen
 
 ---
 
+## Anonymisierung (freiwillig)
+
+Ermöglicht es, Namen vor einer Übermittlung an eine KI durch Platzhalter zu ersetzen — und
+danach wieder einzusetzen. Was das fachlich bedeutet, steht im Anwaltsteil unter
+[Anonymisieren](../anwalt/09-anonymisieren.md).
+
+Einzurichten ist ein Schlüssel:
+
+```
+ANYMIZE_API_KEY=...
+```
+
+Zwei Dinge, die Sie der Kanzlei zusagen können:
+
+- **Der Schlüssel bleibt auf dem Server.** Alle Anfragen laufen über J-DESK; der Browser
+  sieht ihn nie. Ein übernommener Arbeitsplatzrechner gibt keinen Zugang zum Dienst.
+- **Dasselbe gilt fürs Diktat.** Die Aufnahme geht an den Server, der sie weiterreicht; die
+  Spracherkennung des Browsers wird nicht verwendet.
+
+**Rückübersetzung:** Ob anonymisierte Namen wieder eingesetzt werden dürfen, ist eine
+Einstellung der KI-Anbindung (`MCP_ALLOW_DEANONYMIZE`, Voreinstellung: erlaubt). Zusätzlich
+gilt: Ist im Anonymisierungskonto „Zero Data Retention" aktiv, existiert die Zuordnung dort
+gar nicht — die Rückübersetzung schlägt dann fehl, unabhängig von Ihrer Einstellung.
+Klären Sie das mit der Kanzlei, **bevor** produktiv damit gearbeitet wird.
+
+---
+
 ## Checkliste vor der Freigabe an die Kanzlei
 
 - [ ] `auth/status` antwortet mit HTTP 200 und der erwarteten Betriebsart

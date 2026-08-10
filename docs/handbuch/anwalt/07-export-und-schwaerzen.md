@@ -68,7 +68,7 @@ ab** — Sie bekommen eine Meldung statt einer unsicheren Datei.
 ### Wenn J-DESK sich weigert
 
 Bei ungewöhnlich aufgebauten PDF-Dateien — etwa gedrehten Seiten — verweigert J-DESK die
-Bearbeitung, statt an der falschen Stelle zu schwärzen. Das ist gewollt: Eine Fehlermeldung
+Bearbeitung, statt an der falschen Stelle zu schwärzen. Eine Fehlermeldung
 ist besser als eine Datei, die aussieht, als sei sie geschwärzt.
 
 In dem Fall hilft meist, das Dokument neu zu erzeugen oder als Bild zu rastern.

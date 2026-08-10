@@ -16,7 +16,8 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | **Aktivitäten, wer hat was gemacht** | → *Historie* |
 | **Anlagen, Anlagenband, Anlagenkonvolut** | [Anlagen zusammenstellen](refa/03-anlagenpaket.md) |
 | **Anlagenpaket** | [Anlagen zusammenstellen](refa/03-anlagenpaket.md) |
-| **Anonymisieren** | → *Schwärzen* |
+| **Anonymisieren** | [Anonymisieren](anwalt/09-anonymisieren.md) — **nicht** dasselbe wie Schwärzen: ersetzt durch Platzhalter und ist umkehrbar |
+| **Anymize** | → *Anonymisieren* |
 | **Ansicht speichern** | [Ordnung halten](refa/05-ordnung-halten.md#kann-ich-mir-einen-blick-merken) |
 | **Anklammern** | [Ordnung halten](refa/05-ordnung-halten.md#was-ist-der-unterschied-zwischen-heften-klammern-und-festkleben) |
 | **Aufgabe anlegen / zuweisen** | [Aufgaben und Fristen](refa/04-aufgaben-und-fristen.md) |
@@ -117,7 +118,7 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | **Rechte / Rollen** | [Benutzer und Rechte](technik/04-benutzer-und-rechte.md) |
 | **Scannen** | → *Post aufnehmen* |
 | **Schreddern** | [Wenn etwas fehlt](refa/06-wenn-etwas-fehlt.md#ich-habe-aus-versehen-etwas-gelöscht) |
-| **Schwärzen / unkenntlich machen** | [Export und Schwärzen](anwalt/07-export-und-schwaerzen.md#wie-schwärze-ich-richtig) |
+| **Schwärzen / unkenntlich machen** | [Export und Schwärzen](anwalt/07-export-und-schwaerzen.md#wie-schwärze-ich-richtig) — entfernt Text endgültig; zum umkehrbaren Ersetzen siehe *Anonymisieren* |
 | **Sichern / Sicherung / Backup** | [Betrieb und Sicherung](technik/03-betrieb-und-sicherung.md) |
 | **Sichtbarkeit prüfen** | [Benutzer und Rechte](technik/04-benutzer-und-rechte.md#warum-sieht-jemand-etwas-nicht) |
 | **Sitzung / Sitzungsmappe / Verhandlung** | [Termin und KI](anwalt/08-termin-und-ki.md#der-verhandlungstermin) |
