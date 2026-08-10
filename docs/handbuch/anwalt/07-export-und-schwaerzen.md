@@ -46,6 +46,21 @@ meisten Programme **nicht** tun:
 **J-DESK entfernt den Text aus der PDF-Datei.** Er wird nicht schwarz übermalt, sondern
 gelöscht.
 
+**So geht's:**
+
+1. Dokument **aufschlagen** (Doppelklick oder Rechtsklick → „Aufschlagen").
+2. **Rechtsklick** in die Seite — das Werkzeugrad erscheint.
+3. **„Abdecken"** wählen, dann **„Schwärzen"**.
+4. Über die Stelle ziehen, die verschwinden soll.
+
+![Das Werkzeugrad im Dokument mit „Abdecken" und den beiden Werkzeugen Tipp-Ex und Schwärzen](../bilder/werkzeuge-abdecken.png)
+
+> **Im Programm heißt die Gruppe „Abdecken".** Darin liegen zwei Werkzeuge: **Schwärzen**
+> (schwarzer Balken) und **Tipp-Ex** (weiße Fläche). Beide entfernen den Text beim Export
+> gleichermaßen — der Unterschied ist nur, wie die Stelle im Ergebnis aussieht. Weiß wirkt
+> unauffälliger, schwarz macht die Auslassung sichtbar; für gerichtliche Vorlagen ist das
+> in aller Regel die richtige Wahl.
+
 ### Warum das der entscheidende Unterschied ist
 
 Ein schwarzes Rechteck über einem Text ist eine Grafik. Der Text steht weiterhin darunter

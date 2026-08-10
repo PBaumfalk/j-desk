@@ -117,11 +117,22 @@ Für die Technik: [Störungssuche](../technik/05-stoerungssuche.md).
 
 Das ist vorgesehen. Sie sehen, wer gerade mitarbeitet und woran.
 
-Haben Sie **dieselbe** Sache gleichzeitig geändert, fragt J-DESK nach, welche Fassung
-gelten soll. Es wird nie stillschweigend eine Version verworfen — gerade bei Fristen und
-Status wäre das gefährlich.
+Haben Sie **dieselbe** Sache gleichzeitig geändert, meldet sich J-DESK mit der Frage,
+welche Fassung gelten soll. Es wird nie stillschweigend eine Version verworfen — gerade
+bei Fristen und Status wäre das gefährlich.
 
-Wählen Sie im Zweifel „Beides behalten" und klären es anschließend mit der Kollegin.
+![Die Rückfrage „Gleichzeitig bearbeitet" mit den beiden Wahlmöglichkeiten](../bilder/konflikt.png)
+
+Die Meldung nennt beides: **wer** die andere Änderung gemacht hat und **was Sie selbst**
+gerade geändert haben. Danach entscheiden Sie:
+
+| Wahl | Wirkung |
+|---|---|
+| **Meine Änderung übernehmen** | Ihre Fassung gilt |
+| **Meine Änderung verwerfen** | Die Fassung der Kollegin bleibt stehen |
+
+Im Zweifel: übernehmen und anschließend kurz mit der Kollegin sprechen. Nichts davon ist
+endgültig — über **„Aktivität…"** lässt sich jeder Stand zurückholen.
 
 ---
 
