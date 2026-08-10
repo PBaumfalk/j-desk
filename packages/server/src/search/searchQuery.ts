@@ -15,7 +15,9 @@ export type TrefferArt =
   | 'Ausschnitt'
   | 'PDF-Text'
   | 'OCR'
-  | 'Zeitleiste';
+  | 'Zeitleiste'
+  | 'Objekt'
+  | 'Tabelle';
 
 export interface SucheTreffer {
   id: string;
@@ -44,10 +46,19 @@ export interface SucheTreffer {
  * indiziert den festen Kartentitel einer Zeitleiste als eigene Produktentscheidung dieser Phase
  * (09-02 revidierte 09-01s ursprüngliche Entscheidung dagegen); ohne diesen Eintrag würde jede so
  * indizierte Zeile hier stillschweigend herausgefiltert und die Indizierung bliebe wirkungslos.
- * `tables`/`legalObjects` fehlen weiterhin (vorbestehende Lücke aus Phase 8, außerhalb dieses
- * Diffs) — dieselbe Behebung würde auch sie schließen, ist hier aber bewusst nicht mit erledigt.
+ * `tables`/`legalObjects` waren dieselbe Lücke, nur aus Phase 8 — hier nachgezogen: beide
+ * werden in `indexZeileFuer` (searchSync.ts) seit Phase 8 indiziert, fielen ohne Eintrag aber
+ * ebenso lautlos heraus. Auswirkung war erheblich: alle 13 juristischen Objekttypen aus
+ * LEGAL-01 (Tatsache, eigene Behauptung, Behauptung der Gegenseite, Beweismittel …) blieben
+ * über die Suche unauffindbar, obwohl das Anlegen genau dieser Objekte der Kern des Produkts
+ * ist. Am laufenden System reproduziert (2026-08-10): „Kaufpreis" lieferte null Treffer, obwohl
+ * eine Behauptungskarte mit diesem Wort auf dem Tisch lag.
+ *
+ * Damit das Muster nicht ein viertes Mal auftritt, prüft ein Wächtertest in
+ * `searchQuery.test.ts`, dass jede Art aus `VERSIONIERTE_ARTEN` entweder einen Badge hat oder
+ * ausdrücklich als badge-los geführt wird — eine wirkungslose Indizierung fällt sonst nicht auf.
  */
-const ART_ZU_TREFFERART: Partial<Record<string, TrefferArt>> = {
+export const ART_ZU_TREFFERART: Partial<Record<string, TrefferArt>> = {
   docs: 'Karte',
   stacks: 'Stapel',
   notes: 'Zettel',
@@ -56,6 +67,8 @@ const ART_ZU_TREFFERART: Partial<Record<string, TrefferArt>> = {
   stamps: 'Stempel',
   cutouts: 'Ausschnitt',
   zeitleisten: 'Zeitleiste',
+  legalObjects: 'Objekt',
+  tables: 'Tabelle',
 };
 
 /**
@@ -156,6 +169,21 @@ export function labelFuer(art: string, obj: Record<string, unknown>, state: Desk
       (n): n is string => n !== undefined,
     );
     return namen.join(' ↔ ');
+  }
+  // Juristische Objekte tragen ihre Aussage im Freitext — dieselbe Kürzung wie `notes` oben,
+  // damit eine lange Behauptung die Trefferliste nicht sprengt. Ohne diesen Zweig fiel der
+  // Eintrag zwar durch (der Badge allein reicht für die Auslieferung), erschien aber mit leerem
+  // Label: ein Treffer, den man in der Liste nicht lesen kann.
+  if (art === 'legalObjects') {
+    const text = typeof obj.text === 'string' ? obj.text.trim() : '';
+    return text.slice(0, 60);
+  }
+  // Tabellen: nur der Kartentitel ist indiziert (Zellen bewusst nicht, s. searchSync.ts), also
+  // ist er auch das Label. Unbenannte Tabellen tragen einen leeren Titel — dann ein sprechender
+  // Ersatz statt einer leeren Zeile, nach dem Vorbild von `stacks` oben.
+  if (art === 'tables') {
+    const titel = typeof obj.titel === 'string' ? obj.titel.trim() : '';
+    return titel !== '' ? titel.slice(0, 60) : 'Tabelle';
   }
   return '';
 }

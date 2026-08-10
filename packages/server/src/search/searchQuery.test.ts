@@ -5,7 +5,8 @@ import { createTestApp, createTestAppMitZweiNutzern } from '../testUtils';
 import { storeFile } from '../files';
 import type { Db } from '../db';
 import { warteAufLeerlauf, KONFIDENZ_SCHWELLE } from '../ocr/ocrQueue';
-import { fts5QueryAus, labelFuer } from './searchQuery';
+import { VERSIONIERTE_ARTEN } from '@j-desk/core';
+import { fts5QueryAus, labelFuer, ART_ZU_TREFFERART } from './searchQuery';
 
 const pdf = Buffer.from('%PDF-1.4\ninhalt');
 
@@ -228,6 +229,70 @@ describe('Treffer über neue Objektarten (Stempel/Ausschnitt/Verknüpfung) — e
     const eintrag = treffer.find((t) => t.objId === 'zl-such-1') as { art?: string } | undefined;
     expect(eintrag).toBeDefined();
     expect(eintrag?.art).toBe('Zeitleiste');
+  });
+
+  // Dieselbe Lücke wie bei `zeitleisten` oben, nur für die beiden Arten, die der Kommentar in
+  // searchQuery.ts als "vorbestehende Lücke aus Phase 8" ausdrücklich offen ließ:
+  // indexZeileFuer() indiziert `legalObjects.text` und den `tables`-Titel seit Phase 8, aber ohne
+  // Eintrag in ART_ZU_TREFFERART fiel jeder Kandidat über `if (!art) continue` lautlos heraus.
+  //
+  // Praktische Auswirkung, die den Fix rechtfertigt: ALLE 13 juristischen Objekttypen aus
+  // LEGAL-01 (Tatsache, eigene Behauptung, Behauptung der Gegenseite, Beweismittel …) waren über
+  // die Suche unauffindbar — bei einem Werkzeug, dessen Kern das Anlegen genau dieser Objekte
+  // ist. Am laufenden System reproduziert: "Kaufpreis" lieferte null Treffer, obwohl eine
+  // Behauptungskarte mit diesem Wort auf dem Tisch lag.
+  it('findet ein juristisches Objekt über seinen Text mit korrektem Art-Badge "Objekt"', async () => {
+    const { app, authHeaders } = await createTestApp();
+    const desk = (
+      await app.inject({ method: 'POST', url: '/api/v1/desks', headers: authHeaders, payload: { name: 'Akte Objekt' } })
+    ).json();
+    await app.inject({
+      method: 'POST', url: `/api/v1/desks/${desk.id}/commands`, headers: authHeaders,
+      payload: {
+        type: 'addLegalObject',
+        payload: { id: 'lo-such-1', kind: 'tatsache', text: 'Der Kaufpreis war fällig', position: { x: 0, y: 0 } },
+      },
+    });
+
+    const treffer = await suche(app, authHeaders, desk.id, 'Kaufpreis');
+    const eintrag = treffer.find((t) => t.objId === 'lo-such-1') as { art?: string; label?: string } | undefined;
+    expect(eintrag).toBeDefined();
+    expect(eintrag?.art).toBe('Objekt');
+    expect(eintrag?.label).toBe('Der Kaufpreis war fällig');
+  });
+
+  it('findet eine Tabellenkarte über ihren Titel mit korrektem Art-Badge "Tabelle"', async () => {
+    const { app, authHeaders } = await createTestApp();
+    const desk = (
+      await app.inject({ method: 'POST', url: '/api/v1/desks', headers: authHeaders, payload: { name: 'Akte Tabelle' } })
+    ).json();
+    // addTable legt die Karte mit leerem Titel an; benannt wird über renameTable.
+    await app.inject({
+      method: 'POST', url: `/api/v1/desks/${desk.id}/commands`, headers: authHeaders,
+      payload: { type: 'addTable', payload: { id: 'tb-such-1', position: { x: 0, y: 0 } } },
+    });
+    await app.inject({
+      method: 'POST', url: `/api/v1/desks/${desk.id}/commands`, headers: authHeaders,
+      payload: { type: 'renameTable', payload: { id: 'tb-such-1', titel: 'Zinsstaffel' } },
+    });
+
+    const treffer = await suche(app, authHeaders, desk.id, 'Zinsstaffel');
+    const eintrag = treffer.find((t) => t.objId === 'tb-such-1') as { art?: string } | undefined;
+    expect(eintrag).toBeDefined();
+    expect(eintrag?.art).toBe('Tabelle');
+  });
+
+  // Wächter gegen einen Rückfall des GANZEN Musters: Jede Art, die indexZeileFuer() mit einem
+  // Text versieht, MUSS einen Art-Badge haben — sonst ist die Indizierung wirkungslos, ohne dass
+  // irgendetwas fehlschlägt. Genau so entstand die Lücke dreimal (flags bewusst, zeitleisten in
+  // Phase 9 behoben, legalObjects/tables hier). `flags`, `strokes` und `clips` sind die bewusst
+  // ausgenommenen Arten — sie tragen laut UI-SPEC keinen eigenen Badge.
+  it('jede indizierbare Art hat einen Art-Badge (sonst faellt sie lautlos aus der Trefferliste)', () => {
+    const OHNE_BADGE_BEWUSST = new Set(['flags', 'strokes', 'clips', 'sitzungsmappen', 'zones']);
+    const fehlend = VERSIONIERTE_ARTEN.filter(
+      (art) => !OHNE_BADGE_BEWUSST.has(art) && ART_ZU_TREFFERART[art] === undefined,
+    );
+    expect(fehlend).toEqual([]);
   });
 });
 
