@@ -77,6 +77,8 @@ Das ist der Kern von J-DESK. Alles andere ist Beiwerk.
 2. Auf das zweite Dokument klicken
 3. Eine Linie erscheint
 
+![Behauptung, Beleg und Gegenposition mit farbigen Verknüpfungen](../bilder/schreibtisch-beispiel.png)
+
 Klicken Sie diese Linie an, öffnet sich ein kleines Fenster, in dem Sie festlegen, **worin die
 Beziehung besteht**:
 

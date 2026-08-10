@@ -16,6 +16,10 @@ J-DESK kennt für jeden Inhalt auf Ihrem Schreibtisch drei Stufen:
 | **mandant** | Für Mandantengäste sichtbar, aber **nicht** in Export-Dokumenten. |
 | **export** | Darf in Unterlagen, die das Haus verlassen. |
 
+Womit Sie in der Anwendung arbeiten, sind **Ebenen**. Jede trägt sichtbar, wer sie sehen darf:
+
+![Ebenen mit ihren Sichtbarkeiten](../bilder/ebenen.png)
+
 Entscheidend ist die Voreinstellung: **Was nicht ausdrücklich für den Export freigegeben ist,
 gilt als intern.** Nicht umgekehrt.
 
