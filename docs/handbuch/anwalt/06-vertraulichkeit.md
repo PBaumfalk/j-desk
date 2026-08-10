@@ -52,6 +52,11 @@ eingebracht.
 Bereichs aus der PDF-Datei entfernt, nicht überdeckt. Was weg ist, ist weg — auch für Kopieren,
 Textsuche und Auslesewerkzeuge.
 
+**Eine Schwärzung wirkt unabhängig von ihrer Freigabestufe.** Das ist die einzige Ausnahme
+von der Regel dieses Kapitels — und sie muss es sein: Bei allem anderen schützt Weglassen
+die Vertraulichkeit, bei einer Schwärzung würde Weglassen den Text freilegen. Sie müssen
+eine Schwärzung also **nicht** erst freigeben, damit sie greift. Ziehen genügt.
+
 Zwei zusätzliche Sicherungen:
 
 - **Im Zweifel wird mehr gelöscht, nicht weniger.** Wenn nicht eindeutig bestimmbar ist, ob ein

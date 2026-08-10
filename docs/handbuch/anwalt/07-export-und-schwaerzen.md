@@ -96,7 +96,11 @@ einfachen Werkzeugen wieder sichtbar machen.
 Genau dieser Fehler hat schon Behörden und Kanzleien in die Zeitung gebracht — mit
 offengelegten Namen von Zeugen, Kontodaten und Gesundheitsangaben.
 
-### Die beiden Sicherungen
+### Die drei Sicherungen
+
+**Die Schwärzung wirkt immer.** Anders als jede andere Markierung müssen Sie eine
+Schwärzung nicht für den Export freigeben. Sie greift, sobald Sie sie gezogen haben —
+sonst könnte eine vergessene Freigabe genau das Gegenteil bewirken.
 
 **Im Zweifel wird mehr entfernt, nicht weniger.** Lässt sich nicht eindeutig bestimmen, ob
 ein Textstück noch in den geschwärzten Bereich fällt, wird es entfernt. Zu viel Geschwärztes
@@ -106,13 +110,27 @@ sehen Sie sofort und können nachbessern; übrig gebliebener Text wäre der gef�
 und sucht nach Text, der verschwunden sein müsste. Findet es welchen, **bricht der Export
 ab** — Sie bekommen eine Meldung statt einer unsicheren Datei.
 
+> **Stolperstein — auf derselben Zeile kann mehr verschwinden, als der Balken zeigt.**
+> Bei Tabellen und mehrspaltigen Zeilen kann Text **links** der geschwärzten Stelle
+> mitentfernt werden, obwohl er im Bild noch steht. Das ist die Richtung, in die J-DESK
+> im Zweifel irrt — lieber zu viel weg als zu wenig. Sehen Sie sich deshalb bei Tabellen
+> das **fertige** Dokument an, nicht nur den Bildschirm.
+
 ### Wenn J-DESK sich weigert
 
-Bei ungewöhnlich aufgebauten PDF-Dateien — etwa gedrehten Seiten — verweigert J-DESK die
-Bearbeitung, statt an der falschen Stelle zu schwärzen. Eine Fehlermeldung
-ist besser als eine Datei, die aussieht, als sei sie geschwärzt.
+Bei ungewöhnlich aufgebauten PDF-Dateien — etwa gedrehten Seiten oder schräg gesetztem
+Text — verweigert J-DESK die Bearbeitung, statt an der falschen Stelle zu schwärzen. Sie
+sehen dann diese Meldung, und es entsteht **keine Datei**:
 
-In dem Fall hilft meist, das Dokument neu zu erzeugen oder als Bild zu rastern.
+> Die Schwärzung konnte nicht verifiziert werden; der Export wurde abgebrochen, damit
+> kein ungeprüftes Dokument entsteht.
+
+Das ist der Satz, den Sie lesen wollen, wenn etwas nicht stimmt — eine Fehlermeldung ist
+besser als eine Datei, die aussieht, als sei sie geschwärzt.
+
+In dem Fall hilft meist, das Dokument neu zu erzeugen oder als Bild zu rastern. Kommt die
+Meldung bei einem gewöhnlichen Schriftsatz, sagen Sie Ihrer Technikbetreuung Bescheid —
+dann stimmt etwas anderes nicht.
 
 ---
 
