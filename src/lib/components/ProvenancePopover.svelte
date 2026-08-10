@@ -117,6 +117,12 @@
     if (note) return reduziertAus(note, s.layers);
     const link = s.links.find((l) => l.id === id);
     if (link) return reduziertAus(link, s.layers);
+    // Juristische Objekte (LEGAL-01) sind nicht quellgebunden — sie entstehen aus der Wertung,
+    // nicht aus einem Griff ins Dokument. Ohne diesen Zweig meldete „Herkunft" im
+    // Objektmenü (showLegalObjectMenuAt) „Objekt nicht mehr vorhanden", obwohl die Karte
+    // sichtbar auf dem Tisch liegt.
+    const legalObject = (s.legalObjects ?? []).find((o) => o.id === id);
+    if (legalObject) return reduziertAus(legalObject, s.layers);
     // IN-02: bewusst vorbereitet, aktuell aber unerreichbar — es existiert (noch) kein
     // Kontextmenü-Eintrag (z. B. showClipMenu), der ui.provenancePopover mit einer Clip-id
     // befüllt. Kein toter Code im Sinne von Datenverlust, nur Wartungslast ohne UI-Anbindung;
