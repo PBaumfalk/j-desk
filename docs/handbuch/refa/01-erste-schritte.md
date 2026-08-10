@@ -65,19 +65,29 @@ den Kopf drehen.
 
 ---
 
-## Der Rechtsklick ist Ihr wichtigster Griff
+## Zwei Griffe, mit denen Sie fast alles erreichen
 
-Fast alles erreichen Sie über die **rechte Maustaste**:
+Sie müssen sich keine Menüstruktur merken. Es gibt zwei Stellen, und welche davon Sie
+brauchen, hängt nur daran, ob schon etwas auf dem Tisch liegt.
 
-- **Rechtsklick auf ein Dokument** → was Sie damit tun können (öffnen, herunterladen,
-  verknüpfen, zum Anlagenpaket hinzufügen, …)
-- **Rechtsklick auf freie Fläche** → was Sie neu anlegen können (Notiz, Inhalt aufnehmen,
-  aufräumen)
+**Etwas ist da — Rechtsklick darauf.** Das Kontextmenü zeigt, was Sie mit genau diesem
+Ding tun können: aufschlagen, verknüpfen, herunterladen, zum Anlagenpaket hinzufügen,
+in den Papierkorb legen.
 
-![Kontextmenü](../bilder/kontextmenue.jpg)
+![Das Kontextmenü eines Dokuments](../bilder/dokument-kontextmenue.png)
 
-Wenn Sie nicht weiterwissen: Rechtsklick auf das, worum es geht. Meistens steht die
-Antwort dort.
+**Etwas soll neu entstehen — obere Leiste.** Über **„+ Hinzufügen"** legen Sie an: Datei,
+Zettel, juristisches Objekt, Tabelle, Zeitleiste.
+
+![Das Menü „Hinzufügen"](../bilder/hinzufuegen-menue.png)
+
+**Alles, was den ganzen Schreibtisch betrifft**, steht hinter dem **Aktenzeichen oben
+links**: Akte wechseln, Inhalt aufnehmen, Anlagenpaket, Übergabe, aufräumen, Aktivität.
+
+![Das Schreibtisch-Menü hinter dem Aktenzeichen](../bilder/schreibtisch-menue.png)
+
+> **Auf der freien Fläche gibt es kein Rechtsklick-Menü.** Wenn dort nichts passiert, ist
+> das kein Fehler — was Sie suchen, steht in einem der beiden Menüs oben.
 
 ---
 

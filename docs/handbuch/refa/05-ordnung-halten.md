@@ -38,17 +38,22 @@ versehentlich beim Verschieben.
 
 ## Der Tisch ist ein Chaos — kann ich aufräumen lassen?
 
-**Schreibtisch-Menü → „Schreibtisch aufräumen…"**
+Ja. J-DESK schaut sich den Tisch an und schlägt vor, was sich ordnen ließe: ausrichten,
+sortieren, gruppieren, Dubletten zusammenlegen, unverbundene Notizen sammeln. Ausgeführt
+wird nur, was Sie ausdrücklich stehen lassen.
 
-J-DESK schaut sich den Tisch an und schlägt vor: ausrichten, sortieren, gruppieren,
-Dubletten zusammenlegen, unverbundene Notizen sammeln.
+**So geht's:**
 
-> **Wichtig:** Aufräumen zeigt **immer erst eine Vorschau**. Sie
-> sehen, was geschehen *würde*, und entscheiden. Es passiert nie automatisch etwas, das Sie
-> nicht angesehen haben.
+1. Oben links auf das **Aktenzeichen** klicken.
+2. **„Schreibtisch aufräumen…"** wählen.
+3. Die Vorschau durchgehen und **abwählen**, was nicht geschehen soll.
+4. **„Ausführen"** — die Zahl im Knopf sagt, wie viele Vorschläge übrig sind.
 
-Wenn Ihnen ein Vorschlag nicht gefällt, lehnen Sie ihn ab — der Rest wird trotzdem
-ausgeführt.
+![Die Aufräum-Vorschau mit abwählbaren Vorschlägen](../bilder/aufraeumen-dialog.png)
+
+> **Nichts geschieht automatisch.** Aufräumen zeigt immer erst die Vorschau. Wenn Ihnen ein
+> Vorschlag nicht gefällt, nehmen Sie den Haken heraus — der Rest wird trotzdem ausgeführt.
+> Und was doch zu viel war, liegt im Papierkorb und lässt sich zurückholen.
 
 ---
 
@@ -88,34 +93,34 @@ es keine Treffer.
 
 ## Kann ich mir einen Blick merken?
 
-Ja — das sind **Ansichten**.
+Ja — das sind **Ansichten**. Wenn Sie den Tisch einmal so eingerichtet haben, wie Sie ihn
+für eine bestimmte Arbeit brauchen („nur was den Verzug betrifft"), speichern Sie diesen
+Blick und kehren später mit einem Klick dorthin zurück.
 
-Sie richten den Tisch so ein, wie Sie ihn brauchen („nur was den Verzug betrifft"), und
-speichern das über **Ansichten → Ansicht speichern…**. Gemerkt werden Position, Zoom,
-sichtbare Ebenen, Filter und geöffnete Dokumente.
+**So geht's:**
 
-Später kehren Sie mit einem Klick dorthin zurück. Sinnvolle Ansichten:
-„Termin am 3.9.", „Was noch offen ist", „Nur die Anlagen".
+1. Den Tisch so einrichten, wie Sie ihn brauchen.
+2. In der oberen Leiste auf **„Ansichten"** klicken.
+3. **„+ Ansicht speichern…"** wählen und einen Namen vergeben.
+
+![Das Ansichten-Panel mit „Ansicht speichern…"](../bilder/ansichten.png)
+
+Gemerkt werden Position, Zoom, sichtbare Ebenen und geöffnete Dokumente. Sinnvolle
+Ansichten: „Termin am 3.9.", „Was noch offen ist", „Nur die Anlagen".
 
 ---
 
 ## Wozu sind Zonen gut?
 
-Über die Befehlsliste → **„Zone anlegen…"** markieren Sie einen benannten Bereich auf dem
-Tisch: „Klägerseite", „Beklagtenseite", „noch zu prüfen".
+Zonen sind benannte Bereiche auf dem Tisch — „Klägerseite", „Beklagtenseite", „noch zu
+prüfen". Wie Ablagekörbe auf einem echten Schreibtisch: Man legt Dinge hinein und weiß,
+was sie dort bedeuten.
 
-Wie Ablagekörbe auf einem echten Schreibtisch — man legt Dinge hinein und weiß, was sie
-dort bedeuten.
+**So geht's:** Befehlsliste öffnen (Schreibtisch-Menü → **„Befehle…"**) und **„Zone
+anlegen…"** wählen.
 
----
-
-## Ich brauche eine Vorlage für einen neuen Fall
-
-**Schreibtisch-Menü → „Neu aus Vorlage…"**
-
-Es gibt vorbereitete Anordnungen für gängige Mandatstypen (etwa Kündigungsschutz,
-Strafverfahren, Vertragsprüfung) mit passenden Bereichen und Objekttypen. Spart das
-Einrichten bei jedem neuen Mandat.
+> **Zonen anlegen darf, wer den Schreibtisch verwaltet.** Fehlt Ihnen der Eintrag, ist das
+> kein Fehler — fragen Sie, wer den Schreibtisch besitzt.
 
 ---
 

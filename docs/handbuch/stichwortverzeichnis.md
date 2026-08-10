@@ -13,6 +13,7 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 |---|---|
 | **Abmelden** | Rechts oben in der Leiste |
 | **Akte öffnen / wechseln** | [Erste Schritte](refa/01-erste-schritte.md#wie-öffne-ich-eine-akte) |
+| **Aktivität (Schreibtisch zurücksetzen)** | [Wenn etwas fehlt](refa/06-wenn-etwas-fehlt.md#ich-finde-einen-früheren-stand-nicht-mehr) — **nur hier** lässt sich ein früherer Stand wiederherstellen, die *Historie* zeigt ihn nur an |
 | **Aktivitäten, wer hat was gemacht** | → *Historie* |
 | **Anlagen, Anlagenband, Anlagenkonvolut** | [Anlagen zusammenstellen](refa/03-anlagenpaket.md) |
 | **Anlagenpaket** | [Anlagen zusammenstellen](refa/03-anlagenpaket.md) |
@@ -53,6 +54,7 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | **Ebenen** | [Benutzer und Rechte](technik/04-benutzer-und-rechte.md#die-ebenen) · [Vertraulichkeit](anwalt/06-vertraulichkeit.md) |
 | **Einrichtung, erste** | [Erste Einrichtung](technik/02-erste-einrichtung.md) |
 | **Exportieren** | [Export und Schwärzen](anwalt/07-export-und-schwaerzen.md) |
+| **Externe Referenz** | [Post und Dokumente](refa/02-post-und-dokumente.md#was-bedeutet-ablage) — Verweis auf etwas, das nicht in der Akte liegt |
 
 ## F
 
@@ -79,6 +81,7 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 
 | Sie suchen | Sie finden es hier |
 |---|---|
+| **Inhalt aufnehmen (Urteil, Norm, Weblink, Foto)** | [Post und Dokumente](refa/02-post-und-dokumente.md#wie-nehme-ich-etwas-neues-auf) |
 | **Installation** | [Installation](technik/01-installation.md) |
 | **Intern / vertraulich** | [Vertraulichkeit](anwalt/06-vertraulichkeit.md) |
 | **iPad** | [Termin und KI](anwalt/08-termin-und-ki.md#unterwegs) |
@@ -138,7 +141,7 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | **Verknüpfen** | [Verknüpfen](anwalt/03-verknuepfen.md) |
 | **Vergleichen (zwei Fassungen)** | [Chronologie und Vergleich](anwalt/05-chronologie-und-vergleich.md#zwei-fassungen-vergleichen) |
 | **Version / neue Fassung** | [Chronologie und Vergleich](anwalt/05-chronologie-und-vergleich.md) |
-| **Vorlage für neuen Fall** | [Ordnung halten](refa/05-ordnung-halten.md#ich-brauche-eine-vorlage-für-einen-neuen-fall) |
+| **Vorlage für neuen Fall** | Gibt es nur ohne j-lawyer-Anbindung. Arbeitet Ihre Kanzlei mit j-lawyer, entstehen Schreibtische aus Akten — siehe [Akte öffnen](refa/01-erste-schritte.md#wie-öffne-ich-eine-akte) |
 | **Wiedervorlage** | → *Aufgaben und Fristen* |
 | **Zeitleiste / Chronologie** | [Chronologie und Vergleich](anwalt/05-chronologie-und-vergleich.md) |
 | **Zonen** | [Ordnung halten](refa/05-ordnung-halten.md#wozu-sind-zonen-gut) |

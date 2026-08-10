@@ -40,6 +40,8 @@ Für jedes freigegebene Dokument, das ins Paket soll:
 
 Sie können das nach und nach tun, während Sie die Akte durchgehen.
 
+![Das Kontextmenü eines freigegebenen Dokuments mit „Zu Anlagenpaket hinzufügen"](../bilder/dokument-kontextmenue.png)
+
 > **Abkürzung:** Liegt schon ein Stapel mit den richtigen Dokumenten, geht auch
 > **Rechtsklick auf den Stapel → „Anlagenpaket aus Stapel…"**.
 
@@ -48,7 +50,12 @@ Sie können das nach und nach tun, während Sie die Akte durchgehen.
 Der Dialog öffnet sich **beim ersten Hinzufügen von selbst**. Später erreichen Sie ihn
 jederzeit wieder über **Schreibtisch-Menü → „Anlagenpaket…"**.
 
-![Der Anlagenpaket-Dialog](../bilder/anlagenpaket.jpg)
+![Der Anlagenpaket-Dialog mit Deckblatt, Auswahl und Reihenfolge](../bilder/anlagenpaket-dialog.png)
+
+> **Lesen Sie die Zeile unter „Dubletten & Leerseiten".** Steht dort „*n* Unterlage(n)
+> waren nicht verfügbar und wurden ausgelassen", fehlt im Paket etwas — in aller Regel,
+> weil bei diesen Dokumenten die Freigabe auf *exportierbar* noch fehlt. Das Paket wird
+> trotzdem erzeugt, nur eben ohne diese Anlagen.
 
 Vier Bereiche:
 

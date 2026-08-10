@@ -19,17 +19,45 @@ J-DESK unterscheidet drei Stufen, und nur die dritte ist endgültig:
 **Und in jedem Fall:** In j-lawyer wird **nichts** gelöscht. Das Originaldokument ist
 unberührt, ganz gleich, was Sie in J-DESK tun.
 
-Papierkorb öffnen: über die Befehlsliste oder das Papierkorb-Symbol unten rechts.
+**So holen Sie etwas zurück:**
+
+1. Auf das **Papierkorb-Symbol unten rechts** klicken. Die Zahl daran zeigt, wie viel darin
+   liegt.
+2. Beim gesuchten Eintrag auf **„Wiederherstellen"** klicken — die Karte liegt wieder auf
+   dem Tisch.
+
+![Der geöffnete Papierkorb mit einem Eintrag und den Knöpfen „Wiederherstellen" und „Schreddern…"](../bilder/papierkorb.png)
+
+> **„Schreddern…" und „Korb leeren…" sind endgültig.** Beides fragt ausdrücklich nach,
+> bevor es ausgeführt wird. Auch danach bleibt das Original in j-lawyer unberührt —
+> endgültig weg ist nur, was Sie in J-DESK daran gearbeitet haben.
 
 ---
 
 ## Ich finde einen früheren Stand nicht mehr
 
-Über die **Historie** (obere Leiste) sehen Sie, wer wann was geändert hat — und Sie können
-einen **früheren Schreibtischstand wiederherstellen**.
+Der ganze Schreibtisch lässt sich auf einen früheren Stand zurücksetzen — nicht nur eine
+einzelne Karte. Das ist der Ausweg, wenn beim Aufräumen zu viel verschoben wurde oder eine
+Änderung sich als Irrweg herausstellt.
 
-Die Wiederherstellung wird selbst wieder protokolliert. Es geht also nichts verloren, wenn
-Sie sich anders entscheiden.
+**So geht's:**
+
+1. Oben links auf das **Aktenzeichen** klicken.
+2. **„Aktivität…"** wählen.
+3. Bei dem Zeitpunkt, auf den Sie zurückwollen, auf **„↺ Wiederherstellen"** klicken.
+4. Die Rückfrage bestätigen.
+
+![Die Aktivitätsliste mit „Wiederherstellen" hinter jedem Eintrag](../bilder/aktivitaet.png)
+
+Der aktuelle Stand wird dabei automatisch gesichert und bleibt seinerseits
+wiederherstellbar. Es geht also nichts verloren, wenn Sie sich anders entscheiden. Alle
+verbundenen Kolleginnen sehen die Änderung sofort.
+
+> **Historie oder Aktivität?** Die **Historie** in der oberen Leiste zeigt dieselben
+> Vorgänge, aber nur zum Nachlesen. Zurücksetzen können Sie ausschließlich über
+> **„Aktivität…"** — und nur, wenn Sie den Schreibtisch verwalten dürfen.
+
+![Die Historie zeigt Uhrzeit, Person und Vorgang](../bilder/historie.png)
 
 ---
 
