@@ -231,7 +231,7 @@
           </div>
         {/each}
       {:else if fehler}
-        <div class="fehler">
+        <div class="ladefehler">
           <p>{fehler}</p>
           <button onclick={laedt}>Erneut versuchen</button>
         </div>
@@ -333,7 +333,10 @@
   .eintrag:hover { background: var(--glass-hover); }
   .label { font-size: 13px; }
   .wert { font-size: 12px; opacity: .75; white-space: pre-wrap; }
-  .hinweis, .fehler { padding: 18px 4px; font-size: 13px; opacity: .75; }
+  /* `.ladefehler` statt `.fehler`: `fehler` ist zugleich einer der vier Statuswerte, die
+     punktKlasse() ausgibt — unter dem alten Namen erbte der 8px-Statuspunkt der Fehlerzeile
+     das Blockpolster (18px 4px) und wurde zu einem 16x44-Oval. */
+  .hinweis, .ladefehler { padding: 18px 4px; font-size: 13px; opacity: .75; }
   .punkt { width: 8px; height: 8px; border-radius: 50%; flex: none; }
   /* Statusfarben — Wiederverwendung der .status-badge-Palette (DocCard.svelte:424-429), kein
      neuer Farbwert: .neu (Grün) = ok, .unerreichbar (Amber) = warnung, .gone (Dunkelrot) =
