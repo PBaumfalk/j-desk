@@ -56,10 +56,25 @@ Dienst abschalten — J-DESK läuft ohne ihn vollständig.
 
 ---
 
-## „Anmeldung fehlgeschlagen", obwohl die Zugangsdaten stimmen
+## Die Anmeldung wird abgewiesen
 
-Fast immer erreicht J-DESK das j-lawyer nicht. Prüfen Sie **vom Container aus**, nicht vom
-Server:
+**Lesen Sie zuerst die Meldung — sie sagt Ihnen bereits, wo Sie suchen müssen.** J-DESK
+unterscheidet drei Fälle, und nur der erste hat mit den Zugangsdaten zu tun:
+
+| Meldung | Bedeutung |
+|---|---|
+| **Benutzername oder Passwort falsch** | j-lawyer wurde erreicht und hat die Zugangsdaten abgelehnt. Das Konto in j-lawyer prüfen — nicht die Konfiguration von J-DESK |
+| **j-lawyer ist nicht erreichbar** | J-DESK bekommt gar keine Antwort. Adresse oder Netz — weiter mit dem Abschnitt unten |
+| **j-lawyer antwortet mit HTTP …** | j-lawyer antwortet, aber mit einem Fehler. Dort in die Protokolle sehen |
+
+![Die Anmeldemaske weist falsche Zugangsdaten mit eigener Meldung ab](../bilder/anmeldung-fehlgeschlagen.png)
+
+Der Unterschied ist die halbe Störungssuche: Bei „Benutzername oder Passwort falsch" steht
+die Verbindung nachweislich, denn J-DESK hat die Antwort von j-lawyer erhalten.
+
+### Wenn j-lawyer nicht erreichbar ist
+
+Prüfen Sie **vom Container aus**, nicht vom Server:
 
 ```bash
 sudo docker compose exec j-desk node -e "fetch(process.env.JLAWYER_URL+'/v1/cases/list').then(r=>console.log('Antwort:',r.status)).catch(e=>console.log('Kein Kontakt:',e.message))"
@@ -103,7 +118,18 @@ sudo docker compose up -d
 Erwartetes Verhalten, wenn die Office-Vorschau nicht eingerichtet ist — die Dateien werden dann
 zum Herunterladen angeboten. Einrichtung siehe [Installation](01-installation.md).
 
-Ist sie eingerichtet und es klappt trotzdem nicht, ist meist eine der beiden Richtungen gestört:
+Ist sie eingerichtet und es klappt trotzdem nicht, sehen Sie zuerst in der **Systemdiagnose**
+nach (obere Leiste). Steht der Dienst dort auf Rot, brauchen Sie nicht weiterzusuchen — die
+Zeile nennt die Ursache im Klartext:
+
+![Die Systemdiagnose meldet die Office-Vorschau als nicht erreichbar](../bilder/systemdiagnose-gestoert.png)
+
+Dasselbe Muster gilt für die anderen drei Zeilen: Ein roter Punkt steht immer neben dem
+Dienst, der nicht antwortet, samt Fehlergrund. Steht *j-lawyer* auf Rot, gehört Ihre
+Aufmerksamkeit dem Abschnitt weiter oben, nicht diesem hier.
+
+Bleibt die Zeile grün und die Vorschau trotzdem leer, ist meist eine der beiden Richtungen
+gestört:
 
 - **J-DESK erreicht den Vorschaudienst nicht** → `EUROOFFICE_URL` prüfen.
 - **Der Vorschaudienst erreicht J-DESK nicht** → `PUBLIC_URL` prüfen. Der Dienst muss die Datei

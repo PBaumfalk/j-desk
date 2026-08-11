@@ -12,6 +12,7 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | Sie suchen | Sie finden es hier |
 |---|---|
 | **Abmelden** | Rechts oben in der Leiste |
+| **Anmeldung wird abgewiesen** | [Störungssuche](technik/05-stoerungssuche.md#die-anmeldung-wird-abgewiesen) — die Meldung sagt bereits, ob es an den Zugangsdaten oder an der Verbindung liegt |
 | **Akte öffnen / wechseln** | [Erste Schritte](refa/01-erste-schritte.md#wie-öffne-ich-eine-akte) |
 | **Aktivität (Schreibtisch zurücksetzen)** | [Wenn etwas fehlt](refa/06-wenn-etwas-fehlt.md#ich-finde-einen-früheren-stand-nicht-mehr) — **nur hier** lässt sich ein früherer Stand wiederherstellen, die *Historie* zeigt ihn nur an |
 | **Aktivitäten, wer hat was gemacht** | → *Historie* |
@@ -33,7 +34,7 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | **Backup** | → *Sicherung* |
 | **Behauptung anlegen** | [Verknüpfen](anwalt/03-verknuepfen.md#die-dreizehn-objekttypen) |
 | **Benachrichtigungen** | [Aufgaben und Fristen](refa/04-aufgaben-und-fristen.md#wie-weise-ich-eine-aufgabe-zu) |
-| **Benutzer anlegen** | [Benutzer und Rechte](technik/04-benutzer-und-rechte.md) |
+| **Benutzer anlegen** | [Benutzer und Rechte](technik/04-benutzer-und-rechte.md#wie-lege-ich-benutzer-an) — im j-lawyer-Betrieb gar nicht, die Konten kommen von dort |
 | **Betriebsart / Betriebsmodus (eigenständig oder j-lawyer)** | [Erste Einrichtung](technik/02-erste-einrichtung.md#zwei-wege-das-einzustellen) |
 | **Beweismittel** | [Verknüpfen](anwalt/03-verknuepfen.md) · [Lücken finden](anwalt/04-luecken-finden.md) |
 
@@ -88,6 +89,7 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 |---|---|
 | **Inhalt aufnehmen (Urteil, Norm, Weblink, Foto)** | [Post und Dokumente](refa/02-post-und-dokumente.md#wie-nehme-ich-etwas-neues-auf) |
 | **Installation** | [Installation](technik/01-installation.md) |
+| **Kollegin sieht den Schreibtisch nicht** | [Benutzer und Rechte](technik/04-benutzer-und-rechte.md#wie-kommt-eine-kollegin-an-einen-schreibtisch) — im j-lawyer-Betrieb genügt es, dass sie die Akte öffnet |
 | **Intern / vertraulich** | [Vertraulichkeit](anwalt/06-vertraulichkeit.md) |
 | **iPad** | [Termin und KI](anwalt/08-termin-und-ki.md#unterwegs) |
 | **j-lawyer anbinden** | [Erste Einrichtung](technik/02-erste-einrichtung.md#j-lawyer-anbinden) |
@@ -145,6 +147,8 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | Sie suchen | Sie finden es hier |
 |---|---|
 | **Tabelle / rechnen** | [Chronologie und Vergleich](anwalt/05-chronologie-und-vergleich.md#rechnen-in-der-akte) |
+| **Teilen (Schreibtisch freigeben)** | [Benutzer und Rechte](technik/04-benutzer-und-rechte.md#wie-kommt-eine-kollegin-an-einen-schreibtisch) |
+| **Unbekannter Nutzer (Meldung beim Teilen)** | [Benutzer und Rechte](technik/04-benutzer-und-rechte.md#wie-kommt-eine-kollegin-an-einen-schreibtisch) — die Person muss sich einmal selbst angemeldet haben |
 | **Übergabe (Export als PDF)** | [Export und Schwärzen](anwalt/07-export-und-schwaerzen.md#was-kann-ich-exportieren) — sechs Formate hinter Schreibtisch-Menü → *Übergabe…* |
 | **Übergabe an j-lawyer** | [Aufgaben und Fristen](refa/04-aufgaben-und-fristen.md#wie-übergebe-ich-eine-aufgabe-an-j-lawyer) |
 | **Verschiebe-Sperre** | [Termin und KI](anwalt/08-termin-und-ki.md#im-termin-der-sitzungsmodus) |
@@ -157,6 +161,7 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | **Zeitleiste / Chronologie** | [Chronologie und Vergleich](anwalt/05-chronologie-und-vergleich.md) |
 | **Zonen** | [Ordnung halten](refa/05-ordnung-halten.md#wozu-sind-zonen-gut) |
 | **Zurückholen (gelöscht)** | [Wenn etwas fehlt](refa/06-wenn-etwas-fehlt.md#ich-habe-aus-versehen-etwas-gelöscht) |
+| **Zwischenspeicher (Dokumente aus j-lawyer)** | [Betrieb und Sicherung](technik/03-betrieb-und-sicherung.md#wo-ihre-daten-liegen) — liegt im Datenverzeichnis und enthält Mandantendokumente |
 
 ---
 

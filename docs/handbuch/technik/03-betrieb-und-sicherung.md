@@ -13,8 +13,18 @@ Alles an einer Stelle:
   `docker volume inspect <projekt>_j_desk_daten`
 - **Direktinstallation:** `/var/lib/j-desk`
 
-Darin: die Datenbank (`desktop.sqlite`), die hochgeladenen Dateien (`files/`) und die
-automatischen Sicherungen (`backup/`).
+Darin: die Datenbank (`desktop.sqlite`), die hochgeladenen Dateien (`files/`), die
+automatischen Sicherungen (`backup/`) — und im j-lawyer-Betrieb der Zwischenspeicher
+`jlcache/`.
+
+> **Was im Zwischenspeicher liegt, sollten Sie wissen.** J-DESK holt Dokumente aus j-lawyer
+> und legt sie beim ersten Öffnen als Kopie in `jlcache/` ab, damit sie beim nächsten Mal
+> sofort da sind. Es sind vollständige Mandantendokumente. Ändert sich ein Dokument in
+> j-lawyer, ersetzt J-DESK die alte Fassung; von jedem Dokument liegt also höchstens eine.
+>
+> Für Sie heißt das zweierlei: Das Datenverzeichnis ist **auch im j-lawyer-Betrieb
+> vertraulich** und gehört entsprechend geschützt — und es wächst mit der Zahl der
+> geöffneten Dokumente, obwohl J-DESK selbst nichts hochlädt.
 
 ## Sicherung
 
@@ -137,8 +147,21 @@ http://<server>:4810/api/v1/auth/status
 
 Antwortet sie mit HTTP 200, läuft J-DESK. Antwortet sie nicht, stimmt etwas nicht.
 
-Behalten Sie außerdem den **Platz auf der Platte** im Blick. Hochgeladene Dateien und Sicherungen
-wachsen mit der Zeit; eine volle Platte legt den Dienst lahm.
+Behalten Sie außerdem den **Platz auf der Platte** im Blick. Dateien und Sicherungen wachsen
+mit der Zeit; eine volle Platte legt den Dienst lahm. Die Größen stehen in der
+**Systemdiagnose** unter *Speicher*:
+
+![Der Speicherbereich der Systemdiagnose mit Datenbankgröße und Dateispeicher](../bilder/speicherstand.png)
+
+> **Lesen Sie diese Zeilen richtig.** *Dateispeicher* zählt nur, was in J-DESK selbst
+> hochgeladen wurde. Im j-lawyer-Betrieb steht dort deshalb regelmäßig `0 B (0 Dateien)`,
+> während das Datenverzeichnis durch den Zwischenspeicher trotzdem wächst (siehe *Wo Ihre
+> Daten liegen*). Die beiden Zeilen sind eine Auskunft über J-DESK, keine Messung Ihrer
+> Platte.
+>
+> Den freien Plattenplatz hat J-DESK dennoch im Blick: Wird er knapp, erscheint an der Zeile
+> *Dateispeicher* eine Warnung mit der verbleibenden Menge — unabhängig davon, wer den Platz
+> belegt.
 
 ## Berufsrechtliches
 
