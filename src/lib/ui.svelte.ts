@@ -260,6 +260,26 @@ export const ui = $state({
   letzteFundstelle: null as Fundstelle | null,
 });
 
+/** Menüzustand, wie ihn `ui.menu` trägt — benannt, damit `menueNachAktion()` ihn führen kann. */
+export type MenuState = { x: number; y: number; items: MenuItem[]; columns?: number; input?: MenuInput };
+
+/**
+ * Entscheidet, was nach dem Auslösen eines Kontextmenü-Eintrags mit dem Menü geschieht.
+ *
+ * Der Aufrufer merkt sich `ui.menu` VOR `item.action()` und weist das Ergebnis danach wieder
+ * zu. Hat die Aktion nichts am Menü geändert, wird geschlossen (der Normalfall). Hat sie
+ * selbst ein Folgemenü an dieselbe Stelle gesetzt — so arbeiten die Zweischritt-Einträge
+ * „Ebene ändern" (02-04) und „Freigabe" (03-01) —, bleibt dieses stehen.
+ *
+ * Ohne diese Unterscheidung schloss der Handler das Folgemenü in derselben Anweisung wieder,
+ * in der die Aktion es geöffnet hatte: Der zweite Schritt war nie erreichbar. Gefunden beim
+ * Nachholen des UAT-Rückstands zu 02-04; das Muster stand seit dem ersten Commit der
+ * Komponente, die Zweischritt-Einträge kamen erst später dazu.
+ */
+export function menueNachAktion(vorher: MenuState | null, jetzt: MenuState | null): MenuState | null {
+  return jetzt === vorher ? null : jetzt;
+}
+
 /**
  * WR-02-Bündelung (11-01 Task 3): setzt alle SIEBEN in Phase 11 neu eingeführten `ui`-Felder auf
  * ihren Anfangswert — dieselbe Bündelungsform wie `clearHistorieCache()`, damit die

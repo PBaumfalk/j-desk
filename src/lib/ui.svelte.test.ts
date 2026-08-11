@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import {
-  ui, setJlVersionIncompatible, toast403, clearHistorieCache, pointerUeberZeitleiste,
+  ui, setJlVersionIncompatible, toast403, clearHistorieCache, pointerUeberZeitleiste, menueNachAktion,
   setzeSitzungsUiZurueck,
 } from './ui.svelte';
 
@@ -201,5 +201,28 @@ describe('setzeSitzungsUiZurueck (SESS-01/SESS-02/VIEW-01, 11-01 Task 3, WR-02)'
     expect(ui.highlightedIds.has('d1')).toBe(true);
     setzeSitzungsUiZurueck();
     expect(ui.highlightedIds.size).toBe(0);
+  });
+});
+
+describe('menueNachAktion (Zweischritt-Kontextmenüs, Befund UAT 02-04)', () => {
+  const menu = (x: number) => ({ x, y: 0, items: [] });
+
+  it('schließt das Menü, wenn die Aktion es unangetastet ließ', () => {
+    const offen = menu(10);
+    expect(menueNachAktion(offen, offen)).toBeNull();
+  });
+
+  it('lässt ein von der Aktion geöffnetes Folgemenü stehen', () => {
+    const erst = menu(10);
+    const folge = menu(10); // gleiche Position, andere Einträge — der Zweischritt von „Ebene ändern"
+    expect(menueNachAktion(erst, folge)).toBe(folge);
+  });
+
+  it('bleibt geschlossen, wenn die Aktion selbst geschlossen hat', () => {
+    expect(menueNachAktion(menu(10), null)).toBeNull();
+  });
+
+  it('behandelt den Start ohne offenes Menü wie einen Schließvorgang', () => {
+    expect(menueNachAktion(null, null)).toBeNull();
   });
 });

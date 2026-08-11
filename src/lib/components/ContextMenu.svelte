@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ui } from '../ui.svelte';
+  import { ui, menueNachAktion } from '../ui.svelte';
 
   // Verhindert, dass ein synthetischer Klick (z. B. von Safari beim Abheben nach Lang-Druck)
   // sofort den unter dem Finger liegenden Menüeintrag auslöst.
@@ -33,7 +33,15 @@
       <button
         title={item.title}
         onpointerdown={(e) => e.stopPropagation()}
-        onclick={() => { if (Date.now() - openedAt < 300) return; item.action(); ui.menu = null; }}
+        onclick={() => {
+          if (Date.now() - openedAt < 300) return;
+          // Zweischritt-Einträge („Ebene ändern", „Freigabe") setzen in action() selbst ein
+          // Folgemenü an dieselbe Stelle — ein pauschales `ui.menu = null` würde es in
+          // derselben Anweisung wieder verwerfen (Befund UAT 02-04).
+          const vorher = ui.menu;
+          item.action();
+          ui.menu = menueNachAktion(vorher, ui.menu);
+        }}
       >
         {item.label}
       </button>
