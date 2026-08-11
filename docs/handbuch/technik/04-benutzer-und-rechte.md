@@ -65,7 +65,11 @@ Schreibtisch für ihn zu.** Ein zweiter Ort, an dem Sie das pflegen müssten, ex
 hinzunehmen wollen: obere Leiste → **„Teilen"**. Der Dialog listet alle Mitglieder mit ihrer
 Rolle; die Auswahl wirkt sofort, es gibt keinen Speichern-Knopf.
 
-![Der Teilen-Dialog mit dem Eigentümer und der Zeile zum Hinzufügen](../bilder/teilen-dialog.png)
+![Der Teilen-Dialog: Eigentümer ohne Auswahlfeld, darunter ein Mitglied mit Rollenauswahl und „Entfernen"](../bilder/teilen-mitglied.png)
+
+Solange niemand eingeladen ist, steht dort nur Ihre eigene Zeile:
+
+![Der Teilen-Dialog ohne weitere Mitglieder](../bilder/teilen-dialog.png)
 
 > **Stolperstein: „Unbekannter Nutzer".** Sie können nur Personen eintragen, die J-DESK
 > bereits kennt — und J-DESK lernt eine Person erst kennen, **wenn sie sich mindestens
