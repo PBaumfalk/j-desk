@@ -20,9 +20,34 @@ automatischen Sicherungen (`backup/`).
 
 ### Was J-DESK selbst tut
 
-J-DESK legt automatisch Sicherungen im Unterordner `backup/` an. **Das ersetzt keine
-Datensicherung** — liegt der Ordner auf derselben Platte, ist er bei einem Plattendefekt genauso
-verloren wie das Original.
+J-DESK legt automatisch Sicherungen im Unterordner `backup/` an — standardmäßig **alle sechs
+Stunden**, einstellbar über `BACKUP_INTERVAL_HOURS`. **Das ersetzt keine Datensicherung** —
+liegt der Ordner auf derselben Platte, ist er bei einem Plattendefekt genauso verloren wie
+das Original.
+
+**Wo Sie den Stand sehen:** In der **Systemdiagnose** (obere Leiste) steht unter *Backup*,
+wann zuletzt gesichert wurde und wann die nächste Sicherung fällig ist. Der Knopf **„Jetzt
+sichern"** löst eine Sicherung von Hand aus — nützlich vor einem Update.
+
+![Der Sicherungsbereich der Systemdiagnose mit Zeitpunkten und dem Knopf „Jetzt sichern"](../bilder/sicherungsstand.png)
+
+> **Prüfen Sie diese Zeile regelmäßig.** Liegt die letzte Sicherung länger zurück als der
+> eingestellte Takt, läuft etwas nicht — und das merkt man sonst erst, wenn man die
+> Sicherung braucht.
+
+### Das Diagnosepaket
+
+Darunter liegt **„Diagnosepaket exportieren"** — eine lesbare Textdatei zum Mitschicken, wenn
+Sie eine Störung melden.
+
+**Sie können es bedenkenlos herausgeben.** Das Paket enthält ausschließlich technische
+Zustandsangaben: Versionen, ob eine Verbindung steht, Speichergrößen, Sicherungszeitpunkte.
+Ausdrücklich **nicht** enthalten sind Mandanteninhalte, Dokumente, Passwörter und
+Zugangsdaten — und auch keine Protokolldateien, weil darin Mandantennamen auftauchen könnten.
+Selbst die konfigurierten Adressen Ihrer j-lawyer- und Vorschau-Anbindung bleiben draußen; es
+steht nur da, ob die Verbindung steht.
+
+Das ist keine Absichtserklärung, sondern im Programm so gebaut und durch Tests abgesichert.
 
 ### Was Sie tun müssen
 

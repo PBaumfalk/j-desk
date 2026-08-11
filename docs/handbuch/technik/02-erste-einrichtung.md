@@ -18,7 +18,23 @@ Einstellung** — aber er ändert alles, was Anwender erleben.
 | Ersteinrichtungsmaske | **erscheint nicht** | erscheint beim ersten Aufruf |
 | Geeignet für | **Kanzleibetrieb** | Ausprobieren, Schulung |
 
-Ein Wechsel ist später möglich — die Einstellung ändern und neu starten.
+### Zwei Wege, das einzustellen
+
+**Weg 1 — die Ersteinrichtungsmaske.** Starten Sie J-DESK ohne `JLAWYER_URL` und rufen die
+Adresse im Browser auf, fragt J-DESK selbst nach der Betriebsart:
+
+![Schritt 1 der Ersteinrichtung: Eigenständig oder Mit j-lawyer verbinden](../bilder/ersteinrichtung-modus.png)
+
+**Weg 2 — die Umgebungsvariable.** `JLAWYER_URL` in der `.env` setzen. Dann erscheint die
+Maske gar nicht erst; die Betriebsart steht von Anfang an fest.
+
+> **Welcher Weg gilt, wenn beides gesetzt ist?** Die **Umgebungsvariable gewinnt** immer.
+> Sie können also eine über die Maske getroffene Wahl später mit `JLAWYER_URL` überstimmen.
+
+> **Die Wahl in der Maske ist einmalig.** Ist sie einmal gespeichert, verschwindet die Maske;
+> ein zweiter Versuch wird mit „Der Betriebsmodus ist bereits konfiguriert" abgewiesen. Für
+> einen Wechsel danach führt der Weg über die Umgebungsvariable — Einstellung ändern und neu
+> starten.
 
 ---
 
@@ -70,7 +86,14 @@ JLAWYER_URL=http://host.docker.internal:8080/j-lawyer-io
 
 ### Anbindung prüfen
 
-Vom Container aus, nicht vom Server:
+**Wenn Sie über die Maske einrichten,** nimmt J-DESK Ihnen die Prüfung ab: Adresse
+eintragen, **„Verbindung testen"** drücken. Steht darunter **„j-lawyer erreichbar"**,
+stimmt die Adresse — und erst dann lässt sich speichern.
+
+![Schritt 2: j-lawyer-Adresse eintragen und die Verbindung prüfen](../bilder/ersteinrichtung-jlawyer.png)
+
+**Wenn die Maske nicht mehr erscheint** — weil die Betriebsart bereits feststeht —, prüfen
+Sie vom Container aus, nicht vom Server:
 
 ```bash
 sudo docker compose exec j-desk node -e "fetch(process.env.JLAWYER_URL+'/v1/cases/list').then(r=>console.log('Antwort:',r.status)).catch(e=>console.log('Kein Kontakt:',e.message))"
@@ -90,8 +113,10 @@ Anmeldung erscheint der Vermerk `"jlVersion":"kompatibel"`.
 
 ## Erstes Konto im eigenständigen Betrieb
 
-Ohne `JLAWYER_URL` erscheint beim ersten Aufruf im Browser eine Einrichtungsmaske. Dort
-legen Sie das erste Konto an — dieses hat Verwaltungsrechte.
+Wählen Sie in der Maske **„Eigenständig"**, folgt als Schritt 2 die Anlage des ersten
+Kontos. Dieses hat Verwaltungsrechte. **Das Passwort muss mindestens acht Zeichen haben.**
+
+![Schritt 2 der Ersteinrichtung: das erste Konto anlegen](../bilder/ersteinrichtung-konto.png)
 
 Danach steht `"needsSetup":false`, und die Maske erscheint nicht mehr.
 

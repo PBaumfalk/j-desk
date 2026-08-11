@@ -112,7 +112,20 @@ http://<name-oder-adresse-des-servers>:4810
 ```
 
 Bei Anbindung an j-lawyer erscheint sofort die Anmeldemaske — melden Sie sich mit einem
-j-lawyer-Konto an. Ohne Anbindung erscheint stattdessen die Einrichtungsmaske für das erste Konto.
+j-lawyer-Konto an. Ohne Anbindung fragt J-DESK zuerst nach der **Betriebsart** und erst danach
+nach dem ersten Konto → [Erste Einrichtung](02-erste-einrichtung.md#zwei-wege-das-einzustellen).
+
+### Der Blick, der alles auf einmal beantwortet
+
+Nach der Anmeldung sagt Ihnen die **Systemdiagnose** in der oberen Leiste, ob wirklich alles
+steht — Version, Datenbankschema, Betriebsart und jede Anbindung mit eigenem Punkt:
+
+![Der obere Teil der Systemdiagnose: Version, Schema, Betriebsmodus und die vier Verbindungen](../bilder/systemdiagnose-oben.png)
+
+Vier grüne Punkte und der erwartete **Betriebsmodus** — dann ist die Installation gelungen.
+Steht bei *j-lawyer* etwas anderes als *Verbunden*, führt der Weg zu
+[Erste Einrichtung](02-erste-einrichtung.md#j-lawyer-anbinden); die *Euro-Office-Vorschau* darf
+fehlen, sie ist freiwillig.
 
 **Fertig.**
 

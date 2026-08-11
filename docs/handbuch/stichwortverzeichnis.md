@@ -34,6 +34,7 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | **Behauptung anlegen** | [Verknüpfen](anwalt/03-verknuepfen.md#die-dreizehn-objekttypen) |
 | **Benachrichtigungen** | [Aufgaben und Fristen](refa/04-aufgaben-und-fristen.md#wie-weise-ich-eine-aufgabe-zu) |
 | **Benutzer anlegen** | [Benutzer und Rechte](technik/04-benutzer-und-rechte.md) |
+| **Betriebsart / Betriebsmodus (eigenständig oder j-lawyer)** | [Erste Einrichtung](technik/02-erste-einrichtung.md#zwei-wege-das-einzustellen) |
 | **Beweismittel** | [Verknüpfen](anwalt/03-verknuepfen.md) · [Lücken finden](anwalt/04-luecken-finden.md) |
 
 ## D
@@ -41,6 +42,7 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | Sie suchen | Sie finden es hier |
 |---|---|
 | **Deckblatt** | [Anlagen zusammenstellen](refa/03-anlagenpaket.md#was-macht-j-desk-automatisch) |
+| **Diagnosepaket (für die Störungsmeldung)** | [Betrieb und Sicherung](technik/03-betrieb-und-sicherung.md#das-diagnosepaket) — enthält keine Mandanteninhalte |
 | **Diktieren** | [Post und Dokumente](refa/02-post-und-dokumente.md#kann-ich-diktieren-statt-tippen) |
 | **Docker** | [Installation](technik/01-installation.md) |
 | **Dokument hinzufügen** | [Post und Dokumente](refa/02-post-und-dokumente.md) |
@@ -52,7 +54,8 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | Sie suchen | Sie finden es hier |
 |---|---|
 | **Ebenen** | [Benutzer und Rechte](technik/04-benutzer-und-rechte.md#die-ebenen) · [Vertraulichkeit](anwalt/06-vertraulichkeit.md) |
-| **Einrichtung, erste** | [Erste Einrichtung](technik/02-erste-einrichtung.md) |
+| **Einrichtung, erste** | → *Ersteinrichtung* |
+| **Ersteinrichtung** | [Erste Einrichtung](technik/02-erste-einrichtung.md#zwei-wege-das-einzustellen) — J-DESK fragt beim ersten Aufruf zuerst nach der Betriebsart, dann nach dem Konto |
 | **Exportieren** | [Export und Schwärzen](anwalt/07-export-und-schwaerzen.md) |
 | **Externe Referenz** | [Post und Dokumente](refa/02-post-und-dokumente.md#was-bedeutet-ablage) — Verweis auf etwas, das nicht in der Akte liegt |
 
@@ -60,9 +63,9 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 
 | Sie suchen | Sie finden es hier |
 |---|---|
+| **Fahne (Sprungmarke im Dokument)** | [Termin und KI](anwalt/08-termin-und-ki.md#vorbereiten-die-sitzungsmappe) — Rechtsklick in die Seite → *Anbringen* → *Fahne* |
 | **Festkleben** | [Ordnung halten](refa/05-ordnung-halten.md#was-ist-der-unterschied-zwischen-heften-klammern-und-festkleben) |
 | **Foto hochladen** | [Post und Dokumente](refa/02-post-und-dokumente.md#kann-ich-etwas-mit-dem-handy-fotografieren) |
-| **Fahne (Sprungmarke im Dokument)** | [Termin und KI](anwalt/08-termin-und-ki.md#vorbereiten-die-sitzungsmappe) — Rechtsklick in die Seite → *Anbringen* → *Fahne* |
 | **Freigabe (exportierbar / intern)** | [Vertraulichkeit](anwalt/06-vertraulichkeit.md) · [Anlagenpaket](refa/03-anlagenpaket.md#schritt-1-dokumente-freigeben) |
 | **Freigabe-Statistik (vor dem Export)** | [Export und Schwärzen](anwalt/07-export-und-schwaerzen.md#die-freigabe-statistik-lesen) |
 | **Frist eintragen** | [Aufgaben und Fristen](refa/04-aufgaben-und-fristen.md) — **Achtung:** echte Fristen gehören in j-lawyer |
@@ -126,7 +129,7 @@ also das Wort aus dem Kanzleialltag, nicht das aus dem Programm.
 | **Scannen** | → *Post aufnehmen* |
 | **Schreddern** | [Wenn etwas fehlt](refa/06-wenn-etwas-fehlt.md#ich-habe-aus-versehen-etwas-gelöscht) |
 | **Schwärzen / unkenntlich machen** | [Export und Schwärzen](anwalt/07-export-und-schwaerzen.md#wie-schwärze-ich-richtig) — entfernt Text endgültig; zum umkehrbaren Ersetzen siehe *Anonymisieren* |
-| **Sichern / Sicherung / Backup** | [Betrieb und Sicherung](technik/03-betrieb-und-sicherung.md) |
+| **Sichern / Sicherung / Backup** | [Betrieb und Sicherung](technik/03-betrieb-und-sicherung.md#was-j-desk-selbst-tut) — Stand und „Jetzt sichern" stehen in der *Systemdiagnose* |
 | **Sichtbarkeit prüfen** | [Benutzer und Rechte](technik/04-benutzer-und-rechte.md#warum-sieht-jemand-etwas-nicht) |
 | **Sitzung / Sitzungsmappe / Verhandlung** | [Termin und KI](anwalt/08-termin-und-ki.md#vorbereiten-die-sitzungsmappe) |
 | **Sitzungsmodus (im Termin)** | [Termin und KI](anwalt/08-termin-und-ki.md#im-termin-der-sitzungsmodus) |
