@@ -87,6 +87,23 @@ gelöscht.
 > unauffälliger, schwarz macht die Auslassung sichtbar; für gerichtliche Vorlagen ist das
 > in aller Regel die richtige Wahl.
 
+### So sieht das aus
+
+Auf dem Schirm sehen Sie das Dokument mit den Balken darüber — die Stelle ist abgedeckt,
+das Original bleibt unangetastet:
+
+![Ein Aktenvermerk mit zwei geschwärzten Stellen im geöffneten Dokument](../bilder/schwaerzung-im-dokument.png)
+
+Erst der **Export** erzeugt die geschwärzte Fassung. Darin ist der Text unter den Balken
+tatsächlich fort:
+
+![Dieselbe Seite als exportierte Datei: die Balken stehen, der Text darunter ist gelöscht](../bilder/schwaerzung-artefakt.png)
+
+Vergleichen Sie die beiden Bilder genau. In der exportierten Fassung fehlt **die ganze
+Zeile** „Die Zeugin Renate Meier, wohnhaft …" — nicht nur der überdeckte Teil. Dasselbe
+bei der Kontozeile. Das ist kein Versehen, sondern die Richtung, in die J-DESK im Zweifel
+irrt; der nächste Abschnitt erklärt, warum.
+
 ### Warum das der entscheidende Unterschied ist
 
 Ein schwarzes Rechteck über einem Text ist eine Grafik. Der Text steht weiterhin darunter
@@ -110,11 +127,20 @@ sehen Sie sofort und können nachbessern; übrig gebliebener Text wäre der gef�
 und sucht nach Text, der verschwunden sein müsste. Findet es welchen, **bricht der Export
 ab** — Sie bekommen eine Meldung statt einer unsicheren Datei.
 
-> **Stolperstein — auf derselben Zeile kann mehr verschwinden, als der Balken zeigt.**
-> Bei Tabellen und mehrspaltigen Zeilen kann Text **links** der geschwärzten Stelle
-> mitentfernt werden, obwohl er im Bild noch steht. Das ist die Richtung, in die J-DESK
-> im Zweifel irrt — lieber zu viel weg als zu wenig. Sehen Sie sich deshalb bei Tabellen
-> das **fertige** Dokument an, nicht nur den Bildschirm.
+> **Stolperstein — es verschwindet mehr, als der Balken zeigt.**
+> In der exportierten Datei fehlt in aller Regel **die ganze Zeile**, in der Sie geschwärzt
+> haben, nicht nur der überdeckte Teil. Der Grund liegt im Aufbau von PDF-Dateien: Eine
+> Zeile aus einer Textverarbeitung ist dort meist **eine einzige Anweisung**, die sich nicht
+> in der Mitte auftrennen lässt, ohne die Buchstabenbreiten jeder Schrift nachzurechnen.
+> J-DESK entfernt sie deshalb ganz.
+>
+> Das ist die Richtung, in die J-DESK im Zweifel irrt — lieber zu viel weg als zu wenig,
+> denn übrig gebliebener Text wäre der Fehler, den man nicht mehr zurückholen kann.
+>
+> **Was das für Sie heißt:** Sehen Sie sich das **fertige** Dokument an, nicht nur den
+> Bildschirm. Fehlt eine Aussage, die Sie brauchen, schreiben Sie sie in einem
+> Begleitschreiben oder einem eigenen Vermerk erneut — statt die Schwärzung kleiner zu
+> ziehen.
 
 ### Wenn J-DESK sich weigert
 

@@ -59,9 +59,11 @@ eine Schwärzung also **nicht** erst freigeben, damit sie greift. Ziehen genügt
 
 Zwei zusätzliche Sicherungen:
 
-- **Im Zweifel wird mehr gelöscht, nicht weniger.** Wenn nicht eindeutig bestimmbar ist, ob ein
-  Textstück noch in den Schwärzungsbereich fällt, wird es entfernt. Zu viel Gelöschtes sehen Sie
-  sofort; übrig gebliebener Text wäre der gefährliche Fall.
+- **Im Zweifel wird mehr gelöscht, nicht weniger.** In der Regel fällt **die ganze Zeile** weg,
+  in der Sie geschwärzt haben — eine Zeile ist in einer PDF-Datei meist eine einzige Anweisung,
+  die sich nicht in der Mitte auftrennen lässt. Zu viel Gelöschtes sehen Sie sofort; übrig
+  gebliebener Text wäre der gefährliche Fall. Mehr dazu in
+  [Export und Schwärzen](07-export-und-schwaerzen.md#so-sieht-das-aus).
 - **Es wird nachgeprüft.** Nach dem Schwärzen liest das Programm die erzeugte Datei noch einmal
   und sucht darin nach Text, der eigentlich verschwunden sein müsste. Findet es welchen, bricht
   der Export ab, statt Ihnen eine unsichere Datei zu geben.
